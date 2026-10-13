@@ -10,7 +10,7 @@ Registro dinâmico de status e marcos de desenvolvimento.
 | **02 - Port & Process Guardian (MCPs)** | Inventário de portas, alocador e gerenciador de permissões | ✅ DONE | ✅ 16/16 tests GREEN |
 | **03 - Hermes Orchestrator** | Motor orquestrador com persona Anti-Sycophancy | ✅ DONE | ✅ 19/19 tests GREEN |
 | **04 - Telegram Bot Bridge** | Bot 1-to-1 com autenticação de chat_id e fila FIFO | ✅ DONE | ✅ 23/23 tests GREEN |
-| **05 - Security & Pentest Gates** | Integração Semgrep + TruffleHog + Scanner | ⚪ To-Do | Pendente |
+| **05 - Security & Pentest Gates** | Integração Semgrep + TruffleHog + Scanner | ✅ DONE | ✅ 25/25 tests GREEN |
 | **06 - UI/UX Frontend** | Dashboard shadcn/ui + Framer Motion | ⚪ To-Do | Pendente |
 
 ## Próxima Tarefa Imediata
