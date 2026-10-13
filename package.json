@@ -1,0 +1,14 @@
+{
+  "name": "hermes-control-center",
+  "version": "0.1.0",
+  "description": "Hermes Control Center — multi-agent orchestration platform for dev, security and automation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "packageManager": "pnpm@10.20.0"
+}

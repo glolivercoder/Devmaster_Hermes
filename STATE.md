@@ -5,7 +5,7 @@ Registro dinâmico de status e marcos de desenvolvimento.
 
 | Módulo | Descrição | Status | Gate de Qualidade |
 |---|---|---|---|
-| **00 - Core Foundation** | Event Bus, Registries, Types, Audit Logger | 🟡 Em Especificação | Pendente |
+| **00 - Core Foundation** | Event Bus, Registries, Types, Audit Logger | ✅ DONE | ✅ 5/5 tests GREEN |
 | **01 - LiteLLM Gateway & API Config** | Docker compose LiteLLM + Postgres + Virtual Keys config | ⚪ To-Do | Pendente |
 | **02 - Port & Process Guardian (MCPs)** | Inventário de portas, alocador e gerenciador de processos | ⚪ To-Do | Pendente |
 | **03 - Hermes Orchestrator** | Motor orquestrador com persona Anti-Sycophancy | ⚪ To-Do | Pendente |
