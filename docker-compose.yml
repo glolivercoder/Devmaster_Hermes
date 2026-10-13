@@ -68,3 +68,4 @@ services:
 volumes:
   hermes_pg_data:
   hermes_redis_data:
+

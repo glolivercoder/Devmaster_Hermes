@@ -81,3 +81,4 @@ test('EventBus: publish and subscribe round-trip', async () => {
   assert.ok(received !== null, 'payload received');
   unsub();
 });
+

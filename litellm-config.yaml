@@ -55,3 +55,4 @@ general_settings:
   allow_user_auth: false            # no public signup — internal use only
   max_budget: 50.0                  # global monthly cap in USD
   budget_duration: 1mo
+

@@ -35,3 +35,4 @@ export function loadRegistry(rootDir = '.'): McpRegistry {
 export function portOwner(registry: McpRegistry, port: number): string | null {
   return registry.port_allocations[String(port)] ?? null;
 }
+
