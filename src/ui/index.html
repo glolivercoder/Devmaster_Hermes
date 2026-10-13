@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HERMES Control Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- ─── SIDEBAR MODULAR ─────────────────────────────────────────────── -->
+  <aside class="w-64 bg-gray-950 border-r border-gray-800 flex flex-col justify-between">
+    <div>
+      <!-- Brand Header -->
+      <div class="p-5 border-b border-gray-800 flex items-center space-x-3">
+        <div class="w-8 h-8 rounded bg-gradient-to-tr from-amber-500 to-red-600 flex items-center justify-center font-bold text-white shadow-lg shadow-amber-500/20">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-wider uppercase text-white">HERMES</h1>
+          <p class="text-xs text-gray-500 font-mono">Control Center v0.1</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="p-3 space-y-1">
+        <button onclick="switchTab('orchestrator')" id="tab-btn-orchestrator" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span>🧠</span> <span>Orquestrador</span>
+        </button>
+        <button onclick="switchTab('mcps')" id="tab-btn-mcps" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🔌</span> <span>MCPs & Portas</span>
+        </button>
+        <button onclick="switchTab('gateway')" id="tab-btn-gateway" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>💳</span> <span>LiteLLM & Custos</span>
+        </button>
+        <button onclick="switchTab('telegram')" id="tab-btn-telegram" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>✈️</span> <span>Telegram 1-to-1</span>
+        </button>
+        <button onclick="switchTab('security')" id="tab-btn-security" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🛡️</span> <span>Security Gates</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- System Status Bottom Bar -->
+    <div class="p-4 border-t border-gray-800 bg-gray-900/40">
+      <div class="flex items-center justify-between text-xs font-mono text-gray-400">
+        <span class="flex items-center space-x-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>SISTEMA ATIVO</span>
+        </span>
+        <span class="text-gray-500">Node v22</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN CONTENT VIEW ────────────────────────────────────────────── -->
+  <main class="flex-1 flex flex-col bg-gray-900/30 overflow-y-auto">
+
+    <!-- Top Bar -->
+    <header class="h-14 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-950/60 backdrop-blur">
+      <div class="flex items-center space-x-4">
+        <span id="current-view-title" class="text-sm font-semibold text-gray-200">Orquestrador & Chat Central</span>
+        <span class="text-xs px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800/50 font-mono">Anti-Sycophancy: ON</span>
+      </div>
+      <div class="flex items-center space-x-4 text-xs font-mono text-gray-400">
+        <span>Gasto Mensal: <strong class="text-emerald-400">$1.23 / $50.00</strong></span>
+        <span>Portas Ativas: <strong class="text-amber-400">5</strong></span>
+      </div>
+    </header>
+
+    <!-- Tab View: Orchestrator Chat -->
+    <section id="view-orchestrator" class="flex-1 flex flex-col p-6 space-y-4">
+      <div class="flex-1 bg-gray-950 rounded-xl border border-gray-800 p-4 overflow-y-auto space-y-4 font-mono text-xs" id="chat-messages">
+        <div class="bg-gray-900/80 border border-gray-800 p-3 rounded-lg text-gray-300">
+          <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Sistema pronto. Enviei o prompt para análise de viabilidade real, divisão em módulos e detecção de riscos.
+        </div>
+      </div>
+      <div class="flex space-x-2">
+        <input type="text" id="prompt-input" placeholder="Digite uma ideia de projeto ou comando de orquestração..." class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500" />
+        <button onclick="sendPrompt()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold px-5 py-2.5 rounded-lg text-sm transition">
+          Analisar
+        </button>
+      </div>
+    </section>
+
+    <!-- Tab View: MCPs & Process Guardian -->
+    <section id="view-mcps" class="hidden flex-1 p-6 space-y-6">
+      <h2 class="text-base font-bold text-gray-200">Monitor de Portas & Processos (Port Guardian)</h2>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+          <div class="text-xs text-gray-500 font-mono">PORTA 4000</div>
+          <div class="text-sm font-bold text-white mt-1">LiteLLM AI Gateway</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">
+            <span>LISTEN</span>
+            <span class="text-gray-500">PID 1024</span>
+          </div>
+        </div>
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+          <div class="text-xs text-gray-500 font-mono">PORTA 4010</div>
+          <div class="text-sm font-bold text-white mt-1">Port & Process Guardian</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">
+            <span>LISTEN</span>
+            <span class="text-gray-500">PID 2048</span>
+          </div>
+        </div>
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+          <div class="text-xs text-gray-500 font-mono">PORTA 4030</div>
+          <div class="text-sm font-bold text-white mt-1">Telegram 1-to-1 Bridge</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">
+            <span>LISTEN</span>
+            <span class="text-gray-500">PID 4096</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab View: LiteLLM & Custos -->
+    <section id="view-gateway" class="hidden flex-1 p-6 space-y-6">
+      <h2 class="text-base font-bold text-gray-200">Gateway LiteLLM & Chaves Virtuais</h2>
+      <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-3 font-mono text-xs">
+        <div class="flex justify-between border-b border-gray-800 pb-2 text-gray-400">
+          <span>VIRTUAL KEY</span>
+          <span>MODELOS</span>
+          <span>ORÇAMENTO</span>
+          <span>CONSUMO ATUAL</span>
+        </div>
+        <div class="flex justify-between items-center text-gray-300">
+          <span class="text-amber-400">sk-virtual-orchestrator</span>
+          <span>claude-code, gemini-pro</span>
+          <span>$20.00</span>
+          <span class="text-emerald-400">$0.85 (4.2%)</span>
+        </div>
+        <div class="flex justify-between items-center text-gray-300">
+          <span class="text-amber-400">sk-virtual-security</span>
+          <span>deepseek-code</span>
+          <span>$5.00</span>
+          <span class="text-emerald-400">$0.12 (2.4%)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab View: Telegram -->
+    <section id="view-telegram" class="hidden flex-1 p-6 space-y-6">
+      <h2 class="text-base font-bold text-gray-200">Telegram 1-to-1 Whitelist & Fila FIFO</h2>
+      <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2 text-xs font-mono">
+        <div class="text-gray-400">Chat ID Autorizado: <span class="text-amber-400">123456789</span></div>
+        <div class="text-gray-400">Fila Pendente: <span class="text-emerald-400">0 mensagens</span></div>
+        <div class="text-gray-500 mt-2">Qualquer mensagem recebida de outros Chat IDs será automaticamente rejeitada e registrada em auditoria.</div>
+      </div>
+    </section>
+
+    <!-- Tab View: Security Gates -->
+    <section id="view-security" class="hidden flex-1 p-6 space-y-6">
+      <h2 class="text-base font-bold text-gray-200">Security Gate & Varredura de Segredos</h2>
+      <div class="p-4 bg-gray-950 rounded-xl border border-emerald-900/50 bg-emerald-950/20 text-xs font-mono space-y-2">
+        <div class="flex items-center space-x-2 text-emerald-400 font-bold">
+          <span>✅</span> <span>ÚLTIMA VARREDURA: LIMPO (PASSOU)</span>
+        </div>
+        <div class="text-gray-400">Arquivos escaneados: 28</div>
+        <div class="text-gray-400">Segredos vazados: 0</div>
+        <div class="text-gray-400">Status: Gate Aprovado para Promoção de Módulo</div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function switchTab(tab) {
+      const tabs = ['orchestrator', 'mcps', 'gateway', 'telegram', 'security'];
+      tabs.forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white";
+      });
+
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tab}`);
+      activeBtn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition bg-amber-500/10 text-amber-400 border border-amber-500/30";
+      document.getElementById('current-view-title').innerText = activeBtn.innerText.trim();
+    }
+
+    function sendPrompt() {
+      const input = document.getElementById('prompt-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chat = document.getElementById('chat-messages');
+      chat.innerHTML += `
+        <div class="bg-gray-900 p-3 rounded-lg text-gray-200 text-right">
+          <span class="text-blue-400 font-bold">[USER]</span> ${text}
+        </div>
+        <div class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-gray-300">
+          <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Analisando viabilidade técnica, atrito de mercado e requisitos de portas/segurança...
+        </div>
+      `;
+      input.value = '';
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
