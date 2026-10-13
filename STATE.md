@@ -8,7 +8,7 @@ Registro dinâmico de status e marcos de desenvolvimento.
 | **00 - Core Foundation** | Event Bus, Registries, Types, Audit Logger | ✅ DONE | ✅ 5/5 tests GREEN |
 | **01 - LiteLLM Gateway & API Config** | docker-compose + GatewayClient + Virtual Keys | ✅ DONE | ✅ 11/11 tests GREEN |
 | **02 - Port & Process Guardian (MCPs)** | Inventário de portas, alocador e gerenciador de permissões | ✅ DONE | ✅ 16/16 tests GREEN |
-| **03 - Hermes Orchestrator** | Motor orquestrador com persona Anti-Sycophancy | ⚪ To-Do | Pendente |
+| **03 - Hermes Orchestrator** | Motor orquestrador com persona Anti-Sycophancy | ✅ DONE | ✅ 19/19 tests GREEN |
 | **04 - Telegram Bot Bridge** | Bot 1-to-1 com autenticação de chat_id e fila FIFO | ⚪ To-Do | Pendente |
 | **05 - Security & Pentest Gates** | Integração Semgrep + TruffleHog + Scanner | ⚪ To-Do | Pendente |
 | **06 - UI/UX Frontend** | Dashboard shadcn/ui + Framer Motion | ⚪ To-Do | Pendente |
