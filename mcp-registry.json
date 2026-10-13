@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "servers": [
+    {
+      "id": "context7",
+      "name": "Context7 Documentation",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "port": null,
+      "priority": "essential",
+      "risk_level": "low",
+      "description": "Documentação atualizada de bibliotecas e frameworks"
+    },
+    {
+      "id": "sequential-thinking",
+      "name": "Sequential Thinking",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "port": null,
+      "priority": "essential",
+      "risk_level": "low",
+      "description": "Decomposição de problemas e raciocínio sequencial"
+    },
+    {
+      "id": "memory",
+      "name": "Memory Knowledge Graph",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "port": null,
+      "priority": "essential",
+      "risk_level": "low",
+      "description": "Grafo de conhecimento persistente para anti-amnésia"
+    },
+    {
+      "id": "filesystem",
+      "name": "Filesystem Guard",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "f:\\Projetos2026\\DevMaster_Hermes"],
+      "port": null,
+      "priority": "essential",
+      "risk_level": "medium",
+      "description": "Acesso seguro e restrito ao diretório do projeto"
+    },
+    {
+      "id": "hermes-gateway",
+      "name": "LiteLLM AI Gateway",
+      "transport": "http",
+      "command": "docker-compose up -d litellm",
+      "args": [],
+      "port": 4000,
+      "priority": "essential",
+      "risk_level": "medium",
+      "description": "Gateway unificado para provedores de LLM com virtual keys"
+    },
+    {
+      "id": "hermes-process-manager",
+      "name": "Port & Process Guardian",
+      "transport": "http",
+      "command": "pnpm --filter @hermes/process-manager dev",
+      "args": [],
+      "port": 4010,
+      "priority": "essential",
+      "risk_level": "high",
+      "description": "Monitoramento de portas, processos órfãos e orquestração"
+    }
+  ],
+  "port_allocations": {
+    "4000": "LiteLLM Gateway",
+    "4010": "Hermes Process Manager & Guardian",
+    "4020": "Hermes Core Event Bus",
+    "4030": "Hermes Telegram Bridge",
+    "5173": "Hermes UI Dashboard (Vite/Next)"
+  }
+}
+
