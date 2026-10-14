@@ -21,16 +21,41 @@ model_list:
       model: gemini/gemini-2.0-flash
       api_key: os.environ/GEMINI_API_KEY
 
+  - model_name: gemini-flash-free    # same model, free-tier key pool
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: os.environ/GEMINI_API_KEY
+
   # ─── OpenRouter (auto-routing) ────────────────────────────────────────────
   - model_name: openrouter-auto      # auto-selects best model by cost+quality
     litellm_params:
       model: openrouter/openai/gpt-5.1
       api_key: os.environ/OPENROUTER_API_KEY
 
-  # ─── OpenRouter Vision / Free Computer Use ────────────────────────────────
+  # ─── OpenRouter free-tier models (:free suffix = $0) ─────────────────────
   - model_name: openrouter-vision-free  # Free multimodal model for GUI grounding & computer use
     litellm_params:
       model: openrouter/google/gemini-2.0-flash-exp:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: openrouter-deepseek-free
+    litellm_params:
+      model: openrouter/deepseek/deepseek-r1:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: openrouter-llama-free
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: openrouter-qwen-free
+    litellm_params:
+      model: openrouter/qwen/qwen3-235b-a22b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: openrouter-mistral-free
+    litellm_params:
+      model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
       api_key: os.environ/OPENROUTER_API_KEY
 
   # ─── DeepSeek ─────────────────────────────────────────────────────────────
@@ -38,6 +63,29 @@ model_list:
     litellm_params:
       model: deepseek/deepseek-coder
       api_key: os.environ/DEEPSEEK_API_KEY
+
+  # ─── OpenAI ───────────────────────────────────────────────────────────────
+  - model_name: gpt-main
+    litellm_params:
+      model: openai/gpt-4.1
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: gpt-mini
+    litellm_params:
+      model: openai/gpt-4.1-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  # ─── NVIDIA NIM ───────────────────────────────────────────────────────────
+  - model_name: nvidia-llama
+    litellm_params:
+      model: nvidia_nim/meta/llama-3.3-70b-instruct
+      api_key: os.environ/NVIDIA_API_KEY
+
+  # ─── Vertex AI ────────────────────────────────────────────────────────────
+  - model_name: vertex-gemini
+    litellm_params:
+      model: vertex_ai/gemini-2.0-flash-001
+      api_key: os.environ/VERTEX_AI_API_KEY
 
 router_settings:
   routing_strategy: cost-based-routing    # roteia pelo custo entre modelos equivalentes

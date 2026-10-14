@@ -5,6 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: hermes-core
+    env_file:
+      - .env
     ports:
       - "4010:4010"    # Process Guardian API
       - "4020:4020"    # Event Bus / Web Dashboard
@@ -14,9 +16,12 @@ services:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ALLOWED_CHAT_ID=${TELEGRAM_ALLOWED_CHAT_ID}
+      - TELEGRAM_LLM_MODEL=${TELEGRAM_LLM_MODEL}
       - COMPOSIO_API_KEY=${COMPOSIO_API_KEY}
+      - COMPOSIO_USER_ID=${COMPOSIO_USER_ID}
     volumes:
       - ./logs:/app/logs
+      - ./data:/app/data
       - ./mcp-registry.json:/app/mcp-registry.json:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro  # Allows Hermes to manage Docker MCP containers on-demand
     depends_on:
@@ -41,9 +46,33 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_KEY_ALT1=${GEMINI_API_KEY_ALT1}
+      - GEMINI_API_KEY_ALT2=${GEMINI_API_KEY_ALT2}
+      - GEMINI_API_KEY_ALT3=${GEMINI_API_KEY_ALT3}
+      - GEMINI_API_KEY_ALT4=${GEMINI_API_KEY_ALT4}
+      - GEMINI_API_KEY_ALT5=${GEMINI_API_KEY_ALT5}
+      - GEMINI_API_KEY_ALT6=${GEMINI_API_KEY_ALT6}
+      - GEMINI_API_KEY_ALT7=${GEMINI_API_KEY_ALT7}
+      - GEMINI_API_KEY_ALT8=${GEMINI_API_KEY_ALT8}
+      - GEMINI_API_KEY_ALT9=${GEMINI_API_KEY_ALT9}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_API_KEY_ALT1=${OPENROUTER_API_KEY_ALT1}
+      - OPENROUTER_API_KEY_ALT2=${OPENROUTER_API_KEY_ALT2}
+      - OPENROUTER_API_KEY_ALT3=${OPENROUTER_API_KEY_ALT3}
+      - OPENROUTER_API_KEY_ALT4=${OPENROUTER_API_KEY_ALT4}
+      - OPENROUTER_API_KEY_ALT5=${OPENROUTER_API_KEY_ALT5}
+      - OPENROUTER_API_KEY_ALT6=${OPENROUTER_API_KEY_ALT6}
+      - OPENROUTER_API_KEY_ALT7=${OPENROUTER_API_KEY_ALT7}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - OPENAI_API_KEY_ALT1=${OPENAI_API_KEY_ALT1}
+      - OPENAI_API_KEY_ALT2=${OPENAI_API_KEY_ALT2}
+      - OPENAI_API_KEY_ALT3=${OPENAI_API_KEY_ALT3}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - NVIDIA_BUILD_BASE_URL=${NVIDIA_BUILD_BASE_URL}
+      - VERTEX_AI_API_KEY=${VERTEX_AI_API_KEY}
+      - VERTEX_AI_BASE_URL=${VERTEX_AI_BASE_URL}
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
       - DATABASE_URL=postgresql://hermes:${POSTGRES_PASSWORD}@postgres:5432/hermes_gateway
       - REDIS_URL=redis://redis:6379

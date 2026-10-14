@@ -1,0 +1,23 @@
+{
+  "mode": "auto",
+  "routes": {
+    "orchestrator": "claude-code",
+    "coder": "deepseek-code",
+    "security": "claude-fast",
+    "pentest": "claude-code",
+    "qa": "gemini-flash",
+    "integrator": "claude-fast",
+    "computer_user": "openrouter-vision-free",
+    "telegram": "deepseek-code",
+    "svc-serpapi": "gemini-flash",
+    "svc-tavily": "gemini-flash",
+    "svc-brave": "gemini-flash-free",
+    "svc-linkup": "gemini-pro",
+    "svc-github": "deepseek-code",
+    "svc-media": "openrouter-vision-free",
+    "svc-finance": "gemini-flash",
+    "svc-docs": "openrouter-qwen-free"
+  },
+  "freeOnly": false,
+  "updatedAt": "2026-10-14T06:04:03.805Z"
+}

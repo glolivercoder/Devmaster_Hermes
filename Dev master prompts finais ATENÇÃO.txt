@@ -1,0 +1,148 @@
+Procure pelos melhores prompts agentes e skills para desenvolvedores vibe coders  que criem melhora de contexto para a plataforma ou agente de desenvolvimento não esquecer e começar a çer o projeto todo novamente ( existe uma q crie um ingografo com os principais pontos cr8uciasi da aplicação ) .
+
+Skills ou repositórios com agentes de desenvolvimento , agentes de cyber segurança q evitem problemas com invasões hackers e roubo de API  fazendo teste e pentests na aplicação e instruindo o agente principal de desenvolvimento a evitar e corrigir as brechas criando relatórios e interagindo como ele
+
+skill ou repositório concil para evitar q o agente pu plataforma minta para agradar ou puxi o saco do usuário vibe code falando na lata as verdadeiras projeções de mercado e publico do webapp ou soft
+
+skill, repositório e mcps   de webdesign e animações que deixem o site ou webapp com animações e aspecto modernos e clean . fugindo do padrão pobre e comum da maioria dos sites vibe cooders e sigam criando com referencias profissionais de ux e ui design de sites e webapps  de referencia 
+
+se eu criar um agent hermes ou agent com computer use que tenha integração com varias plataformas de desenvolvimento como cursor , antigravity , claude code e q use as skills e repositorios recomendados acima como  referencia  de desenvolvimento via computer use ou MCP e q gere agents de programação , cyber segurança, agents de pentest e invasão , agents de testes e agente de integração de modulos do sas ou web app . Numa plataforma com chats e com integraç~çao a computer use e mcp onde eu possa criar um melhorar do prompt com  analise  de viabilidade, analise de mercado e tempo de desenvolvimento sugerindo a criação do webapp ou sas em modulos separados integrados por mco pu api rest . estes modulos devem ser criados nunma orgem q crie fluidez no desenvolvimento cada módulo criado é testado e segue para o outro módulo seguinte mais necessario de acordo com a arvore de desenvolvimnto da aplicação para evitar bugs e erros e que o agent de desenvolvimento se perca no contexto . pesquise tb por vuma repositorio para controlar as apis criando um ambiente de segurança paras as apis par aq estas apis sejam usados futuramente em outras sass ou webapps q eu desenvolver. quero previa de custos e consumo da api sempre visivel enqunto eu estiver programando usando as apis da openrouter ,  gogle gemini anthropic , openai , deep seek , assim como repositoris de api gratuitas q por acaso vc encontrar e incorporar o projeto ( ja tem uma no github)  
+
+Excelente  para finalizar crie o modulo onde vou colacaras apis no servidor local de modo onde eu possa escolher manualmente cada agente e cada llm  ou colocar nas maõs do agent orqustrador a escolha lembrando sempre q ele deve buscar o custo beneficio do desenvolvimento usando os melhores llm de codificação paga extritamente quando for necessario como planejamento  e descobreta de buygs erros e usando opções gratuitas  ou baratas para tarefas mais leves . O chat de desenvolvimento deve ser interativo o orquetrador vai analizar o prompt e sugerir melhorias e só vai seguir em frente quando o usuario com analise tecnica de viabilidade e de mercado em mão dejejar prosseguir ou fazer alterações pelo chat . quero um sustem chamado hidtorico onde ficara armazenado os meus prompts e as respostar do llm e um sitema de backup similar ou do github porem local  para maior controle e erros e versões ele deve armazenar automaticamente cada etapa d odesenvolvimento e salvar localmente
+
+Crie a aba no sidebar MCPs  quero visualizar nesta aba todosos mcps rodando na maquina com poder de fechar , abriar , reiniciar  cada mcp da maquina e os mcps da proprio HERMES Control Center quero um mcp de integração com visual studio ( e outros q usem ele como antigravity, windsurf e cursor ) e quero visualizar todas as aplicacões q rode nos terminais como servições e servidores node js entre outros  para fechar e abrir  e reiniciar manualmente ou de forma orquetrada pelo agent orquestrador  e crie a aba Whatsup para q eu possa receber notificações  no celular e poder enviar prompts pro chat e visualizar as respostas na tela do celular pelo whatsapp e se o agent tiver ocupado crie uma fila de pedidos q rodará automaticamente quando o agent estiver livre 
+
+quero q recompile todas as solicitações e gere um prompt no formato md ou txt com todas as informações necessrias para  criar a aplicação  informe no prompt  q a aplicação deve ser criadas e módulos e q cada módulo seja separado e integrado por mcps ou api rest e cerfifique-se q o agente orquestrador tenha acesso aos mcps e terminais para gerenciar conforme o necessario ou q crie subgants com a função
+
+abra o arquivo hermes_control_center_prompt_mestre  V2.mde analise a viabiliade da aplicação e prossiga com o desenvolvimento  use as diretrizes de desenvolvimento do repositorio supoerpowers : https://github.com/obra/superpowers#antigravity e prossiga com o desenvolvimento use o repositorio npx @caveman-ai/cli@latest para gastar menis tokens  
+
+Composio Toolkits
+
+gere botões de teste de conexão para cada api de llm 
+
+para finalizr faltou a aba de Backup e Endpoints e Versionamento usando o qual o substitudo local para o github para uma versão basica para backup e para criar  end point do projetops para versionamento e se proteger de erros ? .
+
+
+Para o seu caso, o substituto local mais indicado é o Gitea (go-gitea/gitea). Ele é leve, roda bem em um mini PC/VPS, oferece interface web, repositórios Git, API REST, webhooks, issues, releases, usuários/organizações e backup integrado — praticamente um “GitHub básico self-hosted”.
+
+Recomendação principal
+Opção	Quando escolher
+Gitea	Melhor equilíbrio: leve, simples, API completa, webhooks, Actions e backup nativo. Ideal para backup, versionamento e endpoints de automação. 
+Forgejo	Fork comunitário do Gitea, muito parecido; escolha se preferir governança comunitária e ecossistema Forgejo. Tem API, webhooks, registry e Actions compatíveis com GitHub Actions. 
+GitLab CE	Só se você quiser CI/CD, container registry, segurança e recursos empresariais mais pesados; consome muito mais RAM.
+Git bare + rsync/Borg	Se quiser apenas backup simples, sem interface, API ou automação.
+Para múltiplos webapps/SaaS e integração com agentes, Gitea é a melhor escolha.
+
+Por que Gitea atende seus requisitos
+Versionamento local: repositórios Git privados, branches, tags, releases, pull requests e histórico completo.
+
+Endpoints/API: a API REST cobre cerca de 300 operações para repositórios, branches, commits, PRs, issues, releases, webhooks, organizações, usuários e administração.
+
+Webhooks: dispara eventos de push, PR, issue, release e pacote para n8n, seu backend, LiteLLM, CI ou agentes.
+
+CI/CD: Gitea Actions é compatível com workflows no estilo GitHub Actions, usando .gitea/workflows/.
+
+Backup: o comando gitea dump gera um arquivo ZIP/TAR com banco de dados, repositórios, LFS e dados da instalação.
+
+Proteção contra erros: branches protegidas, PRs obrigatórios, revisão, tags de release e histórico imutável permitem voltar a qualquer versão estável.
+
+Instalação mínima com Docker
+text
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      GITEA__server__DOMAIN: git.seudominio.local
+      GITEA__server__ROOT_URL: https://git.seudominio.local/
+    volumes:
+      - ./gitea-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3000:3000"
+      - "2222:22"
+
+  postgres:
+    image: postgres:16
+    container_name: gitea-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: troque-esta-senha
+      POSTGRES_DB: gitea
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+Depois acesse http://localhost:3000 e configure o administrador inicial.
+
+Backup automático
+O backup nativo inclui banco, repositórios e dados da instância em um único arquivo.
+
+bash
+docker exec -u git gitea \
+  gitea dump -c /data/gitea/conf/app.ini \
+  --file /data/backups/gitea-$(date +%F).zip
+Para rodar diariamente às 3h:
+
+bash
+crontab -e
+text
+0 3 * * * docker exec -u git gitea gitea dump -c /data/gitea/conf/app.ini --file /data/backups/gitea-$(date +\%F).zip
+Regra importante: nunca deixe o backup apenas no mesmo disco/servidor. Copie para um HD externo, NAS, Backblaze B2, S3, Wasabi ou outro local. O dump do Gitea é restaurável, mas a restauração é manual: você extrai o arquivo e recupera banco, repositórios e arquivos de configuração.
+
+Endpoint para seus projetos
+Você pode expor endpoints como:
+
+text
+POST /api/v1/repos/{owner}/{repo}/hooks
+GET  /api/v1/repos/{owner}/{repo}/commits
+GET  /api/v1/repos/{owner}/{repo}/branches
+POST /api/v1/repos/{owner}/{repo}/issues
+POST /api/v1/repos/{owner}/{repo}/releases
+Exemplo de webhook para avisar seu backend ou n8n após um push:
+
+bash
+curl -X POST "https://git.seudominio.local/api/v1/repos/gleidson/meu-webapp/hooks" \
+  -H "Authorization: token SEU_TOKEN_GITEA" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "gitea",
+    "config": {
+      "url": "https://api.seudominio.com/webhooks/gitea",
+      "content_type": "json"
+    },
+    "events": ["push", "pull_request", "issue"],
+    "active": true
+  }'
+O Gitea envia payloads JSON nesses eventos, permitindo que seu agente de desenvolvimento, pipeline de deploy ou sistema de auditoria reaja automaticamente.
+
+Proteção contra erros
+Configure isto em cada repositório:
+
+Branch principal protegida: main ou master sem push direto.
+
+PR obrigatório: pelo menos uma aprovação para mudanças em produção.
+
+CI antes do merge: testes, lint, build e security scan.
+
+Tags semânticas: v1.0.0, v1.1.0, etc.
+
+Releases: artefatos versionados e changelog.
+
+Backup diário + retenção: manter 7 diários, 4 semanais e 6 mensais.
+
+Espelho para outro servidor: use git push --mirror ou o mirror do Gitea para uma segunda máquina.
+
+Setup ideal para você
+text
+Seus projetos
+   │
+   ├── Gitea local — fonte da verdade, PRs, issues, releases
+   ├── Gitea Actions — testes, build, lint e deploy
+   ├── Webhooks — disparam n8n, backend, agentes e deploy
+   ├── LiteLLM — chaves e custos de LLM
+   └── Backup externo — B2/S3/NAS/HD externo
+Se quiser o caminho mais simples e robusto: Gitea + PostgreSQL + Gitea Actions + backup diário externo. Isso cobre versionamento, endpoints, automação, rollback e proteção contra erros sem o peso do GitLab

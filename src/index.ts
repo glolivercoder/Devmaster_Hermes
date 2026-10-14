@@ -11,6 +11,9 @@ import { eventBus } from './core/event-bus.js';
 import { loadRegistry } from './core/registry.js';
 import { TelegramBridge } from './telegram/telegram-bridge.js';
 import { ComposioAgent } from './integrations/composio-agent.js';
+import { getCenterState, updateRouting } from './llm/llm-center.js';
+import { resolveModel } from './llm/routing-store.js';
+import { LLM_MODELS } from './llm/models.js';
 
 const PROCESS_API_PORT = 4010;   // Process Guardian API (health/status)
 const DASHBOARD_PORT = 4020;     // Event Bus / Web Dashboard
@@ -30,9 +33,13 @@ async function bootstrap() {
 
   console.log('[HERMES] Core foundation online. Event bus active.');
 
-  // ── Process Guardian API (4010) — health & status endpoints ──
-  const apiServer = createServer((req, res) => {
+  // ── Process Guardian API (4010) — health, status & LLM Center ──
+  const apiServer = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     if (req.url === '/health') {
       res.writeHead(200);
       res.end(JSON.stringify({ status: 'ok', uptime_s: Math.round(process.uptime()) }));
@@ -45,6 +52,32 @@ async function bootstrap() {
         mcps: registry.servers.length,
         ports: registry.port_allocations,
       }));
+      return;
+    }
+    if (req.url === '/api/llm/state' && req.method === 'GET') {
+      try {
+        const state = await getCenterState();
+        res.writeHead(200);
+        res.end(JSON.stringify(state));
+      } catch (err) { res.writeHead(500); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/routing' && req.method === 'POST') {
+      try {
+        const raw = await new Promise<string>((resolve) => {
+          let b = ''; req.on('data', (c) => { b += c; }); req.on('end', () => resolve(b));
+        });
+        const patch = JSON.parse(raw || '{}');
+        const routing = await updateRouting(patch);
+        auditLogger.log({ actor: 'USER', event: 'llm:routing:updated', payload: patch });
+        res.writeHead(200);
+        res.end(JSON.stringify(routing));
+      } catch (err) { res.writeHead(400); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/models' && req.method === 'GET') {
+      res.writeHead(200);
+      res.end(JSON.stringify({ models: LLM_MODELS }));
       return;
     }
     res.writeHead(404);
@@ -65,6 +98,28 @@ async function bootstrap() {
         res.writeHead(500);
         res.end('dashboard ui not found');
       }
+      return;
+    }
+    // LLM Center API (same-origin for the dashboard UI; secrets stay masked)
+    if (req.url === '/api/llm/state' && req.method === 'GET') {
+      try {
+        const state = await getCenterState();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(state));
+      } catch (err) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/routing' && req.method === 'POST') {
+      try {
+        const raw = await new Promise<string>((resolve) => {
+          let b = ''; req.on('data', (c) => { b += c; }); req.on('end', () => resolve(b));
+        });
+        const patch = JSON.parse(raw || '{}');
+        const routing = await updateRouting(patch);
+        auditLogger.log({ actor: 'USER', event: 'llm:routing:updated', payload: patch });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(routing));
+      } catch (err) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
       return;
     }
     res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -125,8 +180,9 @@ async function bootstrap() {
           return `📊 *Hermes Status*\n• Uptime: ${Math.round(process.uptime())}s\n• Fila Telegram: ${q.pendingCount} pendente(s)\n• Composio API key: ${compStatus}`;
         }
 
-        // Encaminha para o gateway LiteLLM (com fallback entre modelos)
-        const llmModels = [process.env.TELEGRAM_LLM_MODEL ?? 'deepseek-code', 'gemini-flash', 'claude-fast'].filter(
+        // Encaminha para o gateway LiteLLM (modelo do roteamento manual/auto + fallbacks)
+        const preferred = await resolveModel('telegram');
+        const llmModels = [preferred, process.env.TELEGRAM_LLM_MODEL ?? 'deepseek-code', 'gemini-flash', 'deepseek-code'].filter(
           (m, i, arr) => m && arr.indexOf(m) === i,
         );
         let lastErr = '';

@@ -91,22 +91,30 @@ Analyze the screenshot. Return a JSON object with your action:
       });
 
       const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        decision = JSON.parse(jsonMatch[0]);
-      } else {
-        decision = {
-          reasoning: 'Shortcut fallback to open Command Palette',
-          action: 'hotkey',
-          hotkeys: ['Control', 'Shift', 'P'],
-        };
+      if (!jsonMatch) {
+        auditLogger.log({
+          actor: 'SUBAGENT',
+          event: 'computer_use:parse_failure',
+          payload: { goal, responseLength: response.content.length },
+        });
+        throw new Error('Vision model did not return valid JSON with an action object.');
       }
-    } catch {
-      // Robust fallback if external multimodal endpoint is unreachable
-      decision = {
-        reasoning: 'Fallback: Open editor command palette via Ctrl+Shift+P',
-        action: 'hotkey',
-        hotkeys: ['Control', 'Shift', 'P'],
-      };
+      decision = JSON.parse(jsonMatch[0]);
+      if (!decision || typeof decision.action !== 'string') {
+        auditLogger.log({
+          actor: 'SUBAGENT',
+          event: 'computer_use:invalid_action',
+          payload: { goal, decision: JSON.stringify(decision) },
+        });
+        throw new Error('Vision model did not return a valid action field.');
+      }
+    } catch (error: any) {
+      auditLogger.log({
+        actor: 'SUBAGENT',
+        event: 'computer_use:vision_failure',
+        payload: { goal, error: error?.message || String(error) },
+      });
+      throw new Error(`cannot proceed with GUI automation: ${(error?.message || 'Vision model unreachable')}. Ensure Windows Forms and GDI+ are available. Install: https://github.com/obra/superpowers — Evidence over claims`);
     }
 
     // 3. Execution

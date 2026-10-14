@@ -26,6 +26,14 @@ export interface ComputerAction {
 export class ScreenDriver {
   private tempDir: string;
 
+  /** Absolute path to the Windows PowerShell host, or 'powershell' as fallback. */
+  private get psBin(): string {
+    if (process.platform === 'win32' && process.env.SYSTEMROOT) {
+      return `${process.env.SYSTEMROOT}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
+    }
+    return 'powershell';
+  }
+
   constructor(tempDir = 'temp/screenshots') {
     this.tempDir = tempDir;
     if (!existsSync(this.tempDir)) {
@@ -37,7 +45,7 @@ export class ScreenDriver {
   getScreenSize(): ScreenDimensions {
     if (process.platform === 'win32') {
       try {
-        const cmd = `powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width.ToString() + 'x' + [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height.ToString()"`;
+        const cmd = `"${this.psBin}" -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width.ToString() + 'x' + [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height.ToString()"`;
         const res = execSync(cmd, { encoding: 'utf8', timeout: 5000 }).trim();
         const [w, h] = res.split('x').map(Number);
         if (w && h) return { width: w, height: h };
@@ -66,7 +74,7 @@ export class ScreenDriver {
       `.trim().replace(/\n\s*/g, '; ');
 
       try {
-        execSync(`powershell -NoProfile -Command "${psScript}"`, { timeout: 8000 });
+        execSync(`"${this.psBin}" -NoProfile -Command "${psScript}"`, { timeout: 8000 });
         if (existsSync(filePath)) {
           const buffer = readFileSync(filePath);
           unlinkSync(filePath); // Cleanup file immediately
@@ -84,9 +92,7 @@ export class ScreenDriver {
   /** Execute a computer action (mouse/keyboard/shortcut) */
   executeAction(action: ComputerAction): boolean {
     if (process.platform === 'win32') {
-      const psBin = process.env.SYSTEMROOT
-        ? `${process.env.SYSTEMROOT}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
-        : 'powershell';
+      const psBin = this.psBin;
 
       try {
         if (action.action === 'left_click' && action.coordinate) {

@@ -534,29 +534,63 @@
       </div>
     </section>
 
-    <!-- ─── Tab View: LiteLLM & Custos ──────────────────────────────────── -->
+    <!-- ─── Tab View: LiteLLM & Custos (Centro de Controle LLM) ──────────── -->
     <section id="view-gateway" class="hidden flex-1 p-6 space-y-6">
-      <h2 class="text-base font-bold text-gray-200">Gateway LiteLLM & Chaves Virtuais</h2>
-      <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-3 font-mono text-xs">
-        <div class="flex justify-between border-b border-gray-800 pb-2 text-gray-400">
-          <span>VIRTUAL KEY</span>
-          <span>MODELOS</span>
-          <span>ORÇAMENTO</span>
-          <span>CONSUMO ATUAL</span>
-        </div>
-        <div class="flex justify-between items-center text-gray-300">
-          <span class="text-amber-400">sk-virtual-orchestrator</span>
-          <span>claude-code, gemini-pro</span>
-          <span>$20.00</span>
-          <span class="text-emerald-400">$0.85 (4.2%)</span>
-        </div>
-        <div class="flex justify-between items-center text-gray-300">
-          <span class="text-amber-400">sk-virtual-security</span>
-          <span>deepseek-code</span>
-          <span>$5.00</span>
-          <span class="text-emerald-400">$0.12 (2.4%)</span>
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="text-base font-bold text-gray-200">Centro de Controle LLM & Custos</h2>
+        <div class="flex items-center gap-3 text-xs font-mono">
+          <label class="flex items-center gap-2 text-gray-300 cursor-pointer">
+            <input type="checkbox" id="llm-free-only" onchange="toggleFreeOnly(this.checked)" class="accent-emerald-500 w-4 h-4" />
+            🆓 Somente LLMs gratuitos (OpenRouter :free + Gemini free tier)
+          </label>
+          <label class="flex items-center gap-2 text-gray-300 cursor-pointer">
+            <input type="checkbox" id="llm-mode-manual" onchange="toggleMode(this.checked)" class="accent-amber-500 w-4 h-4" />
+            🎛️ Roteamento manual por agente
+          </label>
+          <button onclick="loadLlmCenter()" class="px-3 py-1.5 bg-gray-900 text-gray-300 rounded-lg hover:bg-gray-800 border border-gray-800">↻ Atualizar</button>
         </div>
       </div>
+      <div id="llm-routing-panel" class="hidden p-4 bg-gray-950 rounded-xl border border-amber-900/50 space-y-3">
+        <div class="text-xs font-bold text-amber-400 font-mono">🎛️ ROTEAMENTO MANUAL — escolha o modelo de cada agente / pipeline</div>
+        <p class="text-[11px] text-gray-500 font-mono">Modo automático = orquestrador escolhe pelo custo/qualidade (cost-based-routing do LiteLLM). Modo manual = sua escolha abaixo vale (salva em <span class="text-gray-400">data/llm-routing.json</span>, inclusive para o Telegram).</p>
+        <div id="llm-routes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        <button onclick="saveRouting()" class="px-4 py-2 bg-amber-500 text-gray-950 font-bold rounded-lg text-xs font-mono hover:bg-amber-600">💾 Salvar roteamento</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+          <div class="text-xs text-gray-500 font-mono">GASTO TOTAL (30d, LiteLLM)</div>
+          <div id="llm-spend-total" class="text-2xl font-bold text-white mt-1">$—</div>
+          <div id="llm-spend-note" class="text-[11px] text-gray-500 font-mono mt-1">carregando…</div>
+        </div>
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+          <div class="text-xs text-gray-500 font-mono">TETO GLOBAL MENSAL</div>
+          <div class="text-2xl font-bold text-white mt-1">$50.00</div>
+          <div class="text-[11px] text-gray-500 font-mono mt-1">max_budget do LiteLLM (litellm-config.yaml)</div>
+        </div>
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+          <div class="text-xs text-gray-500 font-mono">PROVEDORES CONFIGURADOS</div>
+          <div id="llm-prov-count" class="text-2xl font-bold text-emerald-400 mt-1">—</div>
+          <div id="llm-env-coverage" class="text-[11px] text-gray-500 font-mono mt-1">chaves presentes no .env (valores mascarados)</div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-950 rounded-xl border border-blue-900/40 text-xs font-mono flex flex-wrap gap-x-6 gap-y-1">
+        <div><span class="text-gray-500">🛡️ IP público de saída do Hermes:</span> <span id="llm-public-ip" class="text-blue-300">—</span></div>
+        <div class="text-gray-500">→ use este IP na allowlist dos provedores com suporte a restrição por IP</div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+          <div class="text-xs text-gray-500 font-mono">GASTO POR MODELO (30d)</div>
+          <div id="llm-spend-by-model" class="space-y-1 text-[11px] font-mono pt-1"></div>
+        </div>
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5">
+          <div class="text-xs text-gray-500 font-mono">GASTO POR PROVEDOR (30d)</div>
+          <div id="llm-spend-by-provider" class="space-y-1 text-[11px] font-mono pt-1"></div>
+        </div>
+      </div>
+      <h3 class="text-sm font-bold text-gray-200 pt-2">🤖 Provedores LLM <span class="text-gray-500 font-mono text-xs">(clique no nome para abrir o console oficial e ativar restrição por IP)</span></h3>
+      <div id="llm-providers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <h3 class="text-sm font-bold text-gray-200 pt-2">🧰 Provedores de serviço (SerpAPI, Tavily, mídia, dados…)</h3>
+      <div id="llm-other-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </section>
 
     <!-- ─── Tab View: Telegram ──────────────────────────────────────────── -->
@@ -596,7 +630,134 @@
       { name: 'PostgreSQL', category: 'dev', tools: 14, desc: 'Execução de queries e inspeção de schema' },
     ];
 
+    // ── Centro de Controle LLM & Custos ──
+    let llmState = null;
+
+    async function llmFetch(path, opts) {
+      const urls = [path, `http://localhost:4010${path}`];
+      let lastErr = null;
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, opts);
+          if (!r.ok) { lastErr = `HTTP ${r.status}`; continue; }
+          return await r.json();
+        } catch (e) { lastErr = e.message; }
+      }
+      throw new Error(lastErr || 'API LLM indisponivel');
+    }
+
+    async function loadLlmCenter() {
+      try {
+        llmState = await llmFetch('/api/llm/state');
+        renderLlmCenter();
+      } catch (e) {
+        document.getElementById('llm-spend-note').innerText = 'ERRO: ' + e.message + ' (hermes-core no ar?)';
+      }
+    }
+
+    function ipBadge(p) {
+      if (p.ipRestriction === 'supported') return '<span class="text-emerald-400 font-bold">IP: suportado</span>';
+      if (p.ipRestriction === 'partial') return '<span class="text-amber-400 font-bold">IP: parcial</span>';
+      return '<span class="text-gray-500">IP: nao suportado</span>';
+    }
+
+    function providerCard(p) {
+      const dot = p.configured ? 'bg-emerald-500' : 'bg-red-500';
+      const keys = p.keysMasked ? Object.entries(p.keysMasked).map(([k, v]) =>
+        `<div class="flex justify-between"><span class="text-gray-500">${k}</span><span class="text-gray-300">${v}</span></div>`).join('') : '';
+      const missing = (!p.configured && p.envKeys.length)
+        ? `<div class="text-red-400/80">ausente: ${p.envKeys[0]} (defina no .env)</div>` : '';
+      const base = p.baseUrl ? `<div class="flex justify-between"><span class="text-gray-500">base_url</span><span class="text-gray-400 break-all text-right">${p.baseUrl}</span></div>` : '';
+      return `<div class="p-4 bg-gray-950 rounded-xl border ${p.configured ? 'border-gray-800' : 'border-red-900/40'} space-y-1.5 text-xs font-mono">`
+        + `<div class="flex items-center justify-between"><a href="${p.consoleUrl}" target="_blank" class="font-bold text-gray-100 hover:text-amber-400">${p.label} -></a>`
+        + `<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${dot}"></span><span class="${p.configured ? 'text-emerald-400' : 'text-red-400'}">${p.configured ? 'configurado' : 'sem chave'}</span></span></div>`
+        + `${base}${keys}${missing}`
+        + `<div class="pt-1 border-t border-gray-900 flex items-center justify-between gap-2">${ipBadge(p)}<a href="${p.consoleUrl}" target="_blank" class="text-blue-400 hover:underline">como proteger -></a></div>`
+        + `<div class="text-gray-600 text-[10px]">${p.ipGuide}</div></div>`;
+    }
+
+    function servicePill(t) {
+      const sel = (llmState && llmState.routing && llmState.routing.routes[t.id]) || t.defaultModel;
+      const opts = (llmState.models || []).map(m =>
+        `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.id} - ${m.provider}${m.free ? ' FREE' : ''} (${m.costTier})</option>`).join('');
+      return `<div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono space-y-1.5">`
+        + `<div class="text-gray-300 font-bold">${t.label} <span class="text-gray-600">(${t.kind})</span></div>`
+        + `<select data-route="${t.id}" class="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-gray-200">${opts}</select></div>`;
+    }
+
+    function renderSpendBreakdown(s) {
+      const sp = s.spend || {};
+      const rows = (obj) => Object.entries(obj || {})
+        .sort((a, b) => b[1].spend - a[1].spend)
+        .map(([k, v]) => `<div class="flex justify-between gap-2"><span class="text-gray-400 break-all">${k}</span><span class="text-gray-200">$${Number(v.spend).toFixed(4)} <span class="text-gray-600">(${Number(v.tokens).toLocaleString('pt-BR')} tok)</span></span></div>`)
+        .join('');
+      const mEl = document.getElementById('llm-spend-by-model');
+      const pEl = document.getElementById('llm-spend-by-provider');
+      if (mEl) mEl.innerHTML = rows(sp.byModel) || '<div class="text-gray-600">sem consumo registrado</div>';
+      if (pEl) pEl.innerHTML = rows(sp.byProvider) || '<div class="text-gray-600">sem consumo registrado</div>';
+    }
+
+    function renderLlmCenter() {
+      const s = llmState;
+      if (!s) return;
+      document.getElementById('llm-spend-total').innerText = '$' + (s.spend ? s.spend.totalSpend.toFixed(4) : '0.0000');
+      document.getElementById('llm-spend-note').innerText = (s.spend && s.spend.note) || '';
+      const cfg = s.llm.filter(p => p.configured).length;
+      document.getElementById('llm-prov-count').innerText = cfg + '/' + s.llm.length;
+      if (s.envCoverage) {
+        document.getElementById('llm-env-coverage').innerText =
+          `${s.envCoverage.configured}/${s.envCoverage.totalKeys} chaves do catálogo preenchidas no .env`;
+      }
+      const ipEl = document.getElementById('llm-public-ip');
+      if (ipEl) ipEl.innerText = s.publicIp || 'indisponível';
+      renderSpendBreakdown(s);
+      const freeOnly = document.getElementById('llm-free-only').checked;
+      const llmList = freeOnly ? s.llm.filter(p => (s.models || []).some(m => m.provider === p.id && m.free)) : s.llm;
+      document.getElementById('llm-providers-grid').innerHTML = llmList.map(providerCard).join('') || '<div class="text-gray-500 text-xs font-mono">Nenhum provedor gratuito configurado.</div>';
+      document.getElementById('llm-other-grid').innerHTML = s.other.map(providerCard).join('');
+      document.getElementById('llm-mode-manual').checked = s.routing && s.routing.mode === 'manual';
+      document.getElementById('llm-free-only').checked = !!(s.routing && s.routing.freeOnly);
+      renderRoutes();
+    }
+
+    function renderRoutes() {
+      const manual = document.getElementById('llm-mode-manual').checked;
+      document.getElementById('llm-routing-panel').classList.toggle('hidden', !manual);
+      if (!manual || !llmState) return;
+      const agents = (llmState.targets || []).filter(t => t.kind === 'agent');
+      const svcs = (llmState.targets || []).filter(t => t.kind === 'service');
+      document.getElementById('llm-routes-grid').innerHTML =
+        `<div class="space-y-2"><div class="text-[11px] font-bold text-gray-400">AGENTES</div>${agents.map(servicePill).join('')}</div>`
+        + `<div class="space-y-2"><div class="text-[11px] font-bold text-gray-400">PIPELINES DE SERVICO (SerpAPI, Tavily...)</div>${svcs.map(servicePill).join('')}</div>`;
+    }
+
+    function toggleFreeOnly(v) {
+      if (llmState) renderLlmCenter();
+      if (llmState && llmState.routing) saveRouting(true);
+    }
+
+    function toggleMode(v) {
+      renderRoutes();
+      saveRouting(true);
+    }
+
+    async function saveRouting(silent) {
+      const routes = {};
+      document.querySelectorAll('[data-route]').forEach(el => { routes[el.getAttribute('data-route')] = el.value; });
+      const payload = {
+        mode: document.getElementById('llm-mode-manual').checked ? 'manual' : 'auto',
+        freeOnly: document.getElementById('llm-free-only').checked,
+      };
+      if (Object.keys(routes).length) payload.routes = routes;
+      try {
+        llmState.routing = await llmFetch('/api/llm/routing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!silent) alert('Roteamento salvo! Orquestrador e Telegram passam a usar sua escolha.');
+        renderRoutes();
+      } catch (e) { if (!silent) alert('ERRO: ' + e.message); }
+    }
+
     function switchTab(tab) {
+      if (tab === 'gateway') loadLlmCenter();
       const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
