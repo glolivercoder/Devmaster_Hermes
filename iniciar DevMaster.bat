@@ -54,3 +54,4 @@ echo       ⚡ Todos os serviços estão rodando em segundo plano com sucesso! �
 echo             Pressione qualquer tecla para encerrar este terminal.
 echo ===============================================================================
 pause > nul
+
