@@ -633,10 +633,20 @@
     // ── Centro de Controle LLM & Custos ──
     let llmState = null;
 
+    function apiUrls(path) {
+      const urls = [];
+      const proto = window.location.protocol;
+      // Same-origin só vale quando a UI é servida via http(s). Em file:// vira path inválido.
+      if (proto === 'http:' || proto === 'https:') urls.push(path);
+      // Fallbacks diretos: funcionam com a UI aberta como arquivo e cobrem as duas portas do Hermes.
+      urls.push(`http://localhost:4010${path}`);
+      urls.push(`http://localhost:4020${path}`);
+      return [...new Set(urls)];
+    }
+
     async function llmFetch(path, opts) {
-      const urls = [path, `http://localhost:4010${path}`];
       let lastErr = null;
-      for (const u of urls) {
+      for (const u of apiUrls(path)) {
         try {
           const r = await fetch(u, opts);
           if (!r.ok) { lastErr = `HTTP ${r.status}`; continue; }
@@ -661,19 +671,107 @@
       return '<span class="text-gray-500">IP: nao suportado</span>';
     }
 
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function keyRow(p, env) {
+      const masked = (p.keysMasked && p.keysMasked[env]) ? p.keysMasked[env] : '';
+      const statusId = 'kstatus__' + p.id + '__' + env;
+      const dot = masked
+        ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>'
+        : '<span class="w-1.5 h-1.5 rounded-full bg-red-500/70 inline-block"></span>';
+      const testBtn = p.category === 'LLM'
+        ? `<button data-testkey="${esc(env)}" onclick="testKey('${p.id}','${esc(env)}',this)" class="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait">Testar</button>`
+        : '';
+      return `<div class="flex items-center gap-1.5" data-keyrow="${esc(env)}">`
+        + `${dot}<span class="text-gray-500 w-[128px] shrink-0 truncate" title="${esc(env)}">${esc(env)}</span>`
+        + `<input type="password" autocomplete="new-password" spellcheck="false" data-keyinput="${esc(env)}" value="" placeholder="${esc(masked || 'vazia')}" `
+        + `class="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-[11px] text-gray-200 placeholder:text-gray-600" />`
+        + `<button data-savekey="${esc(env)}" onclick="saveKey('${p.id}','${esc(env)}',this)" class="px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/40 text-blue-300 hover:bg-blue-500/25 disabled:opacity-50">Salvar</button>`
+        + testBtn
+        + `<span id="${statusId}" class="text-[10px] text-gray-500 w-[96px] shrink-0 text-right truncate">${esc(masked || '—')}</span>`
+        + `</div>`;
+    }
+
     function providerCard(p) {
       const dot = p.configured ? 'bg-emerald-500' : 'bg-red-500';
-      const keys = p.keysMasked ? Object.entries(p.keysMasked).map(([k, v]) =>
-        `<div class="flex justify-between"><span class="text-gray-500">${k}</span><span class="text-gray-300">${v}</span></div>`).join('') : '';
-      const missing = (!p.configured && p.envKeys.length)
-        ? `<div class="text-red-400/80">ausente: ${p.envKeys[0]} (defina no .env)</div>` : '';
       const base = p.baseUrl ? `<div class="flex justify-between"><span class="text-gray-500">base_url</span><span class="text-gray-400 break-all text-right">${p.baseUrl}</span></div>` : '';
-      return `<div class="p-4 bg-gray-950 rounded-xl border ${p.configured ? 'border-gray-800' : 'border-red-900/40'} space-y-1.5 text-xs font-mono">`
+      const keyRows = (p.envKeys || []).map((k) => keyRow(p, k)).join('');
+      return `<div id="provcard-${p.id}" class="p-4 bg-gray-950 rounded-xl border ${p.configured ? 'border-gray-800' : 'border-red-900/40'} space-y-2 text-xs font-mono">`
         + `<div class="flex items-center justify-between"><a href="${p.consoleUrl}" target="_blank" class="font-bold text-gray-100 hover:text-amber-400">${p.label} -></a>`
         + `<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full ${dot}"></span><span class="${p.configured ? 'text-emerald-400' : 'text-red-400'}">${p.configured ? 'configurado' : 'sem chave'}</span></span></div>`
-        + `${base}${keys}${missing}`
+        + `${base}`
+        + `<div class="space-y-1 pt-1 border-t border-gray-900">${keyRows}</div>`
         + `<div class="pt-1 border-t border-gray-900 flex items-center justify-between gap-2">${ipBadge(p)}<a href="${p.consoleUrl}" target="_blank" class="text-blue-400 hover:underline">como proteger -></a></div>`
-        + `<div class="text-gray-600 text-[10px]">${p.ipGuide}</div></div>`;
+        + `<div class="text-gray-600 text-[10px]">${p.ipGuide}</div>`
+        + `</div>`;
+    }
+
+    function keyInput(id, env) {
+      const card = document.getElementById('provcard-' + id);
+      return card ? card.querySelector('input[data-keyinput="' + env + '"]') : null;
+    }
+
+    function setKeyStatus(el, ok, text) {
+      if (!el) return;
+      el.innerText = text;
+      el.className = 'text-[10px] w-[96px] shrink-0 text-right truncate '
+        + (ok === true ? 'text-emerald-400 font-bold' : ok === false ? 'text-red-400 font-bold' : 'text-amber-300 animate-pulse');
+    }
+
+    /** Grava a chave colada direto no .env (com backup) e reflete no catálogo. */
+    async function saveKey(id, env, btn) {
+      const input = keyInput(id, env);
+      const status = document.getElementById('kstatus__' + id + '__' + env);
+      const value = (input && input.value || '').trim();
+      if (!value) { setKeyStatus(status, false, 'cole um valor'); if (input) input.focus(); return; }
+      if (btn) { btn.disabled = true; btn.innerText = '...'; }
+      setKeyStatus(status, null, 'salvando...');
+      const urls = apiUrls('/api/llm/keys');
+      let saved = null, lastErr = null;
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ env, value }) });
+          const j = await r.json();
+          if (!r.ok) { lastErr = j.error || ('HTTP ' + r.status); continue; }
+          saved = j; break;
+        } catch (e) { lastErr = e.message; }
+      }
+      if (btn) { btn.disabled = false; btn.innerText = 'Salvar'; }
+      if (!saved) { setKeyStatus(status, false, lastErr || 'erro ao salvar'); return; }
+      if (input) input.value = '';
+      setKeyStatus(status, true, 'salvo ✓');
+      // Recarrega o estado para refletir dot/masked/contador nos cards.
+      await loadLlmCenter();
+    }
+
+    /** Testa a chave: usa o valor colado no input (sem salvar) ou, se vazio, a chave já gravada. */
+    async function testKey(id, env, btn) {
+      const input = keyInput(id, env);
+      const status = document.getElementById('kstatus__' + id + '__' + env);
+      const value = (input && input.value || '').trim();
+      if (btn) { btn.disabled = true; btn.innerText = '...'; }
+      setKeyStatus(status, null, 'testando...');
+      const body = JSON.stringify(value ? { provider: id, env, value } : { provider: id, env });
+      const urls = apiUrls('/api/llm/test');
+      let result = null, lastErr = null;
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+          const j = await r.json();
+          if (!r.ok) { lastErr = j.error || ('HTTP ' + r.status); continue; }
+          result = j; break;
+        } catch (e) { lastErr = e.message; }
+      }
+      if (btn) { btn.disabled = false; btn.innerText = 'Testar'; }
+      if (!result) { setKeyStatus(status, false, lastErr || 'indisponível'); return; }
+      const ok = result.connected;
+      const label = ok
+        ? ('OK ' + result.latencyMs + 'ms' + (result.httpStatus ? ' ' + result.httpStatus : ''))
+        : ('falhou' + (result.httpStatus ? ' ' + result.httpStatus : ''));
+      setKeyStatus(status, ok, label);
+      if (status) status.title = (result.keyEnv ? '[' + result.keyEnv + '] ' : '') + result.message;
     }
 
     function servicePill(t) {

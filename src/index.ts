@@ -11,7 +11,9 @@ import { eventBus } from './core/event-bus.js';
 import { loadRegistry } from './core/registry.js';
 import { TelegramBridge } from './telegram/telegram-bridge.js';
 import { ComposioAgent } from './integrations/composio-agent.js';
-import { getCenterState, updateRouting } from './llm/llm-center.js';
+import { getCenterState, updateRouting, testProviderConnection } from './llm/llm-center.js';
+import { setEnvVar } from './llm/env-store.js';
+import { loadDotEnv, ENV_PATH } from './llm/env-loader.js';
 import { resolveModel } from './llm/routing-store.js';
 import { LLM_MODELS } from './llm/models.js';
 
@@ -19,7 +21,24 @@ const PROCESS_API_PORT = 4010;   // Process Guardian API (health/status)
 const DASHBOARD_PORT = 4020;     // Event Bus / Web Dashboard
 const UI_PATH = join(process.cwd(), 'src', 'ui', 'index.html');
 
+/** Lê e faz o parse do corpo JSON de uma requisição. Nunca lança — devolve {}. */
+function readBody(req: import('node:http').IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve) => {
+    let b = '';
+    req.on('data', (c) => { b += c; });
+    req.on('end', () => {
+      try { resolve(JSON.parse(b || '{}') as Record<string, unknown>); }
+      catch { resolve({}); }
+    });
+  });
+}
+
 async function bootstrap() {
+  // 1) Carrega o .env do disco ANTES de qualquer leitura de env, para que as
+  //    chaves gravadas pela UI (aba LiteLLM & Custos) funcionem após reinícios.
+  const envInfo = await loadDotEnv();
+  console.log(`[HERMES] .env carregado: ${envInfo.loaded} variável(is) de ${envInfo.path}`);
+
   // Wire audit logger into event bus
   eventBus.setAuditLogger(auditLogger);
 
@@ -75,6 +94,28 @@ async function bootstrap() {
       } catch (err) { res.writeHead(400); res.end(JSON.stringify({ error: String(err) })); }
       return;
     }
+    if (req.url === '/api/llm/test' && req.method === 'POST') {
+      try {
+        const { provider, env: envKey, value } = await readBody(req) as { provider?: string; env?: string; value?: string };
+        if (!provider) { res.writeHead(400); res.end(JSON.stringify({ error: 'provider é obrigatório' })); return; }
+        const result = await testProviderConnection(provider, envKey, value);
+        auditLogger.log({ actor: 'USER', event: 'llm:provider:tested', payload: { provider: result.provider, keyEnv: result.keyEnv, connected: result.connected, httpStatus: result.httpStatus } });
+        res.writeHead(200);
+        res.end(JSON.stringify(result));
+      } catch (err) { res.writeHead(400); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/keys' && req.method === 'POST') {
+      try {
+        const { env, value } = await readBody(req) as { env?: string; value?: string };
+        if (!env || !value) { res.writeHead(400); res.end(JSON.stringify({ error: 'env e value são obrigatórios' })); return; }
+        const saved = await setEnvVar(env, value);
+        auditLogger.log({ actor: 'USER', event: 'llm:key:saved', payload: { env: saved.env, updated: saved.updated, masked: saved.masked } });
+        res.writeHead(200);
+        res.end(JSON.stringify(saved));
+      } catch (err) { res.writeHead(400); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
     if (req.url === '/api/llm/models' && req.method === 'GET') {
       res.writeHead(200);
       res.end(JSON.stringify({ models: LLM_MODELS }));
@@ -119,6 +160,28 @@ async function bootstrap() {
         auditLogger.log({ actor: 'USER', event: 'llm:routing:updated', payload: patch });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(routing));
+      } catch (err) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/test' && req.method === 'POST') {
+      try {
+        const { provider, env: envKey, value } = await readBody(req) as { provider?: string; env?: string; value?: string };
+        if (!provider) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'provider é obrigatório' })); return; }
+        const result = await testProviderConnection(provider, envKey, value);
+        auditLogger.log({ actor: 'USER', event: 'llm:provider:tested', payload: { provider: result.provider, keyEnv: result.keyEnv, connected: result.connected, httpStatus: result.httpStatus } });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (err) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/keys' && req.method === 'POST') {
+      try {
+        const { env, value } = await readBody(req) as { env?: string; value?: string };
+        if (!env || !value) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'env e value são obrigatórios' })); return; }
+        const saved = await setEnvVar(env, value);
+        auditLogger.log({ actor: 'USER', event: 'llm:key:saved', payload: { env: saved.env, updated: saved.updated, masked: saved.masked } });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(saved));
       } catch (err) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
       return;
     }

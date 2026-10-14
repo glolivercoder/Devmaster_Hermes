@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsup src/index.ts --format esm",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:probe": "tsx scripts/test-provider-probe.ts",
     "lint": "eslint src --ext .ts"
   },
   "packageManager": "pnpm@10.20.0",
