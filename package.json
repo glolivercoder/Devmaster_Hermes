@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsup",
+    "build": "tsup src/index.ts --format esm",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "lint": "eslint src --ext .ts"
   },

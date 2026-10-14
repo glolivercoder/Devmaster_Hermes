@@ -19,7 +19,7 @@ COPY mcp-registry.json ./
 COPY litellm-config.yaml ./
 
 # Build TypeScript to dist
-RUN pnpm build || npx tsc -p tsconfig.json
+RUN pnpm build
 
 # ─── RUNNER STAGE (Minimal Alpine image) ─────────────────────────
 FROM node:22-alpine AS runner
@@ -44,3 +44,4 @@ COPY --from=builder /app/src/ui ./src/ui
 EXPOSE 4010 4020
 
 CMD ["node", "dist/index.js"]
+
