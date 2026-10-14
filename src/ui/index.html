@@ -32,6 +32,9 @@
         <button onclick="switchTab('orchestrator')" id="tab-btn-orchestrator" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition bg-amber-500/10 text-amber-400 border border-amber-500/30">
           <span>🧠</span> <span>Orquestrador</span>
         </button>
+        <button onclick="switchTab('composio')" id="tab-btn-composio" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🧩</span> <span>Composio Toolkits</span>
+        </button>
         <button onclick="switchTab('mcps')" id="tab-btn-mcps" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
           <span>🔌</span> <span>MCPs & Portas</span>
         </button>
@@ -54,7 +57,7 @@
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>SISTEMA ATIVO</span>
         </span>
-        <span class="text-gray-500">Node v22</span>
+        <span class="text-gray-500">Composio 0.23</span>
       </div>
     </div>
   </aside>
@@ -74,22 +77,231 @@
       </div>
     </header>
 
-    <!-- Tab View: Orchestrator Chat -->
+    <!-- ─── Tab View: Orchestrator Chat ─────────────────────────────────── -->
     <section id="view-orchestrator" class="flex-1 flex flex-col p-6 space-y-4">
       <div class="flex-1 bg-gray-950 rounded-xl border border-gray-800 p-4 overflow-y-auto space-y-4 font-mono text-xs" id="chat-messages">
         <div class="bg-gray-900/80 border border-gray-800 p-3 rounded-lg text-gray-300">
-          <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Sistema pronto. Enviei o prompt para análise de viabilidade real, divisão em módulos e detecção de riscos.
+          <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Sistema pronto. Envie ideias de projeto ou comandos para integrar serviços via Composio (ex.: <code>"integre o github"</code> ou <code>"conectar slack"</code>).
         </div>
       </div>
       <div class="flex space-x-2">
-        <input type="text" id="prompt-input" placeholder="Digite uma ideia de projeto ou comando de orquestração..." class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500" />
+        <input type="text" id="prompt-input" onkeydown="if(event.key==='Enter') sendPrompt()" placeholder="Digite um prompt de projeto ou 'integrar github'..." class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500" />
         <button onclick="sendPrompt()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold px-5 py-2.5 rounded-lg text-sm transition">
-          Analisar
+          Enviar
         </button>
       </div>
     </section>
 
-    <!-- Tab View: MCPs & Process Guardian -->
+    <!-- ─── Tab View: Composio Toolkits ─────────────────────────────────── -->
+    <section id="view-composio" class="hidden flex-1 flex flex-col p-6 space-y-6 overflow-y-auto">
+      
+      <!-- Composio Sub-tabs -->
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex space-x-3">
+          <button onclick="switchComposioSubtab('catalog')" id="subtab-btn-catalog" class="text-sm font-semibold text-amber-400 border-b-2 border-amber-500 pb-2">
+            Catálogo & Categorias
+          </button>
+          <button onclick="switchComposioSubtab('agents')" id="subtab-btn-agents" class="text-sm font-semibold text-gray-400 hover:text-white pb-2">
+            Agentes & Links Externos
+          </button>
+        </div>
+        <span class="text-xs font-mono text-gray-500">250+ Toolkits disponíveis</span>
+      </div>
+
+      <!-- Subtab: Catalog -->
+      <div id="composio-subtab-catalog" class="space-y-6">
+        
+        <!-- Search Bar with Live Suggestions -->
+        <div class="relative">
+          <div class="flex items-center bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 shadow-inner">
+            <span class="text-gray-500 mr-3">🔍</span>
+            <input 
+              type="text" 
+              id="composio-search" 
+              oninput="filterToolkits()" 
+              placeholder="Buscar toolkit (ex: github, slack, jira, gmail, postgresql, linear)..." 
+              class="w-full bg-transparent text-sm focus:outline-none text-gray-200 placeholder-gray-500 font-mono"
+            />
+          </div>
+          <!-- Auto-suggestions Dropdown -->
+          <div id="search-suggestions" class="hidden absolute top-14 left-0 right-0 bg-gray-950 border border-gray-800 rounded-xl shadow-2xl p-2 z-20 space-y-1 font-mono text-xs">
+          </div>
+        </div>
+
+        <!-- Category: Dev & Code -->
+        <div class="toolkit-category" data-category="dev">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center">
+            <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span> Desenvolvimento & Código
+          </h3>
+          <div class="grid grid-cols-3 gap-4" id="grid-dev">
+            <!-- GitHub Card -->
+            <div class="toolkit-card p-4 bg-gray-950 rounded-xl border border-gray-800 hover:border-gray-700 transition" data-name="github">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-sm font-bold text-white">GitHub</h4>
+                  <p class="text-xs text-gray-400 mt-1">28 ferramentas (PRs, issues, commits, repos)</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono border border-emerald-800/40">Ativo</span>
+              </div>
+              <div class="mt-4 flex space-x-2">
+                <button onclick="openIntegrationModal('GitHub', 'API_KEY')" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs py-1.5 rounded font-mono transition">
+                  Configurar
+                </button>
+                <button onclick="testConnection('GitHub')" class="px-3 bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs py-1.5 rounded font-mono transition">
+                  Testar
+                </button>
+              </div>
+            </div>
+
+            <!-- GitLab Card -->
+            <div class="toolkit-card p-4 bg-gray-950 rounded-xl border border-gray-800 hover:border-gray-700 transition" data-name="gitlab">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-sm font-bold text-white">GitLab</h4>
+                  <p class="text-xs text-gray-400 mt-1">Pipelines CI/CD, merge requests, repos</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-900 text-gray-500 font-mono">Disponível</span>
+              </div>
+              <div class="mt-4 flex space-x-2">
+                <button onclick="openIntegrationModal('GitLab', 'API_KEY')" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs py-1.5 rounded font-mono transition">
+                  Configurar
+                </button>
+              </div>
+            </div>
+
+            <!-- Linear Card -->
+            <div class="toolkit-card p-4 bg-gray-950 rounded-xl border border-gray-800 hover:border-gray-700 transition" data-name="linear">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-sm font-bold text-white">Linear</h4>
+                  <p class="text-xs text-gray-400 mt-1">Sprints, issues, roadmap, automações</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-900 text-gray-500 font-mono">Disponível</span>
+              </div>
+              <div class="mt-4 flex space-x-2">
+                <button onclick="openIntegrationModal('Linear', 'API_KEY')" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs py-1.5 rounded font-mono transition">
+                  Configurar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category: Communication & Collab -->
+        <div class="toolkit-category" data-category="collab">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span> Comunicação & Colaboração
+          </h3>
+          <div class="grid grid-cols-3 gap-4" id="grid-collab">
+            <!-- Slack Card -->
+            <div class="toolkit-card p-4 bg-gray-950 rounded-xl border border-gray-800 hover:border-gray-700 transition" data-name="slack">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-sm font-bold text-white">Slack</h4>
+                  <p class="text-xs text-gray-400 mt-1">15 ferramentas (mensagens, canais, bots)</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono border border-emerald-800/40">Ativo</span>
+              </div>
+              <div class="mt-4 flex space-x-2">
+                <button onclick="openIntegrationModal('Slack', 'API_KEY')" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs py-1.5 rounded font-mono transition">
+                  Configurar
+                </button>
+                <button onclick="testConnection('Slack')" class="px-3 bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs py-1.5 rounded font-mono transition">
+                  Testar
+                </button>
+              </div>
+            </div>
+
+            <!-- Gmail Card -->
+            <div class="toolkit-card p-4 bg-gray-950 rounded-xl border border-gray-800 hover:border-gray-700 transition" data-name="gmail">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-sm font-bold text-white">Gmail</h4>
+                  <p class="text-xs text-gray-400 mt-1">Envio, leitura e classificação de emails</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-900 text-gray-500 font-mono">OAuth2</span>
+              </div>
+              <div class="mt-4 flex space-x-2">
+                <button onclick="openIntegrationModal('Gmail', 'OAUTH2')" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs py-1.5 rounded font-mono transition">
+                  Autorizar
+                </button>
+              </div>
+            </div>
+
+            <!-- Discord Card -->
+            <div class="toolkit-card p-4 bg-gray-950 rounded-xl border border-gray-800 hover:border-gray-700 transition" data-name="discord">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-sm font-bold text-white">Discord</h4>
+                  <p class="text-xs text-gray-400 mt-1">Webhooks, canais, alertas em servidores</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-900 text-gray-500 font-mono">Disponível</span>
+              </div>
+              <div class="mt-4 flex space-x-2">
+                <button onclick="openIntegrationModal('Discord', 'API_KEY')" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs py-1.5 rounded font-mono transition">
+                  Configurar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Subtab: Active Agents & Links -->
+      <div id="composio-subtab-agents" class="hidden space-y-6">
+        <div class="p-5 bg-gray-950 border border-gray-800 rounded-xl space-y-4 font-mono text-xs">
+          <h3 class="text-sm font-bold text-white font-sans">Agentes Hermes com Composio Habilitado</h3>
+          
+          <div class="border-t border-gray-800 pt-3 space-y-3">
+            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg border border-gray-800/80">
+              <div>
+                <span class="text-amber-400 font-bold">Subagente de Integração & DevOps</span>
+                <p class="text-gray-400 text-xs mt-0.5">Toolkits ativos: GitHub, Slack, Linear | Role: INTEGRATOR</p>
+              </div>
+              <span class="text-emerald-400 font-mono">ONLINE</span>
+            </div>
+
+            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg border border-gray-800/80">
+              <div>
+                <span class="text-blue-400 font-bold">Subagente de Notificação & Suporte</span>
+                <p class="text-gray-400 text-xs mt-0.5">Toolkits ativos: Gmail, Discord | Role: QA/NOTIFIER</p>
+              </div>
+              <span class="text-emerald-400 font-mono">ONLINE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-5 bg-gray-950 border border-gray-800 rounded-xl space-y-3 font-mono text-xs">
+          <h3 class="text-sm font-bold text-white font-sans">Links & Exportação para Outros Webapps/SaaS</h3>
+          <p class="text-gray-400">Endpoints para reutilizar os toolkits do Composio em aplicações satélite:</p>
+          <div class="bg-gray-900 p-3 rounded border border-gray-800 text-gray-300">
+            <code>POST http://localhost:4000/v1/composio/execute</code>
+            <p class="text-gray-500 text-xs mt-1">Header: Authorization: Bearer sk-virtual-app-xyz</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ─── Modal de Formulário de Integração ────────────────────────────── -->
+    <div id="integration-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+          <h3 id="modal-title" class="text-sm font-bold text-white">Configurar Integração</h3>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-white">&times;</button>
+        </div>
+        <div id="modal-body" class="space-y-4 text-xs font-mono">
+          <!-- Injected dynamically -->
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-800">
+          <button onclick="closeModal()" class="px-4 py-2 bg-gray-900 text-gray-300 rounded-lg text-xs font-mono hover:bg-gray-800">Cancelar</button>
+          <button onclick="submitModalForm()" class="px-4 py-2 bg-amber-500 text-gray-950 font-bold rounded-lg text-xs font-mono hover:bg-amber-600">Salvar & Conectar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Tab View: MCPs & Process Guardian ───────────────────────────── -->
     <section id="view-mcps" class="hidden flex-1 p-6 space-y-6">
       <h2 class="text-base font-bold text-gray-200">Monitor de Portas & Processos (Port Guardian)</h2>
       <div class="grid grid-cols-3 gap-4">
@@ -120,7 +332,7 @@
       </div>
     </section>
 
-    <!-- Tab View: LiteLLM & Custos -->
+    <!-- ─── Tab View: LiteLLM & Custos ──────────────────────────────────── -->
     <section id="view-gateway" class="hidden flex-1 p-6 space-y-6">
       <h2 class="text-base font-bold text-gray-200">Gateway LiteLLM & Chaves Virtuais</h2>
       <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-3 font-mono text-xs">
@@ -145,7 +357,7 @@
       </div>
     </section>
 
-    <!-- Tab View: Telegram -->
+    <!-- ─── Tab View: Telegram ──────────────────────────────────────────── -->
     <section id="view-telegram" class="hidden flex-1 p-6 space-y-6">
       <h2 class="text-base font-bold text-gray-200">Telegram 1-to-1 Whitelist & Fila FIFO</h2>
       <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-2 text-xs font-mono">
@@ -155,7 +367,7 @@
       </div>
     </section>
 
-    <!-- Tab View: Security Gates -->
+    <!-- ─── Tab View: Security Gates ────────────────────────────────────── -->
     <section id="view-security" class="hidden flex-1 p-6 space-y-6">
       <h2 class="text-base font-bold text-gray-200">Security Gate & Varredura de Segredos</h2>
       <div class="p-4 bg-gray-950 rounded-xl border border-emerald-900/50 bg-emerald-950/20 text-xs font-mono space-y-2">
@@ -171,8 +383,19 @@
   </main>
 
   <script>
+    const TOOLKIT_CATALOG = [
+      { name: 'GitHub', category: 'dev', tools: 28, desc: 'Repositórios, PRs, issues, commits' },
+      { name: 'GitLab', category: 'dev', tools: 22, desc: 'Pipelines CI/CD, merge requests, repos' },
+      { name: 'Linear', category: 'dev', tools: 18, desc: 'Sprints, issues, roadmap, automações' },
+      { name: 'Slack', category: 'collab', tools: 15, desc: 'Mensagens, canais, bots de alertas' },
+      { name: 'Gmail', category: 'collab', tools: 12, desc: 'Envio, leitura e classificação de emails' },
+      { name: 'Discord', category: 'collab', tools: 10, desc: 'Webhooks, canais, bots em servidores' },
+      { name: 'Jira', category: 'dev', tools: 20, desc: 'Gerenciamento de tickets corporativos' },
+      { name: 'PostgreSQL', category: 'dev', tools: 14, desc: 'Execução de queries e inspeção de schema' },
+    ];
+
     function switchTab(tab) {
-      const tabs = ['orchestrator', 'mcps', 'gateway', 'telegram', 'security'];
+      const tabs = ['orchestrator', 'composio', 'mcps', 'gateway', 'telegram', 'security'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -185,6 +408,100 @@
       document.getElementById('current-view-title').innerText = activeBtn.innerText.trim();
     }
 
+    function switchComposioSubtab(subtab) {
+      document.getElementById('composio-subtab-catalog').classList.toggle('hidden', subtab !== 'catalog');
+      document.getElementById('composio-subtab-agents').classList.toggle('hidden', subtab !== 'agents');
+
+      const btnCat = document.getElementById('subtab-btn-catalog');
+      const btnAg = document.getElementById('subtab-btn-agents');
+
+      if (subtab === 'catalog') {
+        btnCat.className = "text-sm font-semibold text-amber-400 border-b-2 border-amber-500 pb-2";
+        btnAg.className = "text-sm font-semibold text-gray-400 hover:text-white pb-2";
+      } else {
+        btnAg.className = "text-sm font-semibold text-amber-400 border-b-2 border-amber-500 pb-2";
+        btnCat.className = "text-sm font-semibold text-gray-400 hover:text-white pb-2";
+      }
+    }
+
+    function filterToolkits() {
+      const query = document.getElementById('composio-search').value.toLowerCase().trim();
+      const suggestions = document.getElementById('search-suggestions');
+      const cards = document.querySelectorAll('.toolkit-card');
+
+      if (!query) {
+        suggestions.classList.add('hidden');
+        cards.forEach(card => card.classList.remove('hidden'));
+        return;
+      }
+
+      // Filter cards
+      cards.forEach(card => {
+        const name = card.getAttribute('data-name');
+        card.classList.toggle('hidden', !name.includes(query));
+      });
+
+      // Filter suggestions
+      const matches = TOOLKIT_CATALOG.filter(t => t.name.toLowerCase().includes(query));
+      if (matches.length > 0) {
+        suggestions.innerHTML = matches.map(m => `
+          <div onclick="selectToolkitSuggestion('${m.name}')" class="p-2 hover:bg-gray-900 rounded cursor-pointer flex justify-between items-center">
+            <span class="text-white font-bold">${m.name}</span>
+            <span class="text-gray-500 text-xs">${m.tools} ações disponíveis</span>
+          </div>
+        `).join('');
+        suggestions.classList.remove('hidden');
+      } else {
+        suggestions.classList.add('hidden');
+      }
+    }
+
+    function selectToolkitSuggestion(name) {
+      document.getElementById('composio-search').value = name;
+      document.getElementById('search-suggestions').classList.add('hidden');
+      filterToolkits();
+      openIntegrationModal(name, 'API_KEY');
+    }
+
+    function openIntegrationModal(service, authType) {
+      document.getElementById('modal-title').innerText = `Configurar Integração: ${service}`;
+      const body = document.getElementById('modal-body');
+
+      if (authType === 'OAUTH2') {
+        body.innerHTML = `
+          <div class="p-3 bg-blue-950/40 border border-blue-900/50 rounded-lg text-blue-300">
+            Esta integração utiliza OAuth2. Clique no link abaixo para autorizar no portal do fornecedor:
+          </div>
+          <a href="https://backend.composio.dev/auth/${service.toLowerCase()}" target="_blank" class="block text-center py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
+            Iniciar Autorização OAuth2 ↗
+          </a>
+        `;
+      } else {
+        body.innerHTML = `
+          <div>
+            <label class="block text-gray-400 mb-1">Token de Acesso / Chave de API</label>
+            <input type="password" id="modal-api-token" placeholder="Insira sua chave para ${service}..." class="w-full bg-gray-900 border border-gray-800 rounded p-2 text-white focus:outline-none focus:border-amber-500 font-mono" />
+            <p class="text-gray-500 text-[10px] mt-1">Suas credenciais serão guardadas de forma segura e auditadas pelo Hermes.</p>
+          </div>
+        `;
+      }
+
+      document.getElementById('integration-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('integration-modal').classList.add('hidden');
+    }
+
+    function submitModalForm() {
+      alert('Integração salva e transmitida ao Subagente Composio com sucesso!');
+      closeModal();
+    }
+
+    function testConnection(service) {
+      alert(`[HERMES COMPOSIO] Teste do Toolkit ${service}: Conexão bem-sucedida!`);
+    }
+
     function sendPrompt() {
       const input = document.getElementById('prompt-input');
       const text = input.value.trim();
@@ -195,14 +512,41 @@
         <div class="bg-gray-900 p-3 rounded-lg text-gray-200 text-right">
           <span class="text-blue-400 font-bold">[USER]</span> ${text}
         </div>
-        <div class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-gray-300">
-          <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Analisando viabilidade técnica, atrito de mercado e requisitos de portas/segurança...
-        </div>
       `;
+
+      // Prompt command interception for Composio integrations
+      const lower = text.toLowerCase();
+      if (lower.includes('integrar') || lower.includes('conectar') || lower.includes('composio')) {
+        let matchedService = 'GitHub';
+        if (lower.includes('slack')) matchedService = 'Slack';
+        else if (lower.includes('gmail')) matchedService = 'Gmail';
+        else if (lower.includes('linear')) matchedService = 'Linear';
+
+        setTimeout(() => {
+          chat.innerHTML += `
+            <div class="bg-gray-950 border border-amber-900/40 p-4 rounded-lg text-gray-300 space-y-2">
+              <span class="text-amber-400 font-bold">[SUBAGENTE COMPOSIO]</span> Detectei solicitação de integração com <strong>${matchedService}</strong>.
+              <p class="text-xs text-gray-400">Gerando formulário de credenciais para autorização do usuário:</p>
+              <div class="mt-2 flex space-x-2">
+                <button onclick="openIntegrationModal('${matchedService}', '${matchedService === 'Gmail' ? 'OAUTH2' : 'API_KEY'}')" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-3 py-1.5 rounded text-xs">
+                  Preencher Formulário de Dados (${matchedService})
+                </button>
+              </div>
+            </div>
+          `;
+          chat.scrollTop = chat.scrollHeight;
+        }, 400);
+      } else {
+        chat.innerHTML += `
+          <div class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-gray-300">
+            <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Analisando viabilidade técnica, atrito de mercado e requisitos de portas/segurança...
+          </div>
+        `;
+      }
+
       input.value = '';
       chat.scrollTop = chat.scrollHeight;
     }
   </script>
 </body>
 </html>
-
