@@ -1,10 +1,43 @@
+# ─── Dependências e build ───────────────────────────────────────────────────
 node_modules/
 dist/
-logs/
-*.jsonl
+
+# ─── Segredos e variáveis de ambiente ───────────────────────────────────────
+# NUNCA commite chaves, tokens ou senhas no git.
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa*
+.netrc
+.npmrc
+.infisical.json
+credentials.json
+serviceAccount*.json
+*credentials*.json
+*secret*.json
+
+# ─── Logs e dados sensíveis de execução ─────────────────────────────────────
+logs/
+temp/
+*.jsonl
 tests/tmp-logs/
 tests/tmp-logs2/
+
+# ─── Docker local (não versionar overrides com credenciais) ────────────────
+docker-compose.override.yml
+
+# ─── Sistema e editores ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.vscode/
+.idea/
 
