@@ -47,6 +47,40 @@ export class ComposioAgent {
     this.apiKey = apiKey ?? process.env.COMPOSIO_API_KEY;
   }
 
+  get isConfigured(): boolean {
+    return Boolean(this.apiKey);
+  }
+
+  /**
+   * Validate the Composio API key against the live backend
+   * (GET /api/v2/toolkits with x-api-key header).
+   */
+  async validateApiKey(): Promise<{ valid: boolean; message: string; toolkitsSample?: number }> {
+    if (!this.apiKey) {
+      return { valid: false, message: 'COMPOSIO_API_KEY não definida no ambiente.' };
+    }
+    try {
+      const res = await fetch('https://backend.composio.dev/api/v3/toolkits?limit=3', {
+        headers: { 'x-api-key': this.apiKey },
+      });
+      if (res.status === 401 || res.status === 403) {
+        return { valid: false, message: `Chave recusada pelo Composio (HTTP ${res.status}). Verifique a key em app.composio.dev.` };
+      }
+      if (!res.ok) {
+        return { valid: false, message: `Composio respondeu HTTP ${res.status}.` };
+      }
+      const body = (await res.json()) as { items?: unknown[] };
+      const sample = body.items?.length ?? 0;
+      return {
+        valid: true,
+        message: `Chave válida. ${sample} toolkit(s) de amostra listados com sucesso.`,
+        toolkitsSample: sample,
+      };
+    } catch (err) {
+      return { valid: false, message: `Falha de rede ao validar com o Composio: ${(err as Error).message}` };
+    }
+  }
+
   /**
    * Request an integration with a specific third-party platform.
    * If credentials or OAuth are missing, generates a structured form for the user.
