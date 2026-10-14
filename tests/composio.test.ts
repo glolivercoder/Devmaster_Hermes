@@ -53,3 +53,4 @@ test('Orchestrator: triggers Composio subagent and generates user form', () => {
   assert.equal(req.form?.serviceName, 'Gmail');
   assert.equal(req.form?.fields[0].type, 'oauth_url');
 });
+
