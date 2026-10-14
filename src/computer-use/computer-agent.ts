@@ -141,3 +141,4 @@ Analyze the screenshot. Return a JSON object with your action:
     return result;
   }
 }
+

@@ -61,3 +61,4 @@ test('Orchestrator: triggers Computer Use fallback when APIs/MCPs unavailable', 
   assert.equal(result.success, true);
   assert.ok(result.action.action);
 });
+
