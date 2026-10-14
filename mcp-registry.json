@@ -73,7 +73,8 @@
     "4010": "Hermes Process Manager & Guardian",
     "4020": "Hermes Core Event Bus",
     "4030": "Hermes Telegram Bridge",
-    "5173": "Hermes UI Dashboard (Vite/Next)"
+    "5173": "Hermes UI Dashboard (Vite/Next)",
+    "5433": "Hermes PostgreSQL (LiteLLM Data)"
   }
 }
 

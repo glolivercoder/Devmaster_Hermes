@@ -70,7 +70,7 @@ services:
     image: postgres:16-alpine
     container_name: hermes-postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - hermes_pg_data:/var/lib/postgresql/data
     environment:
