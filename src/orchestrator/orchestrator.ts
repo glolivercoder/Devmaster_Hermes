@@ -12,6 +12,7 @@ import { GatewayClient } from '../gateway/gateway-client.js';
 import { eventBus } from '../core/event-bus.js';
 import { auditLogger } from '../core/audit-logger.js';
 import { ComposioAgent } from '../integrations/composio-agent.js';
+import { ComputerUseAgent } from '../computer-use/computer-agent.js';
 
 export interface TaskPlan {
   title: string;
@@ -24,7 +25,7 @@ export interface TaskPlan {
 
 export interface SubagentTask {
   taskId: string;
-  agentRole: 'CODER' | 'SECURITY' | 'PENTEST' | 'QA' | 'INTEGRATOR';
+  agentRole: 'CODER' | 'SECURITY' | 'PENTEST' | 'QA' | 'INTEGRATOR' | 'COMPUTER_USER';
   instructions: string;
   assignedModel: string;
   virtualKey: string;
@@ -132,6 +133,26 @@ export class Orchestrator {
     });
 
     return result;
+  }
+
+  /**
+   * Fallback to Computer Use Subagent when API, MCP or Playwright are not available
+   * (e.g. interacting with Cursor, Windsurf, VS Code, Antigravity, OpenCode).
+   */
+  async requestComputerUseFallback(
+    computerAgent: ComputerUseAgent,
+    targetEditor: string,
+    actionGoal: string
+  ) {
+    this.dispatchSubagent({
+      taskId: `cu-${targetEditor.toLowerCase()}-${Date.now()}`,
+      agentRole: 'COMPUTER_USER',
+      instructions: `Perform GUI automation on ${targetEditor}: ${actionGoal}`,
+      assignedModel: 'openrouter-vision-free',
+      virtualKey: this.virtualKey,
+    });
+
+    return await computerAgent.executeStep(`Target: ${targetEditor}. Goal: ${actionGoal}`);
   }
 }
 
