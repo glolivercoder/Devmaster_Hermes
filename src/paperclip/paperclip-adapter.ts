@@ -125,3 +125,4 @@ export class PaperclipAdapter {
     return Array.from(this.tickets.values());
   }
 }
+

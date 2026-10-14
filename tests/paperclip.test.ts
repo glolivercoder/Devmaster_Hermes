@@ -55,3 +55,4 @@ test('PaperclipAdapter: updates ticket to DONE and frees assigned agent', () => 
   assert.equal(agent?.status, 'IDLE');
   assert.equal(agent?.currentTask, undefined);
 });
+
