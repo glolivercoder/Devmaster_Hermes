@@ -32,6 +32,9 @@
         <button onclick="switchTab('orchestrator')" id="tab-btn-orchestrator" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition bg-amber-500/10 text-amber-400 border border-amber-500/30">
           <span>🧠</span> <span>Orquestrador</span>
         </button>
+        <button onclick="switchTab('office')" id="tab-btn-office" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🏢</span> <span>Paperclip & Office</span>
+        </button>
         <button onclick="switchTab('composio')" id="tab-btn-composio" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
           <span>🧩</span> <span>Composio Toolkits</span>
         </button>
@@ -90,6 +93,205 @@
           Enviar
         </button>
       </div>
+    </section>
+
+    <!-- ─── Tab View: Paperclip & Hermes Office ───────────────────────── -->
+    <section id="view-office" class="hidden flex-1 flex flex-col p-6 space-y-6 overflow-y-auto">
+      
+      <!-- Top Office Header -->
+      <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center space-x-2">
+            <span>🏢</span> <span>Hermes Virtual Office & Paperclip Workflows</span>
+          </h2>
+          <p class="text-xs text-gray-400 mt-0.5 font-mono">Organograma da empresa de agentes, desks de trabalho ao vivo e quadro Kanban de tickets</p>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="createNewTicketPrompt()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-3 py-1.5 rounded-lg text-xs font-mono transition">
+            + Novo Ticket Paperclip
+          </button>
+        </div>
+      </div>
+
+      <!-- Virtual Office Desks (Visual Representation) -->
+      <div class="p-5 bg-gray-950 rounded-2xl border border-gray-800 space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Escritório Compartilhado (Hermes Office Mode)</span>
+          </h3>
+          <span class="text-xs font-mono text-gray-500">7 Agentes Alocados</span>
+        </div>
+
+        <!-- Desks Grid -->
+        <div class="grid grid-cols-4 gap-4 font-mono text-xs">
+          <!-- CEO Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-amber-500/40 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-amber-400 font-bold">🧠 Hermes (CEO)</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300">TRABALHANDO</span>
+            </div>
+            <div class="text-gray-300 text-[11px]">Orquestrando fluxo do projeto</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>claude-code</span>
+              <span class="text-emerald-400">$0.85</span>
+            </div>
+          </div>
+
+          <!-- Fullstack Dev Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-blue-500/40 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-blue-400 font-bold">💻 Coder Agent</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-300">TRABALHANDO</span>
+            </div>
+            <div class="text-gray-300 text-[11px]">Gerando views e rotas de UI</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>claude-fast</span>
+              <span class="text-emerald-400">$0.24</span>
+            </div>
+          </div>
+
+          <!-- Integrator Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-purple-500/40 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-purple-400 font-bold">🧩 Integrator (Composio)</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-300">TRABALHANDO</span>
+            </div>
+            <div class="text-gray-300 text-[11px]">Conectando APIs e formulários</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>claude-fast</span>
+              <span class="text-emerald-400">$0.15</span>
+            </div>
+          </div>
+
+          <!-- Security Reviewer Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-emerald-400 font-bold">🛡️ Security Agent</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">OCIOSO</span>
+            </div>
+            <div class="text-gray-400 text-[11px]">Varredura TruffleHog pronta</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>deepseek-code</span>
+              <span class="text-emerald-400">$0.08</span>
+            </div>
+          </div>
+
+          <!-- Pentest Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-red-400 font-bold">🎯 Pentest Agent</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">OCIOSO</span>
+            </div>
+            <div class="text-gray-400 text-[11px]">Aguardando gate de módulo</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>deepseek-code</span>
+              <span class="text-emerald-400">$0.05</span>
+            </div>
+          </div>
+
+          <!-- Computer User Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-cyan-400 font-bold">🖥️ Computer User</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">OCIOSO</span>
+            </div>
+            <div class="text-gray-400 text-[11px]">Driver de tela em prontidão</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>openrouter-free</span>
+              <span class="text-emerald-400">$0.00</span>
+            </div>
+          </div>
+
+          <!-- QA Tester Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-yellow-400 font-bold">🧪 QA Tester</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300">37/37 GREEN</span>
+            </div>
+            <div class="text-gray-400 text-[11px]">Testes unitários concluídos</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>gemini-flash</span>
+              <span class="text-emerald-400">$0.02</span>
+            </div>
+          </div>
+
+          <!-- Tech Lead Desk -->
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-pink-400 font-bold">📐 Tech Lead</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">OCIOSO</span>
+            </div>
+            <div class="text-gray-400 text-[11px]">Arquitetura modular revisada</div>
+            <div class="text-[10px] text-gray-500 flex justify-between">
+              <span>gemini-pro</span>
+              <span class="text-emerald-400">$0.32</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paperclip Tickets Kanban Board -->
+      <div class="space-y-3 font-mono text-xs">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center space-x-2">
+          <span>📋</span> <span>Quadro de Tickets & Sprints (Paperclip Workflow)</span>
+        </h3>
+
+        <div class="grid grid-cols-3 gap-4">
+          <!-- TODO Column -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-3">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-800 text-gray-400 font-bold">
+              <span>TO-DO</span>
+              <span class="bg-gray-900 px-2 py-0.5 rounded">1</span>
+            </div>
+            <div class="p-3 bg-gray-900 rounded-lg border border-gray-800 space-y-1.5">
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 font-bold">CRÍTICO</span>
+              <h5 class="font-bold text-white text-xs">Auditoria de Cibersegurança Módulo 09</h5>
+              <p class="text-gray-400 text-[11px]">Executar varredura profunda no adapter do Paperclip</p>
+              <div class="text-[10px] text-gray-500 pt-1">Atribuído: <strong>Security Reviewer</strong></div>
+            </div>
+          </div>
+
+          <!-- IN PROGRESS Column -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-3">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-800 text-amber-400 font-bold">
+              <span>EM PROGRESSO</span>
+              <span class="bg-amber-950 text-amber-400 px-2 py-0.5 rounded">2</span>
+            </div>
+            <div class="p-3 bg-gray-900 rounded-lg border border-amber-900/40 space-y-1.5">
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 font-bold">MÉDIO</span>
+              <h5 class="font-bold text-white text-xs">Aba Virtual Office no Hermes Desktop</h5>
+              <p class="text-gray-400 text-[11px]">Visualização de desks e integração do adaptador</p>
+              <div class="text-[10px] text-gray-500 pt-1">Atribuído: <strong>Fullstack Dev</strong></div>
+            </div>
+            <div class="p-3 bg-gray-900 rounded-lg border border-purple-900/40 space-y-1.5">
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-400 font-bold">ALTO</span>
+              <h5 class="font-bold text-white text-xs">Formulários de Autenticação Composio</h5>
+              <p class="text-gray-400 text-[11px]">Suporte a preenchimento de tokens OAuth2</p>
+              <div class="text-[10px] text-gray-500 pt-1">Atribuído: <strong>Composio Integrator</strong></div>
+            </div>
+          </div>
+
+          <!-- DONE Column -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-3">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-800 text-emerald-400 font-bold">
+              <span>CONCLUÍDO</span>
+              <span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded">3</span>
+            </div>
+            <div class="p-3 bg-gray-900 rounded-lg border border-gray-800 space-y-1.5 opacity-80">
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold">OK</span>
+              <h5 class="font-bold text-gray-300 text-xs line-through">Port & Process Guardian</h5>
+              <p class="text-gray-500 text-[11px]">Detecção de conflitos de portas com netstat</p>
+            </div>
+            <div class="p-3 bg-gray-900 rounded-lg border border-gray-800 space-y-1.5 opacity-80">
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold">OK</span>
+              <h5 class="font-bold text-gray-300 text-xs line-through">LiteLLM AI Gateway</h5>
+              <p class="text-gray-500 text-[11px]">docker-compose com PostgreSQL e Redis</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ─── Tab View: Composio Toolkits ─────────────────────────────────── -->
@@ -395,7 +597,7 @@
     ];
 
     function switchTab(tab) {
-      const tabs = ['orchestrator', 'composio', 'mcps', 'gateway', 'telegram', 'security'];
+      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -546,6 +748,11 @@
 
       input.value = '';
       chat.scrollTop = chat.scrollHeight;
+    }
+    function createNewTicketPrompt() {
+      const title = prompt('Título da Tarefa / Ticket Paperclip:');
+      if (!title) return;
+      alert(`[PAPERCLIP] Novo ticket criado: "${title}". Atribuído ao próximo agente disponível na Virtual Agency!`);
     }
   </script>
 </body>
