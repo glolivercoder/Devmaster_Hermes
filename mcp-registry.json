@@ -74,7 +74,8 @@
     "4020": "Hermes Core Event Bus",
     "4030": "Hermes Telegram Bridge",
     "5173": "Hermes UI Dashboard (Vite/Next)",
-    "5433": "Hermes PostgreSQL (LiteLLM Data)"
+    "5434": "Hermes PostgreSQL (LiteLLM Data)",
+    "6380": "Hermes Redis (Cache & Queues)"
   }
 }
 

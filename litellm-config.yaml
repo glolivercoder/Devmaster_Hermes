@@ -40,7 +40,7 @@ model_list:
       api_key: os.environ/DEEPSEEK_API_KEY
 
 router_settings:
-  routing_strategy: cost-based-shuffling   # pick cheapest among equally capable
+  routing_strategy: cost-based-routing    # roteia pelo custo entre modelos equivalentes
   num_retries: 3
   retry_after: 5
   timeout: 120

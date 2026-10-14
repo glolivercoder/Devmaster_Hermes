@@ -60,7 +60,7 @@ services:
           cpus: '2.0'
           memory: 1536M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=4)"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -70,7 +70,7 @@ services:
     image: postgres:16-alpine
     container_name: hermes-postgres
     ports:
-      - "5433:5432"
+      - "5434:5432"    # 5433 já ocupado pelo evolution_postgres neste host
     volumes:
       - hermes_pg_data:/var/lib/postgresql/data
     environment:
@@ -95,7 +95,7 @@ services:
     image: redis:7-alpine
     container_name: hermes-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"    # 6379 já ocupado pelo evolution_redis neste host
     command: redis-server --save "" --appendonly no --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - hermes_redis_data:/data
