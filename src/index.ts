@@ -85,9 +85,40 @@ async function bootstrap() {
       .startPolling(async (req) => {
         const text = req.prompt.trim();
         if (text === '/start' || text === '/help') {
-          return '🤖 *Hermes Control Center*\n\nComandos:\n/status — status do sistema\n/help — esta ajuda\n\nQualquer outra mensagem é encaminhada ao orquestrador Hermes (via LiteLLM).';
+          return '🤖 *Hermes Control Center*\n\nComandos:\n/status — status do sistema\n/conectar <serviço> — gerar link OAuth (ex: /conectar instagram)\n/postar <url_imagem> | <legenda> — publicar foto no Instagram\n/help — esta ajuda\n\nQualquer outra mensagem é encaminhada ao orquestrador Hermes (via LiteLLM).';
         }
-        if (text === '/status') {
+        const composioCmd = new ComposioAgent();
+        if (text.startsWith('/conectar')) {
+          const svc = text.replace('/conectar', '').trim().toLowerCase();
+          if (!svc) return 'Uso: /conectar <serviço>\nExemplo: /conectar instagram';
+          if (!composioCmd.isConfigured) return '⚠️ COMPOSIO_API_KEY não configurada no .env.';
+          const r = await composioCmd.connectToolkit(svc);
+          if (r.connected) return `✅ ${r.message}`;
+          return r.redirectUrl
+            ? `🔗 Para conectar o *${svc}*, abra este link e autorize:\n\n${r.redirectUrl}\n\nDepois me avise com /status ${svc} ou tente o comando novamente.`
+            : `⚠️ ${r.message}`;
+        }
+        if (text.startsWith('/postar')) {
+          const payload = text.replace('/postar', '').trim();
+          const sep = payload.indexOf('|');
+          const imageUrl = (sep >= 0 ? payload.slice(0, sep) : payload).trim();
+          const caption = sep >= 0 ? payload.slice(sep + 1).trim() : undefined;
+          if (!imageUrl || !/^https?:\/\//i.test(imageUrl)) {
+            return 'Uso: /postar <url_publica_da_imagem> | <legenda opcional>\nExemplo: /postar https://meusite.com/foto.jpg | Lançamento novo!';
+          }
+          if (!composioCmd.isConfigured) return '⚠️ COMPOSIO_API_KEY não configurada no .env.';
+          const r = await composioCmd.postInstagramImage({ imageUrl, caption });
+          return r.message;
+        }
+        if (text.startsWith('/status')) {
+          const arg = text.replace('/status', '').trim().toLowerCase();
+          if (arg) {
+            if (!composioCmd.isConfigured) return '⚠️ COMPOSIO_API_KEY não configurada no .env.';
+            const st = await composioCmd.getToolkitStatus(arg);
+            return st.connected
+              ? `✅ *${arg}*: conectado (conta ${st.connectedAccountId}).`
+              : `❌ *${arg}*: não conectado.\n${st.message}`;
+          }
           const q = telegram.getQueueStatus();
           const composio = new ComposioAgent();
           const compStatus = composio.isConfigured ? 'configurada' : 'AUSENTE';
