@@ -38,3 +38,4 @@ test('SecurityScanner: detects hardcoded Anthropic secret and blocks quality gat
   unlinkSync(leakFile);
   rmdirSync(testDir);
 });
+

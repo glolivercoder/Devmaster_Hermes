@@ -11,6 +11,7 @@
 import { GatewayClient } from '../gateway/gateway-client.js';
 import { eventBus } from '../core/event-bus.js';
 import { auditLogger } from '../core/audit-logger.js';
+import { ComposioAgent } from '../integrations/composio-agent.js';
 
 export interface TaskPlan {
   title: string;
@@ -114,4 +115,23 @@ export class Orchestrator {
       payload: task,
     });
   }
+
+  /**
+   * Request an external platform integration via Composio Subagent.
+   * Emits user form if credentials or authorization are required.
+   */
+  requestIntegrationService(composioAgent: ComposioAgent, serviceName: string) {
+    const result = composioAgent.requestIntegration(serviceName);
+
+    this.dispatchSubagent({
+      taskId: `integrate-${serviceName.toLowerCase()}`,
+      agentRole: 'INTEGRATOR',
+      instructions: `Configure and connect to ${serviceName} using Composio toolkits.`,
+      assignedModel: 'claude-fast',
+      virtualKey: this.virtualKey,
+    });
+
+    return result;
+  }
 }
+

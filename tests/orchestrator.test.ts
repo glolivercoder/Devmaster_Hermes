@@ -62,3 +62,4 @@ test('Orchestrator.dispatchSubagent: logs and publishes subagent event', () => {
   dispatched = true;
   assert.equal(dispatched, true);
 });
+

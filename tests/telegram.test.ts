@@ -51,3 +51,4 @@ test('TelegramBridge.formatNotification: generates alert header', () => {
   assert.ok(formatted.includes('[HERMES ALERT]'));
   assert.ok(formatted.includes('Vulnerability Detected'));
 });
+

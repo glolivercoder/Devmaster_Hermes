@@ -76,3 +76,4 @@ test('ProcessGuardian: findAvailablePort finds a usable port', () => {
   assert.ok(port >= 45000);
   assert.equal(pidOnPort(port), null);
 });
+

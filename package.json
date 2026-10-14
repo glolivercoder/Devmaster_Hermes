@@ -10,5 +10,14 @@
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "lint": "eslint src --ext .ts"
   },
-  "packageManager": "pnpm@10.20.0"
+  "packageManager": "pnpm@10.20.0",
+  "dependencies": {
+    "@composio/core": "^0.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
 }

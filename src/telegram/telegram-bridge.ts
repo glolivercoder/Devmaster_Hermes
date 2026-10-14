@@ -106,3 +106,4 @@ export class TelegramBridge {
     return `🔔 *[HERMES ALERT]* ${title}\n\n${body}`;
   }
 }
+
