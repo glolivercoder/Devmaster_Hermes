@@ -9,7 +9,8 @@
     "build": "tsup src/index.ts --format esm",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:probe": "tsx scripts/test-provider-probe.ts",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "dev:fresh": "node scripts/kill-ports.js && npm run dev"
   },
   "packageManager": "pnpm@10.20.0",
   "dependencies": {

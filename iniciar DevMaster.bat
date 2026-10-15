@@ -1,57 +1,115 @@
 @echo off
-chcp 65001 > nul
-title DevMaster Hermes Control Center - Launcher
+chcp 65001 1>nul 2>nul
+title DevMaster Hermes Control Center
 color 0A
 
 echo ===============================================================================
-echo                ? DEVMASTER HERMES CONTROL CENTER ?
-echo       Plataforma Modular de Orquestra??o, Ciberseguran?a e Automa??o
+echo                * DEVMASTER HERMES CONTROL CENTER *
 echo ===============================================================================
 echo.
 
-:: 1. Verificar se o Docker est? em execu??o
-echo [1/4] Verificando status do Docker Engine...
-docker info > nul 2>&1
-if %errorlevel% neq 0 (
-    echo [ERRO] O Docker Desktop n?o est? rodando!
-    echo Inicie o Docker Desktop e tente executar este script novamente.
-    echo.
-    pause
-    exit /b 1
-)
-echo [OK] Docker Engine ativo.
+echo [0/6] Verificando Docker Desktop...
+set DOCKER_OK=0
+docker ps 1>nul 2>nul
+if %ERRORLEVEL% EQU 0 goto docker_ok
+echo       Docker nao esta rodando. Aguardando (ate 60s)...
+set COUNT=0
+:wait_docker
+timeout /t 5 /nobreak 1>nul 2>nul
+set /a COUNT=%COUNT%+5
+docker ps 1>nul 2>nul
+if %ERRORLEVEL% EQU 0 goto docker_ok
+if %COUNT% LSS 60 goto wait_docker
+echo [AVISO] Docker nao detectado. Suba o Docker Desktop manualmente.
+goto skip_gitea
+
+:docker_ok
+echo [OK] Docker disponivel.
+set DOCKER_OK=1
 echo.
 
-:: 2. Subir os servi?os em container (Postgres, Redis, LiteLLM e Hermes Core)
-echo [2/4] Inicializando containers do Hermes (docker compose up -d)...
-docker compose up -d
-if %errorlevel% neq 0 (
-    echo [ERRO] Falha ao iniciar os containers do Docker!
-    echo Verifique os logs com: docker compose logs
-    pause
-    exit /b 1
-)
-echo [OK] Containers iniciados com sucesso!
+echo [1/6] Iniciando Gitea local (porta 3011)...
+docker compose up -d gitea 1>nul 2>nul
+if %ERRORLEVEL% NEQ 0 goto gitea_fail
+echo [OK] Container Gitea criado. Aguardando healthcheck (ate 30s)...
+set COUNT=0
+:wait_gitea
+timeout /t 3 /nobreak 1>nul 2>nul
+set /a COUNT=%COUNT%+3
+curl -fsS http://localhost:3011/api/healthz 1>nul 2>nul
+if %ERRORLEVEL% EQU 0 goto gitea_ok
+if %COUNT% LSS 30 goto wait_gitea
+echo [AVISO] Gitea nao respondeu. Tente http://localhost:3011
+goto after_gitea
+:gitea_ok
+echo [OK] Gitea acessivel em http://localhost:3011
+goto after_gitea
+:gitea_fail
+echo [AVISO] Falha ao subir Gitea.
+:after_gitea
+echo.
+goto kill_ports
+
+:skip_gitea
+echo [1/6] Gitea nao iniciado (Docker indisponivel).
 echo.
 
-:: 3. Exibir status dos servi?os
-echo [3/4] Status dos Servi?os:
-echo - LiteLLM AI Gateway:    http://localhost:4000
-echo - Hermes Process API:    http://localhost:4010
-echo - Hermes Core Bus:       http://localhost:4020
-echo - Postgres (LiteLLM):    localhost:5434
-echo - Redis Cache:           localhost:6380
+:kill_ports
+echo [2/6] Encerrando servidores antigos (portas 4010/4020)...
+call node scripts\kill-ports.js
+timeout /t 2 /nobreak 1>nul 2>nul
+echo [OK] Portas liberadas.
 echo.
 
-:: 4. Abrir Dashboard UI no navegador padr?o
-echo [4/4] Abrindo Dashboard do Hermes Control Center...
-set "DASHBOARD_PATH=%~dp0src\ui\index.html"
-start "" "%DASHBOARD_PATH%"
+echo [3/6] Iniciando Hermes Core (npm run dev:fresh)...
+echo       Process Guardian API:  http://localhost:4010
+echo       Web Dashboard:         http://localhost:4020
+echo       Gitea local:           http://localhost:3011
+start "Hermes Core" cmd /k "npm run dev:fresh"
+echo [OK] Hermes Core iniciado em nova janela.
+echo.
+
+echo [4/6] Aguardando Web Dashboard (porta 4020)...
+set COUNT=0
+:wait_dash
+timeout /t 2 /nobreak 1>nul 2>nul
+set /a COUNT=%COUNT%+2
+curl -fsS http://localhost:4020 1>nul 2>nul
+if %ERRORLEVEL% EQU 0 goto dash_ok
+if %COUNT% LSS 30 goto wait_dash
+echo [AVISO] Dashboard nao respondeu. Abrindo assim mesmo...
+goto after_dash
+:dash_ok
+echo [OK] Dashboard acessivel em http://localhost:4020
+:after_dash
+echo.
+
+echo [5/6] Verificando API Guardian (porta 4010)...
+set COUNT=0
+:wait_api
+timeout /t 2 /nobreak 1>nul 2>nul
+set /a COUNT=%COUNT%+2
+curl -fsS http://localhost:4010/api/health 1>nul 2>nul
+if %ERRORLEVEL% EQU 0 goto api_ok
+if %COUNT% LSS 20 goto wait_api
+echo [AVISO] API nao respondeu. Prosseguindo...
+goto after_api
+:api_ok
+echo [OK] API acessivel em http://localhost:4010
+:after_api
+echo.
+
+echo [6/6] Abrindo Dashboard do Hermes Control Center...
+start "" http://localhost:4020
 
 echo.
 echo ===============================================================================
-echo       ? Todos os servi?os est?o rodando em segundo plano com sucesso! ?
-echo             Pressione qualquer tecla para encerrar este terminal.
+echo       * HERMES RODANDO *
+echo.
+echo         Dashboard:     http://localhost:4020
+echo         API Guardian:  http://localhost:4010
+echo         Gitea:         http://localhost:3011
+echo.
+echo         Esta janela pode ser fechada.
 echo ===============================================================================
-pause > nul
-
+pause 1>nul 2>nul

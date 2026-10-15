@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HERMES Control Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/historico.js" defer></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
@@ -49,6 +50,12 @@
         </button>
         <button onclick="switchTab('security')" id="tab-btn-security" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
           <span>🛡️</span> <span>Security Gates</span>
+        </button>
+        <button onclick="switchTab('versionamento')" id="tab-btn-versionamento" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🗂️</span> <span>Versionamento &amp; Backup</span>
+        </button>
+        <button onclick="switchTab('historico')" id="tab-btn-historico" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>📜</span> <span>Histórico &amp; Auditoria</span>
         </button>
       </nav>
     </div>
@@ -616,6 +623,81 @@
       </div>
     </section>
 
+    <!-- ─── Tab View: Versionamento & Backup (Gitea self-hosted) ───────── -->
+    <section id="view-versionamento" class="hidden flex-1 p-6 space-y-6 overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-200">Versionamento &amp; Backup <span class="text-gray-500 font-normal">(Gitea local)</span></h2>
+        <button onclick="testGitea(this)" id="gitea-test-btn" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait">Testar conexão</button>
+      </div>
+      <div id="gitea-status" class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500">Clique em “Testar conexão” para verificar o Gitea (defina GITEA_BASE_URL / GITEA_TOKEN / GITEA_OWNER no .env).</div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Repositórios -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-gray-300">Repositórios (endpoints da API)</h3>
+            <button onclick="loadGiteaRepos()" class="px-2 py-1 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-[11px] font-mono hover:bg-gray-700">recarregar</button>
+          </div>
+          <div id="gitea-repos" class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 min-h-[80px]">—</div>
+        </div>
+
+        <!-- Backups locais (git bundle) -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-gray-300">Backups locais (git bundle)</h3>
+            <div class="flex gap-2">
+              <button onclick="createGiteaBackup(this)" id="gitea-backup-btn" class="px-2 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono hover:bg-emerald-500/25 disabled:opacity-50">+ Criar backup</button>
+              <button onclick="loadGiteaBackups()" class="px-2 py-1 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-[11px] font-mono hover:bg-gray-700">recarregar</button>
+            </div>
+          </div>
+          <div id="gitea-backups" class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 min-h-[80px]">—</div>
+        </div>
+      </div>
+
+      <!-- Webhooks -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-gray-300">Webhooks (endpoints de automação)</h3>
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="gitea-hook-repo" placeholder="repo (ex: meu-webapp)" class="flex-1 min-w-[160px] bg-gray-900 border border-gray-700 rounded p-1.5 text-gray-200 text-xs font-mono" />
+            <input id="gitea-hook-url" placeholder="https://api.exemplo.com/webhooks/gitea" class="flex-[2] min-w-[220px] bg-gray-900 border border-gray-700 rounded p-1.5 text-gray-200 text-xs font-mono" />
+            <button onclick="listGiteaHooks()" class="px-2.5 py-1 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono hover:bg-gray-700">Listar</button>
+            <button onclick="createGiteaHook(this)" id="gitea-hook-btn" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25 disabled:opacity-50">Criar webhook</button>
+          </div>
+          <div id="gitea-hooks" class="text-xs font-mono text-gray-500">Informe um repo e clique em “Listar”.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Tab View: Histórico & Auditoria ─────────────────────────────── -->
+    <section id="view-historico" class="hidden flex-1 p-6 space-y-6 overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-200">Histórico &amp; Auditoria <span class="text-gray-500 font-normal">(logs de eventos do sistema)</span></h2>
+        <button onclick="loadHistorico()" id="historico-refresh-btn" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait">⟳ Atualizar</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="flex flex-wrap items-center gap-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
+        <span class="text-xs text-gray-500">Filtrar por ator:</span>
+        <select id="historico-actor-filter" onchange="renderHistorico()" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200">
+          <option value="">Todos</option>
+          <option value="USER">👤 Usuário</option>
+          <option value="ORCHESTRATOR">🧠 Orquestrador</option>
+          <option value="SUBAGENT">🤖 Subagente</option>
+          <option value="GUARDIAN">🛡️ Guardian</option>
+          <option value="SYSTEM">⚙️ Sistema</option>
+        </select>
+        <span class="text-xs text-gray-500">Buscar:</span>
+        <input id="historico-search" placeholder="evento, payload..." oninput="renderHistorico()" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 w-48" />
+        <span id="historico-count" class="text-xs text-gray-600 ml-auto"></span>
+      </div>
+
+      <!-- Lista de eventos -->
+      <div id="historico-entries" class="space-y-2">
+        <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Clique em "Atualizar" para carregar o histórico.</div>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -856,7 +938,9 @@
 
     function switchTab(tab) {
       if (tab === 'gateway') loadLlmCenter();
-      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security'];
+      if (tab === 'versionamento') loadVersionamento();
+      if (tab === 'historico') loadHistorico();
+      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -867,6 +951,132 @@
       const activeBtn = document.getElementById(`tab-btn-${tab}`);
       activeBtn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition bg-amber-500/10 text-amber-400 border border-amber-500/30";
       document.getElementById('current-view-title').innerText = activeBtn.innerText.trim();
+    }
+
+    // ── Versionamento & Backup (Gitea) ──
+    async function giteaCall(path, opts) {
+      // Reaproveita apiUrls (same-origin + :4010 + :4020). Mesmo em erro HTTP
+      // devolve o JSON do backend para exibir a mensagem amigável.
+      let lastErr = null;
+      for (const u of apiUrls(path)) {
+        try {
+          const r = await fetch(u, opts);
+          const j = await r.json().catch(() => ({}));
+          return { httpStatus: r.status, ok: r.ok, data: j };
+        } catch (e) { lastErr = e.message; }
+      }
+      return { ok: false, data: { error: lastErr || 'API Gitea indisponível (hermes-core no ar?)' } };
+    }
+
+    function giteaBadge(el, ok, text) {
+      el.className = 'p-4 rounded-xl border text-xs font-mono break-all '
+        + (ok ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-300' : 'bg-red-950/20 border-red-900/50 text-red-300');
+      el.innerHTML = text;
+    }
+
+    async function testGitea(btn) {
+      const el = document.getElementById('gitea-status');
+      if (btn) { btn.disabled = true; btn.innerText = 'Testando...'; }
+      el.className = 'p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-amber-300 animate-pulse';
+      el.innerText = 'verificando conexão com o Gitea...';
+      const { data } = await giteaCall('/api/gitea/status');
+      if (btn) { btn.disabled = false; btn.innerText = 'Testar conexão'; }
+      if (data && data.connected) {
+        giteaBadge(el, true, '✅ ' + (data.message || 'Conectado'));
+        await Promise.all([loadGiteaRepos(), loadGiteaBackups()]);
+      } else {
+        giteaBadge(el, false, '❌ ' + ((data && (data.message || data.error)) || 'Falha ao conectar.'));
+      }
+    }
+
+    async function loadGiteaRepos() {
+      const el = document.getElementById('gitea-repos');
+      el.className = 'p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-amber-300';
+      el.innerText = 'carregando repositórios...';
+      const { data } = await giteaCall('/api/gitea/repos');
+      if (!data || !data.ok) { giteaBadge(el, false, (data && (data.message || data.error)) || 'Não foi possível listar repositórios.'); return; }
+      if (!data.repos.length) { giteaBadge(el, true, 'Nenhum repositório encontrado para este owner/token.'); return; }
+      el.className = 'p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono space-y-1.5 text-gray-300';
+      el.innerHTML = data.repos.map(r =>
+        '<div class="flex items-center justify-between gap-2 border-b border-gray-900 pb-1">'
+        + '<span class="' + (r.private ? 'text-amber-400' : 'text-emerald-400') + '">' + (r.private ? 'privado' : 'público') + '</span>'
+        + '<span class="font-bold text-gray-100 truncate" title="' + (r.fullName || r.name) + '">' + (r.fullName || r.name) + '</span>'
+        + '<span class="text-gray-500">' + (r.defaultBranch || '') + (r.openIssues ? ' · ' + r.openIssues + ' issues' : '') + '</span></div>'
+      ).join('');
+    }
+
+    async function createGiteaBackup(btn) {
+      const el = document.getElementById('gitea-backups');
+      if (btn) { btn.disabled = true; btn.innerText = 'Gerando...'; }
+      el.className = 'p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-amber-300 animate-pulse';
+      el.innerText = 'criando bundle git (proteção/rollback)...';
+      const { data } = await giteaCall('/api/gitea/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      if (btn) { btn.disabled = false; btn.innerText = '+ Criar backup'; }
+      if (data && data.ok) {
+        giteaBadge(el, true, '✅ ' + data.message + ' → <span class="text-gray-400">' + data.file + '</span>');
+      } else {
+        giteaBadge(el, false, '❌ ' + ((data && (data.message || data.error)) || 'Falha ao criar backup.'));
+      }
+      await loadGiteaBackups();
+    }
+
+    async function loadGiteaBackups() {
+      const el = document.getElementById('gitea-backups');
+      const { data } = await giteaCall('/api/gitea/backups');
+      if (!data || !data.ok) { giteaBadge(el, false, (data && (data.message || data.error)) || 'Falha ao listar backups.'); return; }
+      if (!data.backups.length) { giteaBadge(el, true, 'Nenhum bundle ainda. Clique em “+ Criar backup”.'); return; }
+      el.className = 'p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono space-y-1 text-gray-300';
+      el.innerHTML = data.backups.map(b =>
+        '<div class="flex items-center justify-between gap-2 border-b border-gray-900 pb-1">'
+        + '<span class="text-gray-100 truncate" title="' + b.file + '">' + b.file + '</span>'
+        + '<span class="text-gray-500 whitespace-nowrap">' + (b.bytes / 1024).toFixed(1) + ' KB · ' + new Date(b.createdAt).toLocaleString('pt-BR') + '</span></div>'
+      ).join('');
+    }
+
+    async function listGiteaHooks() {
+      const repo = document.getElementById('gitea-hook-repo').value.trim();
+      const el = document.getElementById('gitea-hooks');
+      if (!repo) { el.className = 'text-xs font-mono text-red-400'; el.innerText = 'Informe o nome do repositório.'; return; }
+      el.className = 'text-xs font-mono text-amber-300';
+      el.innerText = 'carregando webhooks...';
+      const { data } = await giteaCall('/api/gitea/hooks?repo=' + encodeURIComponent(repo));
+      if (!data || !data.ok) { el.className = 'text-xs font-mono text-red-400'; el.innerText = (data && (data.message || data.error)) || 'Falha ao listar webhooks.'; return; }
+      if (!data.hooks.length) { el.className = 'text-xs font-mono text-gray-500'; el.innerText = 'Nenhum webhook neste repositório.'; return; }
+      el.className = 'text-xs font-mono space-y-1 text-gray-300';
+      el.innerHTML = data.hooks.map(h =>
+        '<div class="flex items-center justify-between gap-2 border-b border-gray-900 pb-1">'
+        + '<span class="' + (h.active ? 'text-emerald-400' : 'text-red-400') + '">' + (h.active ? 'ativo' : 'inativo') + '</span>'
+        + '<span class="text-gray-100 truncate" title="' + (h.url || '') + '">' + (h.url || ('#' + h.id)) + '</span>'
+        + '<span class="text-gray-500">' + (h.events || []).join(', ') + '</span></div>'
+      ).join('');
+    }
+
+    async function createGiteaHook(btn) {
+      const repo = document.getElementById('gitea-hook-repo').value.trim();
+      const url = document.getElementById('gitea-hook-url').value.trim();
+      const el = document.getElementById('gitea-hooks');
+      if (!repo || !url) { el.className = 'text-xs font-mono text-red-400'; el.innerText = 'Preencha repo e URL de destino.'; return; }
+      if (btn) { btn.disabled = true; btn.innerText = 'Criando...'; }
+      el.className = 'text-xs font-mono text-amber-300 animate-pulse';
+      el.innerText = 'criando webhook...';
+      const { data } = await giteaCall('/api/gitea/hooks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo, url }),
+      });
+      if (btn) { btn.disabled = false; btn.innerText = 'Criar webhook'; }
+      if (data && data.ok) {
+        el.className = 'text-xs font-mono text-emerald-300';
+        el.innerText = (data.message || 'Webhook criado.') + ' (push, pull_request, issues)';
+        await listGiteaHooks();
+      } else {
+        el.className = 'text-xs font-mono text-red-400';
+        el.innerText = (data && (data.message || data.error)) || 'Falha ao criar webhook.';
+      }
+    }
+
+    async function loadVersionamento() {
+      // Ao abrir a aba, testa o status; se conectar, já carrega repos e backups.
+      await testGitea(null);
     }
 
     function switchComposioSubtab(subtab) {

@@ -19,6 +19,10 @@ services:
       - TELEGRAM_LLM_MODEL=${TELEGRAM_LLM_MODEL}
       - COMPOSIO_API_KEY=${COMPOSIO_API_KEY}
       - COMPOSIO_USER_ID=${COMPOSIO_USER_ID}
+      # Gitea local (versionamento/backup). Dentro da rede Docker usa o nome do serviço.
+      - GITEA_BASE_URL=http://gitea:3011
+      - GITEA_TOKEN=${GITEA_TOKEN}
+      - GITEA_OWNER=${GITEA_OWNER}
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
@@ -140,6 +144,42 @@ services:
       timeout: 5s
       retries: 5
 
+  # ─── Gitea (versionamento local, endpoints/API e backup) ───────────────────
+  # "GitHub básico" self-hosted: repos Git, API REST, webhooks, releases.
+  # Usa SQLite embarcado para manter o setup leve (sem Postgres extra).
+  # A UI do Hermes (aba Versionamento & Backup) consome a API REST via GITEA_*.
+  gitea:
+    image: gitea/gitea:1.22
+    container_name: hermes-gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      # Habilita escrita na API REST (necessário para o Hermes criar webhooks/backups)
+      - GITEA__security__INSTALL_LOCK=true
+      - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__api__ENABLE_SWAGGER=false
+      - GITEA__server__SSH_PORT=2222
+      - GITEA__server__HTTP_PORT=3000
+      - GITEA__server__ROOT_URL=http://localhost:3011/
+    ports:
+      - "3011:3000"      # Web UI + API REST (porta 3011 no host, 3000 interna no container)
+    volumes:
+      - hermes_gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 volumes:
   hermes_pg_data:
   hermes_redis_data:
+  hermes_gitea_data:
