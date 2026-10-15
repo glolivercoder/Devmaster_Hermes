@@ -50,7 +50,7 @@ export class GiteaOpsAgent {
       try { execSync(`git remote add gitea ${remoteUrl}`, { cwd: this.localPath, stdio: 'ignore' }); }
       catch { execSync(`git remote set-url gitea ${remoteUrl}`, { cwd: this.localPath, stdio: 'ignore' }); }
       try { execSync('git push -u gitea main', { cwd: this.localPath, stdio: 'pipe' }); } catch { /* ok */ }
-      eventBus.publish('gitea:repo:ready', { project: this.projectName, repo: this.repoName });
+      auditLogger.log({ actor: 'SUBAGENT', event: 'gitea-ops:repo:ready', payload: { project: this.projectName, repo: this.repoName } });
       return { ok: true, step: 'repo', detail: `Repo ${this.repoName} pronto` };
     } catch (e) { return { ok: false, step: 'repo', detail: (e as Error).message }; }
   }
@@ -70,3 +70,77 @@ export class GiteaOpsAgent {
       return { ok: true, step: 'commit', detail: `${hash} (${files.length} files)`, filesCommitted: files, commitHash: hash, branch: br };
     } catch (e) { return { ok: false, step: 'commit', detail: (e as Error).message, filesCommitted: [], commitHash: '', branch: '' }; }
   }
+
+  private async genCommitMsg(files: string[]): Promise<string> {
+    const diff = this.diffStat();
+    for (const m of FREE_MODELS) {
+      try {
+        const base = process.env.LITELLM_BASE_URL || 'http://localhost:4000';
+        const key = process.env.LITELLM_MASTER_KEY || '';
+        const r = await fetch(`${base}/v1/chat/completions`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+          body: JSON.stringify({ model: m, messages: [{ role: 'user', content: `Commit msg concisa (pt-BR, conventional commits): Files: ${files.join(', ')}. Diff: ${diff}` }], max_tokens: 80, temperature: 0.3 }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!r.ok) continue;
+        const d = await r.json() as { choices?: Array<{ message?: { content?: string } }> };
+        const txt = d.choices?.[0]?.message?.content?.trim();
+        if (txt) return txt;
+      } catch { continue; }
+    }
+    return `chore: update ${files.slice(0, 3).join(', ')}${files.length > 3 ? ` +${files.length - 3}` : ''}`;
+  }
+
+  async createFullBackup(): Promise<BackupResult> {
+    try {
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fls: string[] = [];
+      const bf = join(this.backupPath, `${this.repoName}-${ts}.bundle`);
+      try { execSync(`git bundle create "${bf}" --all`, { cwd: this.localPath, stdio: 'pipe' }); fls.push(bf); } catch { /* ok */ }
+      const ep = join(this.localPath, '.env');
+      if (existsSync(ep)) {
+        const eb = join(this.backupPath, `${this.repoName}-${ts}-env.txt`);
+        writeFileSync(eb, `# Backup .env (masked) - ${ts}\n${readFileSync(ep, 'utf8').replace(/=([^#\n\r]{4,})/g, '=***MASKED***')}`, 'utf8');
+        fls.push(eb);
+      }
+      const mf = join(this.backupPath, `${this.repoName}-${ts}-meta.json`);
+      writeFileSync(mf, JSON.stringify({ project: this.projectName, repo: this.repoName, ts, branch: this.branch(), hash: this.hash() }, null, 2), 'utf8');
+      fls.push(mf);
+      const sz = fls.reduce((s, f) => { try { return s + statSync(f).size; } catch { return s; } }, 0);
+      auditLogger.log({ actor: 'SUBAGENT', event: 'gitea-ops:backup', payload: { path: this.backupPath, n: fls.length, bytes: sz } });
+      return { ok: true, step: 'backup', detail: `${(sz / 1024).toFixed(1)} KB`, backupPath: this.backupPath, sizeBytes: sz, files: fls.map(f => basename(f)) };
+    } catch (e) { return { ok: false, step: 'backup', detail: (e as Error).message, backupPath: this.backupPath, sizeBytes: 0, files: [] }; }
+  }
+
+  listBackups(): { file: string; bytes: number; createdAt: string }[] {
+    try { return readdirSync(this.backupPath).filter(f => f.startsWith(this.repoName)).map(f => { const s = statSync(join(this.backupPath, f)); return { file: f, bytes: s.size, createdAt: s.mtime.toISOString() }; }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); }
+    catch { return []; }
+  }
+
+  restoreBackup(bundleFile: string): GiteaOpsResult {
+    const p = join(this.backupPath, bundleFile);
+    if (!existsSync(p)) return { ok: false, step: 'restore', detail: 'Bundle nao encontrado' };
+    try { execSync(`git fetch "${p}" refs/*:refs/*`, { cwd: this.localPath, stdio: 'pipe' }); return { ok: true, step: 'restore', detail: `Restaurado: ${bundleFile}` }; }
+    catch (e) { return { ok: false, step: 'restore', detail: (e as Error).message }; }
+  }
+
+  async setupWebhook(url: string, events: string[] = ['push', 'pull_request']): Promise<GiteaOpsResult> {
+    try { const r = await createWebhook(this.repoName, url, events); return { ok: r.ok ?? false, step: 'webhook', detail: r.message ?? '' }; }
+    catch (e) { return { ok: false, step: 'webhook', detail: (e as Error).message }; }
+  }
+
+  async bootstrap(): Promise<GiteaOpsResult[]> {
+    const R: GiteaOpsResult[] = [];
+    const h = await this.healthCheck();
+    R.push({ ok: h.giteaConnected, step: 'health', detail: h.giteaConnected ? `Gitea ${h.giteaVersion}` : 'offline' });
+    if (h.giteaConnected && h.authenticated) R.push(await this.createRepository());
+    R.push(await this.autoCommit());
+    R.push(await this.createFullBackup());
+    auditLogger.log({ actor: 'SUBAGENT', event: 'gitea-ops:bootstrap:done', payload: { project: this.projectName, allOk: R.every(r => r.ok) } });
+    return R;
+  }
+
+  private branch(): string { try { return execSync('git rev-parse --abbrev-ref HEAD', { cwd: this.localPath, encoding: 'utf8' }).trim(); } catch { return 'main'; } }
+  private hash(): string { try { return execSync('git rev-parse --short HEAD', { cwd: this.localPath, encoding: 'utf8' }).trim(); } catch { return '?'; } }
+  private diffStat(): string { try { return execSync('git diff --cached --stat', { cwd: this.localPath, encoding: 'utf8', stdio: 'pipe' }).slice(0, 600); } catch { return 'indisponivel'; } }
+}

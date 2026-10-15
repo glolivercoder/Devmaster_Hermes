@@ -27,6 +27,8 @@ import {
 import { getEnvSettings, setEnvSetting, deleteEnvSetting } from './llm/env-db-store.js';
 import { readAuditLog } from './core/audit-api.js';
 import { GiteaOpsAgent } from './gitea/gitea-ops-agent.js';
+import { scanPorts } from './guardian/port-inventory.js';
+import { portOwner, type McpRegistry } from './core/registry.js';
 
 const PROCESS_API_PORT = 4010;   // Process Guardian API (health/status)
 const DASHBOARD_PORT = 4020;     // Event Bus / Web Dashboard
@@ -110,6 +112,109 @@ async function handleGitea(
   return false;
 }
 
+/**
+ * Manipulador compartilhado das rotas de Port & Process Guardian.
+ * Inventário de portas/processos, MCPs do registro e ações de parar/reiniciar.
+ */
+async function handlePorts(
+  req: import('node:http').IncomingMessage,
+  res: import('node:http').ServerResponse,
+  url: string,
+  method: string,
+): Promise<boolean> {
+  const registry = loadRegistry('.');
+  const json = (status: number, body: unknown) => {
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(body));
+  };
+
+  // GET /api/ports — inventário real de portas em escuta (netstat/ss)
+  if (url === '/api/ports' && method === 'GET') {
+    try {
+      const ports = scanPorts().filter(p => p.state === 'LISTEN');
+      const registryMap = (registry as McpRegistry).port_allocations ?? {};
+      const enriched = ports.map(p => ({
+        port: p.port,
+        pid: p.pid,
+        address: p.address,
+        protocol: p.protocol,
+        owner: registryMap[String(p.port)] ?? null,
+      })).filter(p => p.port !== 0).sort((a, b) => a.port - b.port);
+      json(200, { ports: enriched, total: enriched.length, registry: registryMap });
+      return true;
+    } catch (err) { json(500, { error: String(err) }); return true; }
+  }
+
+  // GET /api/mcps — lista de MCPs registrados no mcp-registry.json
+  if (url === '/api/mcps' && method === 'GET') {
+    json(200, { servers: (registry as McpRegistry).servers ?? [], version: (registry as McpRegistry).version });
+    return true;
+  }
+
+  // GET /api/processes — processos relevantes (node/python) em execução
+  if (url === '/api/processes' && method === 'GET') {
+    try {
+      let procs: { pid: string; command: string }[] = [];
+      if (process.platform === 'win32') {
+        const raw = require('node:child_process').execSync('tasklist /FO CSV /NH', { encoding: 'utf8' });
+        procs = raw.split('\n').map(function(l: string){ return l.trim(); }).filter(Boolean).map(function(l: string){
+          var m = l.match(/^"([^"]+)","(\d+)"/);
+          if (!m) return null;
+          var name = m[1].toLowerCase();
+          if (name.indexOf('node') === -1 && name.indexOf('python') === -1) return null;
+          return { pid: m[2], command: m[1] };
+        }).filter(Boolean);
+      } else {
+        const raw = require('node:child_process').execSync('ps -eo pid,comm,args', { encoding: 'utf8' });
+        procs = raw.split('\n').map(function(l: string){ return l.trim(); }).filter(Boolean).map(function(l: string){
+          var m = l.match(/^(\d+)\s+\S+\s+(.+)$/);
+          if (!m) return null;
+          var name = m[1] + ' ' + m[2];
+          if (name.toLowerCase().indexOf('node') === -1 && name.toLowerCase().indexOf('python') === -1) return null;
+          return { pid: m[1], command: m[2].slice(0, 200) };
+        }).filter(Boolean);
+      }
+      json(200, { processes: procs });
+      return true;
+    } catch (err) { json(200, { processes: [] }); return true; }
+  }
+
+  // POST /api/processes/kill - encerra um processo por PID
+  if (url === '/api/processes/kill' && method === 'POST') {
+    try {
+      const body = await readBody(req) as { pid?: string };
+      if (!body.pid) { json(400, { error: 'pid é obrigatório' }); return true; }
+      const { execSync } = require('node:child_process');
+      if (process.platform === 'win32') {
+        execSync(`taskkill /F /PID ${body.pid}`, { stdio: 'pipe' });
+      } else {
+        execSync(`kill -9 ${body.pid}`, { stdio: 'pipe' });
+      }
+      auditLogger.log({ actor: 'USER', event: 'process:kill:approved', payload: { pid: body.pid } });
+      json(200, { ok: true, killed: body.pid });
+      return true;
+    } catch (err) { json(500, { error: String(err) }); return true; }
+  }
+
+  // POST /api/processes/restart - reinicia um processo
+  if (url === '/api/processes/restart' && method === 'POST') {
+    try {
+      const body = await readBody(req) as { pid?: string; command?: string };
+      if (!body.pid) { json(400, { error: 'pid é obrigatório' }); return true; }
+      const { execSync } = require('node:child_process');
+      if (process.platform === 'win32') {
+        execSync(`taskkill /F /PID ${body.pid}`, { stdio: 'pipe' });
+      } else {
+        execSync(`kill -9 ${body.pid}`, { stdio: 'pipe' });
+      }
+      auditLogger.log({ actor: 'USER', event: 'process:restart:approved', payload: { pid: body.pid, command: body.command } });
+      json(200, { ok: true, restarted: body.pid, note: 'Processo encerrado para reinicio.' });
+      return true;
+    } catch (err) { json(500, { error: String(err) }); return true; }
+  }
+
+  return false;
+}
 async function bootstrap() {
   // 1) Carrega o .env do disco ANTES de qualquer leitura de env, para que as
   //    chaves gravadas pela UI (aba LiteLLM & Custos) funcionem após reinícios.
@@ -138,6 +243,8 @@ async function bootstrap() {
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     // Versionamento & Backup (Gitea) — mesma API nos dois servidores
     if (req.url && req.url.startsWith('/api/gitea/') && await handleGitea(req, res, req.url, req.method ?? 'GET')) return;
+    // Port & Process Guardian / MCPs — inventário e ações
+    if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
     if (req.url === '/health') {
       res.writeHead(200);
       res.end(JSON.stringify({ status: 'ok', uptime_s: Math.round(process.uptime()) }));
@@ -291,7 +398,7 @@ async function bootstrap() {
       try {
         const project = new URL(req.url ?? '/', 'http://localhost').searchParams.get('project') || 'hermes';
         const agent = new GiteaOpsAgent({ projectName: project, repoName: project, description: `Projeto ${project}` });
-        const backups = agent.listProjectBackups();
+        const backups = agent.listBackups();
         res.writeHead(200);
         res.end(JSON.stringify({ backups }));
       } catch (err) { res.writeHead(500); res.end(JSON.stringify({ error: String(err) })); }
@@ -340,6 +447,8 @@ async function bootstrap() {
     }
     // Versionamento & Backup (Gitea) — mesma API nos dois servidores
     if (req.url && req.url.startsWith('/api/gitea/') && await handleGitea(req, res, req.url, req.method ?? 'GET')) return;
+    // Port & Process Guardian / MCPs — inventário e ações
+    if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
     // LLM Center API (same-origin for the dashboard UI; secrets stay masked)
     if (req.url === '/api/llm/state' && req.method === 'GET') {
       try {
@@ -475,7 +584,7 @@ async function bootstrap() {
       try {
         const project = new URL(req.url ?? '/', 'http://localhost').searchParams.get('project') || 'hermes';
         const agent = new GiteaOpsAgent({ projectName: project, repoName: project, description: `Projeto ${project}` });
-        const backups = agent.listProjectBackups();
+        const backups = agent.listBackups();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ backups }));
       } catch (err) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }

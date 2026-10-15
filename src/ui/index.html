@@ -511,32 +511,49 @@
     </div>
 
     <!-- ─── Tab View: MCPs & Process Guardian ───────────────────────────── -->
-    <section id="view-mcps" class="hidden flex-1 p-6 space-y-6">
-      <h2 class="text-base font-bold text-gray-200">Monitor de Portas & Processos (Port Guardian)</h2>
-      <div class="grid grid-cols-3 gap-4">
+    <section id="view-mcps" class="hidden flex-1 p-6 space-y-6 overflow-y-auto">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <h2 class="text-base font-bold text-gray-200">Monitor de Portas & Processos (Port Guardian)</h2>
+        <button onclick="loadPortsInventory()" id="ports-refresh-btn" class="px-3 py-1.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-mono hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait">⟳ Atualizar inventário</button>
+      </div>
+
+      <!-- Resumo -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
-          <div class="text-xs text-gray-500 font-mono">PORTA 4000</div>
-          <div class="text-sm font-bold text-white mt-1">LiteLLM AI Gateway</div>
-          <div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">
-            <span>LISTEN</span>
-            <span class="text-gray-500">PID 1024</span>
-          </div>
+          <div class="text-xs text-gray-500 font-mono">PORTAS EM ESCUTA</div>
+          <div id="ports-total" class="text-2xl font-bold text-white mt-1">—</div>
         </div>
         <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
-          <div class="text-xs text-gray-500 font-mono">PORTA 4010</div>
-          <div class="text-sm font-bold text-white mt-1">Port & Process Guardian</div>
-          <div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">
-            <span>LISTEN</span>
-            <span class="text-gray-500">PID 2048</span>
-          </div>
+          <div class="text-xs text-gray-500 font-mono">PROCESSOS NODE/PYTHON</div>
+          <div id="processes-total" class="text-2xl font-bold text-white mt-1">—</div>
         </div>
         <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
-          <div class="text-xs text-gray-500 font-mono">PORTA 4030</div>
-          <div class="text-sm font-bold text-white mt-1">Telegram 1-to-1 Bridge</div>
-          <div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">
-            <span>LISTEN</span>
-            <span class="text-gray-500">PID 4096</span>
-          </div>
+          <div class="text-xs text-gray-500 font-mono">MCPs REGISTRADOS</div>
+          <div id="mcps-total" class="text-2xl font-bold text-white mt-1">—</div>
+        </div>
+      </div>
+
+      <!-- Processos em execução -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-gray-300">Processos Node/Python em execução <span class="text-gray-500 font-normal">(interromper ou reiniciar)</span></h3>
+        <div id="processes-list" class="space-y-2">
+          <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Clique em "Atualizar inventário" para carregar.</div>
+        </div>
+      </div>
+
+      <!-- Portas ativas -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-gray-300">Portas ativas (escuta)</h3>
+        <div id="ports-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Clique em "Atualizar inventário" para carregar.</div>
+        </div>
+      </div>
+
+      <!-- MCPs registrados -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-gray-300">MCPs registrados (mcp-registry.json)</h3>
+        <div id="mcps-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Clique em "Atualizar inventário" para carregar.</div>
         </div>
       </div>
     </section>
@@ -940,6 +957,7 @@
       if (tab === 'gateway') loadLlmCenter();
       if (tab === 'versionamento') loadVersionamento();
       if (tab === 'historico') loadHistorico();
+      if (tab === 'mcps') loadPortsInventory();
       const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
