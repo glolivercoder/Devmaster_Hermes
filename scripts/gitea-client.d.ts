@@ -1,6 +1,9 @@
 // Declarações de tipos para o cliente Gitea (gitea-client.js).
 // O módulo é JavaScript puro; este arquivo dá ao TypeScript as assinaturas
 // usadas em src/index.ts (rotas /api/gitea/*).
+//
+// ⚠️ getBaseUrl/getOwner/getToken são FUNÇÕES (leitura lazy do process.env),
+// não constantes: o .env só é carregado em bootstrap(), depois dos imports.
 
 export interface GiteaTestResult {
   connected: boolean;
@@ -8,6 +11,8 @@ export interface GiteaTestResult {
   latencyMs: number;
   version?: string;
   message: string;
+  /** Divergências entre process.env e o .env (ex.: token antigo herdado do terminal). */
+  envMismatch?: string[];
 }
 
 export interface GiteaRepo {
@@ -46,6 +51,6 @@ export declare function createWebhook(
 export declare function createLocalBackup(destDir?: string): { ok: boolean; file?: string; bytes?: number; branch?: string; message: string };
 export declare function listBackups(destDir?: string): { ok: boolean; backups: GiteaBackupFile[]; message?: string };
 
-export declare const BASE: string;
-export declare const OWNER: string;
-export declare const TOKEN: string;
+export declare function getBaseUrl(): string;
+export declare function getOwner(): string;
+export declare function getToken(): string;

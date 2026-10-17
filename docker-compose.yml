@@ -156,7 +156,7 @@ services:
       - USER_GID=1000
       # Habilita escrita na API REST (necessário para o Hermes criar webhooks/backups)
       - GITEA__security__INSTALL_LOCK=true
-      - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__service__DISABLE_REGISTRATION=false
       - GITEA__api__ENABLE_SWAGGER=false
       - GITEA__server__SSH_PORT=2222
       - GITEA__server__HTTP_PORT=3000

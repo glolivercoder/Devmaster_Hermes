@@ -414,7 +414,8 @@ async function bootstrap() {
       } catch (err) { res.writeHead(500); res.end(JSON.stringify({ error: String(err) })); }
       return;
     }
-    console.log(`[HERMES] Process Guardian API listening on :${PROCESS_API_PORT}`);
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'not found' }));
   });
 
   // ── Event Bus / Web Dashboard (4020) ──
@@ -605,6 +606,9 @@ async function bootstrap() {
   });
   dashboardServer.listen(DASHBOARD_PORT, () => {
     console.log(`[HERMES] Web Dashboard listening on :${DASHBOARD_PORT}`);
+  });
+  apiServer.listen(PROCESS_API_PORT, () => {
+    console.log(`[HERMES] Process Guardian API listening on :${PROCESS_API_PORT}`);
   });
 
   // ── Telegram Bridge (real polling, optional) ──

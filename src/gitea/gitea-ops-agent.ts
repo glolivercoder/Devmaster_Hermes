@@ -8,7 +8,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, statSync, readdirSy
 import { join, basename } from 'node:path';
 import { auditLogger } from '../core/audit-logger.js';
 import { eventBus } from '../core/event-bus.js';
-import { testConnection, listRepos, createWebhook, BASE as GITEA_BASE, OWNER as GITEA_OWNER, TOKEN as GITEA_TOKEN } from '../../scripts/gitea-client.js';
+import { testConnection, listRepos, createWebhook, getBaseUrl, getOwner, getToken } from '../../scripts/gitea-client.js';
 
 const BACKUP_ROOT = 'F:\\Projetos Backup';
 const FREE_MODELS = ['openrouter-qwen-free','gemini-flash-free','openrouter-deepseek-free','openrouter-mistral-free','gemini-flash','deepseek-code'];
@@ -37,10 +37,13 @@ export class GiteaOpsAgent {
     const c = await testConnection();
     const r = await listRepos();
     const b = this.listBackups();
-    return { giteaConnected: c.connected, giteaVersion: c.version || '?', authenticated: !!(GITEA_TOKEN && GITEA_OWNER), repos: r.ok ? r.repos.length : 0, lastBackup: b.length > 0 ? b[0].createdAt : null, projectName: this.projectName };
+    return { giteaConnected: c.connected, giteaVersion: c.version || '?', authenticated: !!(getToken() && getOwner()), repos: r.ok ? r.repos.length : 0, lastBackup: b.length > 0 ? b[0].createdAt : null, projectName: this.projectName };
   }
 
   async createRepository(): Promise<GiteaOpsResult> {
+    const GITEA_BASE = getBaseUrl();
+    const GITEA_TOKEN = getToken();
+    const GITEA_OWNER = getOwner();
     if (!GITEA_TOKEN || !GITEA_OWNER) return { ok: false, step: 'repo', detail: 'GITEA_TOKEN/OWNER ausentes' };
     try {
       const body = JSON.stringify({ name: this.repoName, description: 'Hermes GiteaOps', private: true, auto_init: false, default_branch: 'main' });

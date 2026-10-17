@@ -16,18 +16,59 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const BASE = (process.env.GITEA_BASE_URL || 'http://localhost:3011').replace(/\/+$/, '');
-const TOKEN = process.env.GITEA_TOKEN || '';
-const OWNER = process.env.GITEA_OWNER || '';
+// ⚠️ Leitura LAZY do process.env: este módulo é importado (static import) pelo
+// src/index.ts, e no ESM os imports executam ANTES do corpo do módulo importador —
+// ou seja, antes de bootstrap() chamar loadDotEnv(). Se BASE/TOKEN/OWNER fossem
+// consts no top-level, seriam congelados vazios mesmo com o .env correto.
+// Ler as variáveis em cada chamada garante que o .env já tenha sido carregado.
+function getBaseUrl() {
+  return (process.env.GITEA_BASE_URL || 'http://localhost:3011').replace(/\/+$/, '');
+}
+function getToken() {
+  return process.env.GITEA_TOKEN || '';
+}
+function getOwner() {
+  return process.env.GITEA_OWNER || '';
+}
 
 function authHeaders() {
-  return { Authorization: `token ${TOKEN}`, 'Content-Type': 'application/json' };
+  return { Authorization: `token ${getToken()}`, 'Content-Type': 'application/json' };
+}
+
+/**
+ * Compara process.env com o .env em disco. Detecta o caso clássico em que uma
+ * variável GITEA_* antiga herdada do terminal (ambiente VENCE o .env no
+ * loadDotEnv) sobrescreve a configuração correta — causando HTTP 401 com
+ * "user does not exist" mesmo com o token certo no .env.
+ */
+function envMismatchWarnings() {
+  const disk = {};
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), '.env'), 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      const m = line.match(/^\s*(GITEA_[A-Z_0-9]+)\s*=\s*(.*?)\s*$/);
+      if (!m) continue;
+      let v = m[2].replace(/\s+#.*$/, '').trim();
+      if (v.length >= 2 && ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))) v = v.slice(1, -1);
+      disk[m[1]] = v;
+    }
+  } catch { return []; }
+  const warn = [];
+  for (const [k, fileVal] of Object.entries(disk)) {
+    const runVal = (process.env[k] ?? '').trim();
+    if (fileVal && runVal && runVal !== fileVal) {
+      warn.push(`${k} em uso (${runVal.slice(0, 8)}…) difere do .env (${fileVal.slice(0, 8)}…) — uma variável herdada do terminal está sobrescrevendo o .env; abra um terminal NOVO e reinicie.`);
+    }
+  }
+  return warn;
 }
 
 /** Testa a conexão com o Gitea e devolve a versão do servidor. */
 async function testConnection() {
-  if (!BASE) return { connected: false, message: 'GITEA_BASE_URL não definido no .env.' };
+  if (!getBaseUrl()) return { connected: false, message: 'GITEA_BASE_URL não definido no .env.' };
   const started = Date.now();
+  const BASE = getBaseUrl();
+  const TOKEN = getToken();
   try {
     const res = await fetch(`${BASE}/api/v1/version`, {
       headers: TOKEN ? authHeaders() : {},
@@ -35,8 +76,9 @@ async function testConnection() {
     });
     const latencyMs = Date.now() - started;
     const body = await res.text();
+    const mismatch = envMismatchWarnings();
     if (!res.ok) {
-      return { connected: false, httpStatus: res.status, latencyMs, message: `Gitea respondeu HTTP ${res.status}. ${body.slice(0, 200)}` };
+      return { connected: false, httpStatus: res.status, latencyMs, envMismatch: mismatch, message: `Gitea respondeu HTTP ${res.status}. ${body.slice(0, 200)}${mismatch.length ? ' — ' + mismatch.join(' | ') : ''}` };
     }
     let version = '';
     try { version = JSON.parse(body).version || ''; } catch { /* body pode não ser JSON */ }
@@ -45,19 +87,24 @@ async function testConnection() {
       httpStatus: res.status,
       latencyMs,
       version,
-      message: `Gitea ${version || 'online'} acessível em ${BASE} (${latencyMs}ms).`,
+      envMismatch: mismatch,
+      message: `Gitea ${version || 'online'} acessível em ${BASE} (${latencyMs}ms).${mismatch.length ? ' ⚠️ ' + mismatch.join(' | ') : ''}`,
     };
   } catch (err) {
+    const mismatch = envMismatchWarnings();
     return {
       connected: false,
       latencyMs: Date.now() - started,
-      message: `Não foi possível alcançar o Gitea em ${BASE}: ${err.message}. Suba o container gitea (ver docker-compose abaixo).`,
+      envMismatch: mismatch,
+      message: `Não foi possível alcançar o Gitea em ${BASE}: ${err.message}. Suba o container gitea (ver docker-compose abaixo).${mismatch.length ? ' ⚠️ ' + mismatch.join(' | ') : ''}`,
     };
   }
 }
 
 /** Lista repositórios do owner autenticado (ou do OWNER configurado). */
 async function listRepos() {
+  const BASE = getBaseUrl();
+  const TOKEN = getToken();
   if (!TOKEN) return { ok: false, repos: [], message: 'GITEA_TOKEN não definido — não é possível listar repositórios.' };
   try {
     const res = await fetch(`${BASE}/api/v1/user/repos?limit=50`, { headers: authHeaders(), signal: AbortSignal.timeout(8000) });
@@ -79,6 +126,9 @@ async function listRepos() {
 
 /** Lista webhooks de um repositório. */
 async function listWebhooks(repo) {
+  const BASE = getBaseUrl();
+  const TOKEN = getToken();
+  const OWNER = getOwner();
   if (!TOKEN || !OWNER || !repo) return { ok: false, hooks: [], message: 'GITEA_TOKEN, GITEA_OWNER e repo são necessários.' };
   try {
     const res = await fetch(`${BASE}/api/v1/repos/${encodeURIComponent(OWNER)}/${encodeURIComponent(repo)}/hooks`, {
@@ -100,6 +150,9 @@ async function listWebhooks(repo) {
 
 /** Cria um webhook do tipo "gitea" apontando para uma URL de destino. */
 async function createWebhook(repo, targetUrl, events = ['push', 'pull_request', 'issues']) {
+  const BASE = getBaseUrl();
+  const TOKEN = getToken();
+  const OWNER = getOwner();
   if (!TOKEN || !OWNER || !repo) return { ok: false, message: 'GITEA_TOKEN, GITEA_OWNER e repo são necessários.' };
   if (!targetUrl) return { ok: false, message: 'Informe a URL de destino do webhook.' };
   try {
@@ -161,5 +214,5 @@ function listBackups(destDir = 'backups') {
   }
 }
 
-export { testConnection, listRepos, listWebhooks, createWebhook, createLocalBackup, listBackups, BASE, OWNER, TOKEN };
+export { testConnection, listRepos, listWebhooks, createWebhook, createLocalBackup, listBackups, getBaseUrl, getOwner, getToken };
 
