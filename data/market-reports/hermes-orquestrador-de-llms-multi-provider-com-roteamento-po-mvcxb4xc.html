@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise de Mercado — Hermes — orquestrador de LLMs multi-provider com roteamento por custo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>body{font-family:Inter,system-ui,sans-serif}</style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+<div class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <header class="border-b border-gray-800 pb-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <h1 class="text-2xl font-bold">📊 Análise de Mercado — Hermes — orquestrador de LLMs multi-provider com roteamento por custo</h1>
+      <span class="text-xs font-mono text-gray-500">2026-10-17T21:43:23.567Z</span>
+    </div>
+    <p class="text-[11px] text-amber-500/80 mt-1 font-mono">Análise crua e realista (anti-sicofância) · fontes: web, notícias e Reddit</p>
+  </header>
+
+  <section class="bg-gray-900/50 border border-amber-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-amber-400 mb-2">🎯 Resumo executivo</h2>
+    <p class="text-sm text-gray-200 leading-relaxed">Hermes é um runtime de agente AI open-source com rápido crescimento (216.354 estrelas GitHub em Julho 2026) focado em orquestração multi-provedor de LLMs e roteamento por custo. Apesar da velocidade de desenvolvimento, a plataforma sofre de instabilidade crítica e documentação inconsistente. Sua proposta de valor reside no controle total para desenvolvedores e otimização de custos, mas exige alta capacidade de engenharia para mitigar falhas.</p>
+  </section>
+
+  <section class="bg-red-950/20 border border-red-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-red-400 mb-2">⚖️ Veredito (sem lisonja)</h2>
+    <p class="text-sm text-gray-200 leading-relaxed">Hermes é uma ferramenta de nicho para desenvolvedores que exigem controle granular e otimização de custos em orquestração de LLMs. Sua instabilidade documentada e documentação defasada o tornam inadequado para ambientes de produção sem investimento significativo em mitigação. É útil para experimentação e equipes com recursos para gerenciar seus problemas inerentes.</p>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-gray-900/40 border border-emerald-900/40 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-emerald-400 mb-2">✅ Pontos fortes</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Open-source e comunidade ativa: 216.354 estrelas no GitHub e 40.502 forks (Julho 2026), com 3.700+ PRs merged em 8 semanas, indicam desenvolvimento acelerado.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Suporte multi-provedor: Integração com 17+ provedores de LLM e compatibilidade com OpenAI API (v0.14.0), oferecendo flexibilidade de escolha.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Otimização de custos: Roteamento inteligente de requisições baseado em custo, latência e capacidade (dado de &#39;Core Capabilities&#39; de LLM Orchestration Platforms).</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Capacidades de agente avançadas: Orquestração multi-agente Kanban, habilidades auto-aprimoráveis e persistência de sessão (v0.13.0, v0.18.2) para fluxos de trabalho complexos.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Interface para desenvolvedores: Oferece CLI e TUI, além de um aplicativo desktop com 40.000+ beta users (Junho 2026), focado em controle direto.</span></li></ul>
+    </section>
+    <section class="bg-gray-900/40 border border-red-900/40 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-red-400 mb-2">⚠️ Pontos fracos</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Instabilidade crítica: Modelos Claude causam crash-loops, provedores LLM retornam 400s vazios no Windows, e o plugin de memória tem cinco falhas silenciosas (Vellum.ai).</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Documentação defasada: 27 inconsistências encontradas em uma única auditoria, com comandos CLI e variáveis de ambiente incorretos (Vellum.ai).</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Falta de suporte a plataformas: Não possui suporte nativo para web, iOS, macOS, ou voz (Vellum.ai), limitando a acessibilidade.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Gerenciamento de credenciais e permissões precário: Exige gerenciamento DIY de segredos e não possui sistema de permissões (Vellum.ai).</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Diagnóstico de erros falho: Erros de formato Gemini vision são classificados incorretamente como erros de pagamento, tornando o provedor insalubre por 10 minutos (Vellum.ai).</span></li></ul>
+    </section>
+  </div>
+
+  <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-amber-400 mb-3">🥧 Participação de mercado</h2>
+    <div class="grid md:grid-cols-2 gap-6 items-center">
+      <div class="relative h-64"><canvas id="donut"></canvas></div>
+      <div class="space-y-2">
+        
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#f59e0b"></span>
+          <span class="text-sm flex-1">Bifrost (Maxim AI)</span>
+          <span class="text-sm font-mono font-bold text-amber-400">35%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#10b981"></span>
+          <span class="text-sm flex-1">LangChain</span>
+          <span class="text-sm font-mono font-bold text-amber-400">25%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#3b82f6"></span>
+          <span class="text-sm flex-1">LlamaIndex</span>
+          <span class="text-sm font-mono font-bold text-amber-400">15%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#a855f7"></span>
+          <span class="text-sm flex-1">Haystack</span>
+          <span class="text-sm font-mono font-bold text-amber-400">10%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#ef4444"></span>
+          <span class="text-sm flex-1">Hermes (Self-hosted/DIY)</span>
+          <span class="text-sm font-mono font-bold text-amber-400">10%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#06b6d4"></span>
+          <span class="text-sm flex-1">Semantic Kernel</span>
+          <span class="text-sm font-mono font-bold text-amber-400">5%</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 space-y-2">
+      
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Bifrost (Maxim AI)</span><span class="font-mono">35%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:35%;background:#f59e0b"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>LangChain</span><span class="font-mono">25%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:25%;background:#10b981"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>LlamaIndex</span><span class="font-mono">15%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:15%;background:#3b82f6"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Haystack</span><span class="font-mono">10%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:10%;background:#a855f7"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Hermes (Self-hosted/DIY)</span><span class="font-mono">10%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:10%;background:#ef4444"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Semantic Kernel</span><span class="font-mono">5%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:5%;background:#06b6d4"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4 overflow-x-auto">
+    <h2 class="text-sm font-bold text-amber-400 mb-3">🏁 Concorrentes — comparação direta</h2>
+    <table class="w-full text-xs min-w-[700px]">
+      <thead><tr class="text-gray-500 text-left">
+        <th class="px-3 py-2">Player</th><th class="px-3 py-2">Share</th>
+        <th class="px-3 py-2">Posicionamento</th><th class="px-3 py-2">Forte</th><th class="px-3 py-2">Fraco</th>
+      </tr></thead>
+      <tbody>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#f59e0b"></span>Bifrost (Maxim AI)</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">35%</td>
+      <td class="px-3 py-2 text-gray-400">Gateway de infraestrutura para orquestração de produção em escala, com foco em robustez empresarial.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Performance, escalabilidade, confiabilidade, failover automático e observabilidade nativa (OTel, Prometheus).</td>
+      <td class="px-3 py-2 text-red-400/90">Foco em infraestrutura, não orquestra lógica de aplicação (chains, agents).</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#10b981"></span>LangChain</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">25%</td>
+      <td class="px-3 py-2 text-gray-400">Framework para orquestração de lógica de aplicação (chains, agents, retrieval) e prototipagem rápida.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Grande ecossistema, flexibilidade para construir aplicações complexas e vasta gama de integrações.</td>
+      <td class="px-3 py-2 text-red-400/90">Não oferece failover entre provedores e possui controle de custos limitado a nível de infraestrutura.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#3b82f6"></span>LlamaIndex</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">15%</td>
+      <td class="px-3 py-2 text-gray-400">Framework data-centric otimizado para Retrieval Augmented Generation (RAG) e sistemas de conhecimento.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Excelente para RAG, gerenciamento eficiente de dados e contexto para LLMs.</td>
+      <td class="px-3 py-2 text-red-400/90">Foco limitado em RAG, não atua como um gateway multi-provedor abrangente.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#a855f7"></span>Haystack</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">10%</td>
+      <td class="px-3 py-2 text-gray-400">Framework pipeline-based para construção de pipelines de NLP modulares e flexíveis.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Modularidade, facilidade de construção de pipelines de processamento de linguagem natural.</td>
+      <td class="px-3 py-2 text-red-400/90">Menos abrangente para orquestração geral de LLMs e gerenciamento de provedores.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#ef4444"></span>Hermes (Self-hosted/DIY)</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">10%</td>
+      <td class="px-3 py-2 text-gray-400">Runtime de agente open-source para desenvolvedores que buscam controle máximo e otimização de custos via roteamento.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Alta customização, comunidade ativa e roteamento inteligente para otimização de custo.</td>
+      <td class="px-3 py-2 text-red-400/90">Instabilidade crítica, documentação defasada e exige gerenciamento DIY de infraestrutura.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#06b6d4"></span>Semantic Kernel</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">5%</td>
+      <td class="px-3 py-2 text-gray-400">SDK empresarial da Microsoft para integração de IA com o ecossistema Microsoft.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Suporte e integração robusta com produtos Microsoft, arquitetura de plugins.</td>
+      <td class="px-3 py-2 text-red-400/90">Alto lock-in no ecossistema Microsoft, menor flexibilidade para outros ambientes.</td>
+    </tr></tbody>
+    </table>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-cyan-400 mb-2">🚀 Oportunidades</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Estabilização da plataforma: Resolver bugs críticos de crash-loop e falhas silenciosas de memória para aumentar a confiança em produção.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Melhoria da documentação: Atualizar e manter a documentação alinhada ao código para reduzir a barreira de entrada e o tempo de depuração.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Expansão para interfaces de usuário: Desenvolver suporte oficial para web, iOS/Android para alcançar um público mais amplo além de desenvolvedores CLI.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Ferramentas de governança e segurança: Implementar gerenciamento de credenciais robusto e sistema de permissões para uso empresarial.</span></li></ul>
+    </section>
+    <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-red-400 mb-2">💣 Ameaças</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Concorrência de gateways robustos: Plataformas como Bifrost oferecem estabilidade e recursos empresariais que Hermes, com seus bugs, não consegue igualar.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Fadiga da comunidade: A alta velocidade de releases (6 em 6 semanas) pode levar a bugs e inconsistências, afastando contribuidores e usuários.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Percepção de instabilidade: Relatos de falhas críticas podem prejudicar a reputação e a adoção, especialmente em ambientes de produção.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Dependência de esforço DIY: A necessidade de gerenciar hosting, memória e APIs manualmente limita a adoção por empresas sem equipes de engenharia dedicadas.</span></li></ul>
+    </section>
+  </div>
+
+  <section class="bg-gray-900/40 border border-orange-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-orange-400 mb-3">🗣️ Voz do usuário real (Reddit)</h2>
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <h3 class="text-xs font-bold text-gray-400 mb-1.5">Dores recorrentes</h3>
+        <ul class="text-sm space-y-1 text-gray-300"><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Uso excessivo de tokens, especialmente em interfaces como Telegram, gerando custos inesperados.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Dificuldade em otimizar custos de LLM para uso pessoal e tarefas de codificação.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Problemas com roteamento e delegação de tarefas para economizar tokens, indicando complexidade na configuração.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Busca por configurações de IA custo-efetivas para codificação e tarefas gerais.</span></li></ul>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-gray-400 mb-1.5">Recursos muito pedidos</h3>
+        <ul class="text-sm space-y-1 text-gray-300"><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Melhores práticas para gerenciar custos de LLM em larga escala (para 70-150 desenvolvedores).</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Ferramentas para medir a diferença real de custo entre roteamento e uso de modelos &#39;na fronteira&#39;.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Maneiras de visualizar e gerenciar tabelas de roteamento de forma mais eficaz.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Suporte para usar assinaturas de LLMs (ex: Claude) diretamente com Hermes como modelo.</span></li></ul>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-2">
+    <a href="https://www.reddit.com/r/hermesagent/comments/1uelt0u/example_hermes_usecases" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Example Hermes Usecases</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">I recently installed Hermes agent in my Mac and it is working great. - Uso o Hermes rodando local no Windows, mas a minha interface principal com ele no dia a d</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1tvjjor/choosing_the_best_llm_for_hermes_agent?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Escolhendo o Melhor LLM para o Agente Hermes</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Fonte: ArtificialAnalysis.ai Método: Índice de Inteligência dividido pelo custo (USD por 1M de tokens) Filtro: Apenas modelos com um Índice de Inteligência de p</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1w1pmcg/best_way_to_spend_100month_on_llms_for_hermes" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Best way to spend ~$100/month on LLMs for Hermes Agent? : r/hermesagent</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Skip to main contentBest way to spend ~$100/month on LLMs for Hermes Agent? # Best way to spend ~$100/month on LLMs for Hermes Agent? I&#39;m looking for a good ~$1</div>
+    </a>
+    <a href="https://www.reddit.com/r/LocalLLM/comments/1tebx71/those_who_use_it_why_open_code_over_pi_and_hermes?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/LocalLLM</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Aqueles que usam, por que Código Aberto (sobre Pi e Hermes) : r/LocalLLM</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Aqueles que usam, por que Código Aberto (sobre Pi e Hermes) : r/LocalLLM
+# Aqueles que usam, por que Código Aberto (sobre Pi e Hermes) : r/LocalLLM. Skip</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1u3ii32/can_you_use_claude_subscription_to_hermes_as_a?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Você pode usar a assinatura do Claude para o hermes como modelo? : r/hermesagent</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Você pode usar a assinatura do Claude para o hermes como modelo? : r/hermesagent
+# Você pode usar a assinatura do Claude para o hermes como modelo? Skip </div>
+    </a>
+    <a href="https://www.reddit.com/r/brdev/comments/1twdg4j/hermes_agent_est%C3%A3o_usando" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/brdev</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Hermes Agent, estão usando? : r/brdev</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Hermes Agent, estão usando? : r/brdev
+Skip to main contentHermes Agent, estão usando? Open menu Open navigationGo to Reddit Home. Sign UpSign up for Redd</div>
+    </a>
+    <a href="https://www.reddit.com/r/AI_Agents/comments/1rtvqkn/how_do_large_ai_apps_manage_llm_costs_at_scale?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/AI_Agents</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Como os grandes aplicativos de IA gerenciam os custos de LLM em larga escala? : r/AI_Agents</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Como os grandes aplicativos de IA gerenciam os custos de LLM em larga escala? : r/AI_Agents
+# Como os grandes aplicativos de IA gerenciam os custos de LL</div>
+    </a>
+    <a href="https://www.reddit.com/r/LLMDevs/comments/1tw34p4/has_anyone_measured_the_real_cost_difference?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/LLMDevs</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Alguém mediu a real diferença de custo entre sempre na fronteira e roteamento para modelos eficientes por tarefa? : r/LLMDevs</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Alguém mediu a real diferença de custo entre sempre na fronteira e roteamento para modelos eficientes por tarefa? : r/LLMDevs
+# Alguém mediu a real difer</div>
+    </a></div>
+  </section>
+
+  <section class="bg-gray-90/30 border border-gray-800 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-gray-400 mb-2">📚 Fontes</h2>
+    <ul class="text-xs space-y-1">
+      <li><a class="text-amber-500/80 hover:underline" href="https://techjacksolutions.com/ai-tools/hermes/hermes-multi-llm-workflow" target="_blank" rel="noopener">Hermes Multi-LLM Workflows: Master Guide 2026</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.getmaxim.ai/articles/top-5-best-llm-orchestration-platforms-in-2026" target="_blank" rel="noopener">Top 5 Best LLM Orchestration Platforms in 2026</a></li><li><a class="text-amber-500/80 hover:underline" href="https://the-agent-report.com/2026/06/hermes-agent-ecosystem-2026-pillar" target="_blank" rel="noopener">The Hermes Agent Ecosystem in 2026: 22 Releases, 188K Stars, and the Open-Source Runtime Powering the Agent Economy | The Agent Report</a></li><li><a class="text-amber-500/80 hover:underline" href="https://hermesatlas.com/reports/state-of-hermes-july-2026" target="_blank" rel="noopener">The State of Hermes Agent — July 2026 | Hermes Atlas</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.vellum.ai/llm-leaderboard/ai-assistants/hermes" target="_blank" rel="noopener">Hermes AI Assistant Review 2026 - Features, Pros &amp; Cons</a></li><li><a class="text-amber-500/80 hover:underline" href="https://flowtivity.ai/blog/openclaw-vs-hermes-agent-comparison" target="_blank" rel="noopener">OpenClaw vs Hermes Agent: 2026 Comparison (Updated June) | Flowtivity</a></li><li><a class="text-amber-500/80 hover:underline" href="https://hermes-agent.nousresearch.com/docs/integrations/providers" target="_blank" rel="noopener">LLM and Model Providers | Hermes Agent</a></li><li><a class="text-amber-500/80 hover:underline" href="https://petronellatech.com/blog/hermes-agent-ai-guide" target="_blank" rel="noopener">Hermes AI Agent Framework: Complete 2026 Guide</a></li><li><a class="text-amber-500/80 hover:underline" href="https://hermes-agent.nousresearch.com/docs/integrations/providers" target="_blank" rel="noopener">LLM and Model Providers | Hermes Agent</a></li><li><a class="text-amber-500/80 hover:underline" href="https://hermes-agent.ai/features" target="_blank" rel="noopener">Hermes Agent Features</a></li><li><a class="text-amber-500/80 hover:underline" href="https://blakecrosley.com/guides/hermes" target="_blank" rel="noopener">Hermes Agent: The Practitioner&#39;s Reference (2026)</a></li><li><a class="text-amber-500/80 hover:underline" href="https://petronellatech.com/blog/hermes-agent-ai-guide" target="_blank" rel="noopener">Hermes AI Agent Framework: Complete 2026 Guide</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.reddit.com/search/?q=Hermes%20%E2%80%94%20orquestrador%20de%20LLMs%20multi-provider%20com%20roteamento%20por%20custo%20experience%20review" target="_blank" rel="noopener">Reddit: Hermes — orquestrador de LLMs multi-provider com roteamento por custo experience review</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.reddit.com/search/?q=Hermes%20%E2%80%94%20orquestrador%20de%20LLMs%20multi-provider%20com%20roteamento%20por%20custo%20missing%20feature%20request" target="_blank" rel="noopener">Reddit: Hermes — orquestrador de LLMs multi-provider com roteamento por custo missing feature request</a></li>
+    </ul>
+  </section>
+
+  <footer class="text-center text-[10px] text-gray-600 pt-4">Hermes Control Center · gerado automaticamente pelo Agente Pesquisador + Orquestrador</footer>
+</div>
+
+<script>
+new Chart(document.getElementById('donut'), {
+  type: 'doughnut',
+  data: { labels: ["Bifrost (Maxim AI)","LangChain","LlamaIndex","Haystack","Hermes (Self-hosted/DIY)","Semantic Kernel"],
+          datasets: [{ data: [35,25,15,10,10,5], backgroundColor: ["#f59e0b","#10b981","#3b82f6","#a855f7","#ef4444","#06b6d4"],
+                       borderColor: '#0b0f19', borderWidth: 2, hoverOffset: 8 }] },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '62%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + '%' } }
+    }
+  }
+});
+</script>
+</body></html>

@@ -1,5 +1,6 @@
 {
   "pesquisaAvancada": true,
+  "analiseMercado": false,
   "siteCrm": false,
   "siteProfissional": false
 }

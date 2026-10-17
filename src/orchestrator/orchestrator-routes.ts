@@ -17,6 +17,7 @@ import { getGateway, getVirtualKey } from '../gateway/gateway-singleton.js';
 import { resolveModel } from '../llm/routing-store.js';
 import { researchTask, type ResearchReport } from '../research/researcher.js';
 import { resolveDocs } from '../research/context7.js';
+import { runMarketAnalysis, type MarketReport } from '../market/market-analysis.js';
 import { continuityBlock, remember, saveState, normProject, recall } from '../memory/project-memory.js';
 import { auditLogger } from '../core/audit-logger.js';
 
@@ -24,14 +25,14 @@ const CONFIG_PATH = join(process.cwd(), 'data', 'orchestrator-config.json');
 
 export interface OrchestratorSwitches {
   pesquisaAvancada: boolean;
-  docsContext7: boolean;
+  analiseMercado: boolean;
   siteCrm: boolean;
   siteProfissional: boolean;
 }
 
 const DEFAULT_SWITCHES: OrchestratorSwitches = {
   pesquisaAvancada: false,
-  docsContext7: true,   // default ON: docs atualizados são requisito anti-alucinação
+  analiseMercado: false,
   siteCrm: false,
   siteProfissional: false,
 };
@@ -40,7 +41,10 @@ export function loadSwitches(): OrchestratorSwitches {
   try {
     if (existsSync(CONFIG_PATH)) {
       const raw = JSON.parse(readFileSync(CONFIG_PATH, 'utf8')) as Partial<OrchestratorSwitches>;
-      return { ...DEFAULT_SWITCHES, ...raw };
+      // Descarta chaves obsoletas (ex.: docsContext7 — agora é background fixo).
+      const { docsContext7: _legacy, ...rest } = raw as Record<string, unknown>;
+      void _legacy;
+      return { ...DEFAULT_SWITCHES, ...(rest as Partial<OrchestratorSwitches>) };
     }
   } catch { /* arquivo corrompido → default */ }
   return { ...DEFAULT_SWITCHES };
@@ -121,6 +125,7 @@ interface RunResult {
   project?: string;
   memory?: { continuityInjected: boolean; checkpointSaved: boolean };
   docs?: { context7Fetched: number };
+  market?: { dashboardPath?: string; competitors?: number; verdict?: string; error?: string };
   latencyMs: number;
 }
 
@@ -145,33 +150,32 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     }
   }
 
-  // 0.5) Context7 — REQUISITO FUNDAMENTAL: docs de libs/APIs atualizados antes
-  //      de gerar qualquer código. Evita alucinação de assinatura (o modelo
-  //      "lembra" API desatualizada do treinamento). O doc buscado é PERSISTIDO
-  //      no RAG (kind='doc') → próxima sessão já tem em cache, sem refetch.
+  // 0.5) Context7 — REQUISITO PERMANENTE (roda em background, sem switch):
+  //      docs de libs/APIs atualizados antes de gerar qualquer código. Evita
+  //      alucinação de assinatura (o modelo "lembra" API desatualizada do
+  //      treinamento). O doc buscado é PERSISTIDO no RAG (kind='doc') → próxima
+  //      sessão já tem em cache, sem refetch.
   let docsFetched = 0;
-  if (switches.docsContext7) {
-    try {
-      const docs = await resolveDocs(prompt, { maxLibs: 2 });
-      for (const d of docs) {
-        blocks.push(
-          `DOCUMENTAÇÃO OFICIAL (${d.title}, via Context7 — use EXATAMENTE estas assinaturas):\n` +
-          d.markdown.slice(0, 6000),
-        );
-        docsFetched++;
-        if (proj) {
-          // Persiste: cache de conhecimento por projeto.
-          void remember({
-            project: proj, kind: 'doc',
-            title: `Context7: ${d.title}`,
-            content: d.markdown.slice(0, 8000),
-            tags: ['context7', 'docs'], metadata: { libraryId: d.libraryId },
-          }).catch(() => {});
-        }
+  try {
+    const docs = await resolveDocs(prompt, { maxLibs: 2 });
+    for (const d of docs) {
+      blocks.push(
+        `DOCUMENTAÇÃO OFICIAL (${d.title}, via Context7 — use EXATAMENTE estas assinaturas):\n` +
+        d.markdown.slice(0, 6000),
+      );
+      docsFetched++;
+      if (proj) {
+        // Persiste: cache de conhecimento por projeto.
+        void remember({
+          project: proj, kind: 'doc',
+          title: `Context7: ${d.title}`,
+          content: d.markdown.slice(0, 8000),
+          tags: ['context7', 'docs'], metadata: { libraryId: d.libraryId },
+        }).catch(() => {});
       }
-    } catch (e) {
-      blocks.push(`(Context7 indisponível: ${String(e instanceof Error ? e.message : e)}. Declare a limitação se for crítico.)`);
     }
+  } catch (e) {
+    blocks.push(`(Context7 indisponível: ${String(e instanceof Error ? e.message : e)}. Declare a limitação se for crítico.)`);
   }
 
   // 1) Pesquisa avançada → coleta contexto real antes de responder
@@ -208,6 +212,31 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
       );
     }
   } catch { /* catálogo ainda não semeado — segue sem */ }
+
+  // 3) Análise de mercado (switch) — pipeline pesado: web + notícias + Reddit +
+  //    LLM anti-sicofância → dashboard HTML salvo p/ aba Previews. O resumo cru
+  //    vai ao contexto do orquestrador; o relatório completo vai no resultado.
+  let market: MarketReport | undefined;
+  let marketError: string | undefined;
+  if (switches.analiseMercado) {
+    try {
+      market = await runMarketAnalysis(prompt, { project: proj });
+      blocks.push(
+        'ANÁLISE DE MERCADO (crua, anti-sicofância) — dados coletados de web/notícias/Reddit:\n' +
+        `Resumo: ${market.executiveSummary}\n` +
+        `Veredito: ${market.verdict}\n` +
+        `Fortes: ${market.strengths.join(' | ') || '—'}\n` +
+        `Fracos: ${market.weaknesses.join(' | ') || '—'}\n` +
+        `Concorrentes: ${market.competitors.map((c) => `${c.name} (${c.sharePercent}%)`).join(', ') || '—'}\n` +
+        `Dores (Reddit): ${market.redditInsights.painPoints.join(' | ') || '—'}\n` +
+        `Pedidos (Reddit): ${market.redditInsights.requestedFeatures.join(' | ') || '—'}\n` +
+        `Dashboard salvo em: ${market.dashboardPath}`,
+      );
+    } catch (e) {
+      marketError = e instanceof Error ? e.message : String(e);
+      blocks.push(`(análise de mercado falhou: ${marketError}. Prossiga com o que tem.)`);
+    }
+  }
 
   const systemBase = [
     'Você é o HERMES ORCHESTRATOR — orquestrador técnico sênior, anti-cicofantia.',
@@ -263,6 +292,9 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     project: proj,
     memory: { continuityInjected, checkpointSaved },
     docs: { context7Fetched: docsFetched },
+    market: market
+      ? { dashboardPath: market.dashboardPath, competitors: market.competitors.length, verdict: market.verdict }
+      : (marketError ? { error: marketError } : undefined),
     latencyMs: Date.now() - started,
   };
 }

@@ -22,6 +22,8 @@ import { handlePreview } from './preview/preview-routes.js';
 import { handleResearchRoutes } from './research/research-routes.js';
 import { handleOrchestratorRoutes } from './orchestrator/orchestrator-routes.js';
 import { handleMemoryRoutes } from './memory/memory-routes.js';
+import { handleMarketRoutes } from './market/market-routes.js';
+import { handleOptimizerRoutes } from './optimizer/optimizer-routes.js';
 import {
   testConnection as giteaTestConnection,
   listRepos as giteaListRepos,
@@ -484,6 +486,10 @@ async function bootstrap() {
     if (req.url && req.url.startsWith('/api/orchestrator/') && await handleOrchestratorRoutes(req, res, req.url)) return;
     // Memória de contexto por projeto (pgvector) — continuidade entre sessões/LLMs
     if (req.url && req.url.startsWith('/api/memory/') && await handleMemoryRoutes(req, res, req.url)) return;
+    // Análise de mercado — pipeline web+notícias+Reddit → dashboard HTML interativo
+    if (req.url && req.url.startsWith('/api/market') && await handleMarketRoutes(req, res, req.url)) return;
+    // Otimizador de Prompts — intent→análise fria→pesquisa→expansão→otimização
+    if (req.url && req.url.startsWith('/api/optimizer/') && await handleOptimizerRoutes(req, res, req.url)) return;
     // LLM Center API (same-origin for the dashboard UI; secrets stay masked)
     if (req.url === '/api/llm/state' && req.method === 'GET') {
       try {

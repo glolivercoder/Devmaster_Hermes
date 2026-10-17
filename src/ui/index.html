@@ -137,10 +137,10 @@
             </span>
           </label>
           <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
-            <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="docsContext7" onchange="orchToggle(this)" />
+            <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="analiseMercado" onchange="orchToggle(this)" />
             <span class="text-xs">
-              <span class="text-gray-200 font-semibold">📚 Docs Context7</span>
-              <span class="block text-gray-500 text-[11px] leading-snug">Assinaturas oficiais de libs/APIs atualizadas (requisito anti-alucinação)</span>
+              <span class="text-gray-200 font-semibold">📊 Análise de Mercado</span>
+              <span class="block text-gray-500 text-[11px] leading-snug">Web + notícias + Reddit → dashboard HTML interativo (força/fracos/share/concorrentes)</span>
             </span>
           </label>
           <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
@@ -183,6 +183,9 @@
       </div>
       <div class="flex space-x-2">
         <input type="text" id="prompt-input" onkeydown="if(event.key==='Enter') sendPrompt()" placeholder="Digite um prompt de projeto ou 'integrar github'..." class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500" />
+        <button onclick="openOptimizer()" title="Otimizar prompt (análise fria + pesquisa + reescrita)" class="bg-gray-800 hover:bg-gray-700 border border-amber-700/50 text-amber-300 font-semibold px-4 py-2.5 rounded-lg text-sm transition">
+          ✨ Otimizar
+        </button>
         <button onclick="sendPrompt()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold px-5 py-2.5 rounded-lg text-sm transition">
           Enviar
         </button>
@@ -593,6 +596,69 @@
         <div class="flex justify-end space-x-2 pt-2 border-t border-gray-800">
           <button onclick="closeModal()" class="px-4 py-2 bg-gray-900 text-gray-300 rounded-lg text-xs font-mono hover:bg-gray-800">Cancelar</button>
           <button onclick="submitModalForm()" class="px-4 py-2 bg-amber-500 text-gray-950 font-bold rounded-lg text-xs font-mono hover:bg-amber-600">Salvar & Conectar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Modal: Otimizador de Prompts ─────────────────────────────────── -->
+    <div id="opt-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-3xl h-[90vh] flex flex-col shadow-2xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center border-b border-gray-800 px-5 py-3 shrink-0">
+          <h3 class="text-sm font-bold text-white">✨ Otimizador de Prompts</h3>
+          <button onclick="closeOptimizer()" class="text-gray-500 hover:text-white text-lg leading-none">&times;</button>
+        </div>
+
+        <!-- Step 1: entrada (prompt + PDFs/URLs de contexto) -->
+        <div id="opt-step-input" class="p-5 space-y-3 overflow-y-auto">
+          <label class="block text-[11px] font-mono text-gray-400 uppercase tracking-wider">Prompt a otimizar</label>
+          <textarea id="opt-prompt" rows="4" placeholder="Cole aqui o prompt que você quer otimizar…" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-amber-500"></textarea>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">PDFs de contexto (URLs, uma por linha — opcional)</label>
+              <textarea id="opt-pdfs" rows="2" placeholder="https://exemplo.com/doc.pdf" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-gray-300 focus:outline-none focus:border-amber-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">URLs de documentação (opcional)</label>
+              <textarea id="opt-urls" rows="2" placeholder="https://exemplo.com/docs" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-gray-300 focus:outline-none focus:border-amber-500"></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button id="opt-run-btn" onclick="optRun()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50">
+              ⚙️ Executar pipeline
+            </button>
+          </div>
+          <!-- progresso por etapa -->
+          <div id="opt-progress" class="hidden space-y-1 text-[11px] font-mono text-gray-400" aria-live="polite"></div>
+        </div>
+
+        <!-- Step 2: resultado em abas -->
+        <div id="opt-step-result" class="hidden flex-1 flex flex-col min-h-0">
+          <div class="flex border-b border-gray-800 px-5 shrink-0">
+            <button class="opt-tab px-3 py-2 text-xs font-mono text-amber-400 border-b-2 border-amber-500" data-tab="analise" onclick="optTab('analise')">Análise</button>
+            <button class="opt-tab px-3 py-2 text-xs font-mono text-gray-500 border-b-2 border-transparent" data-tab="fontes" onclick="optTab('fontes')">Fontes</button>
+            <button class="opt-tab px-3 py-2 text-xs font-mono text-gray-500 border-b-2 border-transparent" data-tab="expansao" onclick="optTab('expansao')">Expansão</button>
+            <button class="opt-tab px-3 py-2 text-xs font-mono text-gray-500 border-b-2 border-transparent" data-tab="otimizado" onclick="optTab('otimizado')">Otimizado</button>
+            <button class="opt-tab px-3 py-2 text-xs font-mono text-gray-500 border-b-2 border-transparent" data-tab="confronto" onclick="optTab('confronto')">💬 Confronto</button>
+          </div>
+          <div class="flex-1 overflow-y-auto p-5 space-y-4 text-sm">
+            <div id="opt-pane-analise" class="opt-pane space-y-4"></div>
+            <div id="opt-pane-fontes" class="opt-pane hidden space-y-2"></div>
+            <div id="opt-pane-expansao" class="opt-pane hidden space-y-3"></div>
+            <div id="opt-pane-otimizado" class="opt-pane hidden space-y-3"></div>
+            <div id="opt-pane-confronto" class="opt-pane hidden flex flex-col h-full min-h-0">
+              <div id="opt-chat" class="flex-1 overflow-y-auto space-y-2 mb-2 min-h-[160px]"></div>
+              <div class="flex space-x-2 shrink-0">
+                <input id="opt-chat-input" onkeydown="if(event.key==='Enter') optDiscuss()" placeholder="Confronte as sugestões ou responda à LLM…" class="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500" />
+                <button onclick="optDiscuss()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-4 py-2 rounded-lg text-xs">Confrontar</button>
+              </div>
+            </div>
+          </div>
+          <!-- ações -->
+          <div class="flex justify-between items-center border-t border-gray-800 px-5 py-3 shrink-0">
+            <button onclick="optApply()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs">↩ Usar prompt otimizado no orquestrador</button>
+            <button onclick="optReset()" class="text-gray-500 hover:text-white text-xs font-mono">Nova otimização</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1547,6 +1613,187 @@
       alert(`[HERMES COMPOSIO] Teste do Toolkit ${service}: Conexão bem-sucedida!`);
     }
 
+    // ═══ Otimizador de Prompts ═══════════════════════════════════════════════
+    let OPT_RESULT = null;   // último resultado do pipeline
+    let OPT_MSGS = [];       // histórico da discussão (confronto)
+
+    function escHtml(s){ return String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    function openOptimizer() {
+      const pre = (document.getElementById('prompt-input')?.value || '').trim();
+      document.getElementById('opt-prompt').value = pre;
+      document.getElementById('opt-modal').classList.remove('hidden');
+      document.getElementById('opt-step-input').classList.remove('hidden');
+      document.getElementById('opt-step-result').classList.add('hidden');
+      setTimeout(() => document.getElementById('opt-prompt').focus(), 60);
+    }
+    function closeOptimizer() { document.getElementById('opt-modal').classList.add('hidden'); }
+    function optReset() {
+      OPT_RESULT = null; OPT_MSGS = [];
+      document.getElementById('opt-step-input').classList.remove('hidden');
+      document.getElementById('opt-step-result').classList.add('hidden');
+      document.getElementById('opt-progress').classList.add('hidden');
+      document.getElementById('opt-chat').innerHTML = '';
+    }
+
+    function optProgress(steps, activeIdx) {
+      const el = document.getElementById('opt-progress');
+      el.classList.remove('hidden');
+      el.innerHTML = steps.map((s, i) =>
+        `<div class="${i < activeIdx ? 'text-emerald-400' : i === activeIdx ? 'text-amber-400 animate-pulse' : 'text-gray-600'}">${i < activeIdx ? '✓' : i === activeIdx ? '…' : '·'} ${s}</div>`
+      ).join('');
+    }
+
+    async function optRun() {
+      const prompt = document.getElementById('opt-prompt').value.trim();
+      if (!prompt) { alert('Cole um prompt para otimizar.'); return; }
+      const pdfUrls = document.getElementById('opt-pdfs').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const docUrls = document.getElementById('opt-urls').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const btn = document.getElementById('opt-run-btn');
+      btn.disabled = true; btn.textContent = '⏳ Otimizando…';
+      const steps = ['1. Intent + Análise Fria', '2. Pesquisa (web/PDF/Context7)', '3. Expansão + Otimização'];
+      optProgress(steps, 0);
+      const t = setInterval(() => { /* mantém pulse animado */ }, 1000);
+      try {
+        optProgress(steps, 1);
+        const r = await fetch('/api/optimizer/optimize', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, pdfUrls, docUrls, project: (document.getElementById('mem-project')?.value || '').trim() || undefined })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+        clearInterval(t);
+        optProgress(steps, 3);
+        OPT_RESULT = d; OPT_MSGS = [];
+        renderOptimizer(d);
+      } catch (e) {
+        clearInterval(t);
+        document.getElementById('opt-progress').innerHTML = `<div class="text-red-400">⚠️ ${escHtml(e.message || e)}</div>`;
+      } finally {
+        btn.disabled = false; btn.textContent = '⚙️ Executar pipeline';
+      }
+    }
+
+    function renderOptimizer(d) {
+      document.getElementById('opt-step-input').classList.add('hidden');
+      document.getElementById('opt-step-result').classList.remove('hidden');
+
+      // ── Análise: scores + issues em checklist ──
+      const scores = d.analysis.scores;
+      const scoreRows = Object.entries(scores).map(([k, v]) =>
+        `<div class="flex items-center gap-2"><span class="w-36 text-[11px] text-gray-400">${escHtml(k)}</span>
+         <div class="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden"><div class="h-full rounded-full ${v>=7?'bg-emerald-500':v>=4?'bg-amber-500':'bg-red-500'}" style="width:${v*10}%"></div></div>
+         <span class="w-8 text-[11px] font-mono text-gray-300 text-right">${v}/10</span></div>`).join('');
+      const issues = d.analysis.issues.map((i, idx) =>
+        `<label class="flex gap-2 items-start bg-gray-900/60 border border-gray-800 rounded-lg p-2 cursor-pointer hover:border-amber-700/50">
+          <input type="checkbox" class="opt-issue mt-0.5 accent-amber-500" data-idx="${idx}" checked />
+          <span class="flex-1">
+            <span class="text-[10px] font-mono ${i.severity>=4?'text-red-400':'text-amber-400'}">[${escHtml(i.criterion)} · sev ${i.severity}/5]</span>
+            <span class="block text-xs text-gray-200">${escHtml(i.problem)}</span>
+            <span class="block text-[11px] text-gray-500">Trecho: “${escHtml((i.excerpt||'').slice(0,80))}” · Impacto: ${escHtml(i.impact||'—')}</span>
+          </span>
+        </label>`).join('');
+      document.getElementById('opt-pane-analise').innerHTML = `
+        <div class="bg-gray-900/50 border border-amber-900/40 rounded-lg p-3">
+          <div class="flex justify-between items-baseline"><span class="text-xs font-bold text-amber-400">Nota geral</span>
+          <span class="text-2xl font-mono font-bold ${d.analysis.overallScore>=7?'text-emerald-400':d.analysis.overallScore>=4?'text-amber-400':'text-red-400'}">${d.analysis.overallScore}<span class="text-sm text-gray-500">/10</span></span></div>
+          <p class="text-xs text-gray-400 mt-1">Intenção: ${escHtml(d.intent.summary || d.intent.objective)}</p>
+        </div>
+        <div class="space-y-1.5">${scoreRows}</div>
+        <div><h4 class="text-xs font-bold text-gray-300 mb-1">Problemas (checklist de melhorias)</h4>
+        <div class="space-y-1.5">${issues || '<p class="text-xs text-gray-500">Nenhum problema estrutural apontado.</p>'}</div></div>`;
+
+      // ── Fontes ──
+      document.getElementById('opt-pane-fontes').innerHTML =
+        (d.sources || []).map(s =>
+          `<div class="bg-gray-900/50 border border-gray-800 rounded-lg p-2">
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${s.kind==='context7'?'bg-cyan-900/40 text-cyan-300':s.kind==='pdf'?'bg-purple-900/40 text-purple-300':'bg-emerald-900/40 text-emerald-300'}">${escHtml(s.kind)}</span>
+            <a href="${s.ref.startsWith('http')?escHtml(s.ref):'#'}" target="_blank" rel="noopener" class="text-xs text-amber-500/90 hover:underline ml-2">${escHtml(s.ref)}</a>
+            <p class="text-[11px] text-gray-500 mt-1">${escHtml((s.excerpt||'').slice(0,160))}</p>
+          </div>`).join('') || '<p class="text-xs text-gray-500">Sem fontes externas (só o seu prompt).</p>';
+      if ((d.research?.findings||[]).length) {
+        document.getElementById('opt-pane-fontes').innerHTML += `<div class="mt-3"><h4 class="text-xs font-bold text-gray-300 mb-1">Achados da pesquisa</h4>
+          <ul class="space-y-1">${d.research.findings.map(f=>`<li class="text-xs text-gray-300">• ${escHtml(f)}</li>`).join('')}</ul></div>`;
+      }
+
+      // ── Expansão ──
+      document.getElementById('opt-pane-expansao').innerHTML = `
+        <div class="bg-gray-900/50 border border-gray-800 rounded-lg p-3 text-xs text-gray-200 whitespace-pre-wrap">${escHtml(d.expansion.applied)}</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><h4 class="text-xs font-bold text-emerald-400 mb-1">Recursos ampliados</h4>
+            <ul class="space-y-1">${(d.expansion.addedFeatures||[]).map(f=>`<li class="text-[11px] text-gray-300">+ ${escHtml(f)}</li>`).join('')}</ul></div>
+          <div><h4 class="text-xs font-bold text-gray-400 mb-1">Não inventado (fora da intenção)</h4>
+            <ul class="space-y-1">${(d.expansion.guardrails||[]).map(f=>`<li class="text-[11px] text-gray-500">· ${escHtml(f)}</li>`).join('')}</ul></div>
+        </div>`;
+
+      // ── Otimizado: diff + changelog + copiar ──
+      document.getElementById('opt-pane-otimizado').innerHTML = `
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-bold text-gray-300">Prompt otimizado</h4>
+          <button onclick="optCopy()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1 rounded text-[11px] font-mono">📋 Copiar</button>
+        </div>
+        <pre id="opt-final" class="bg-gray-900 border border-emerald-900/40 rounded-lg p-3 text-xs text-gray-100 whitespace-pre-wrap max-h-64 overflow-y-auto">${escHtml(d.optimize.optimizedPrompt)}</pre>
+        <div><h4 class="text-xs font-bold text-gray-300 mb-1">Diff (linhas novas)</h4>
+          <div class="bg-gray-900 border border-gray-800 rounded-lg p-2 space-y-0.5 max-h-32 overflow-y-auto">
+          ${(d.optimize.diff.changedLines||[]).map(l=>`<div class="text-[11px] font-mono text-emerald-400/90">+ ${escHtml(l)}</div>`).join('') || '<span class="text-[11px] text-gray-500">sem linhas adicionadas além do original</span>'}</div></div>
+        <div><h4 class="text-xs font-bold text-gray-300 mb-1">Changelog</h4>
+          <ul class="space-y-1">${(d.optimize.changelog||[]).map(c=>`<li class="text-[11px]"><span class="text-amber-400">• ${escHtml(c.change)}</span> <span class="text-gray-400">— ${escHtml(c.rationale)}</span>${c.source?` <a class="text-cyan-400/80 hover:underline" href="${escHtml(c.source)}" target="_blank" rel="noopener">[fonte]</a>`:''}</li>`).join('')}</ul></div>`;
+
+      optTab('analise');
+    }
+
+    function optTab(name) {
+      document.querySelectorAll('.opt-tab').forEach(b => {
+        const on = b.dataset.tab === name;
+        b.classList.toggle('text-amber-400', on); b.classList.toggle('border-amber-500', on);
+        b.classList.toggle('text-gray-500', !on); b.classList.toggle('border-transparent', !on);
+      });
+      document.querySelectorAll('.opt-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'opt-pane-' + name));
+    }
+
+    function optCopy() {
+      const txt = document.getElementById('opt-final')?.textContent || '';
+      navigator.clipboard?.writeText(txt);
+    }
+    function optApply() {
+      const txt = document.getElementById('opt-final')?.textContent || '';
+      const input = document.getElementById('prompt-input');
+      if (input) input.value = txt;
+      closeOptimizer();
+    }
+
+    async function optDiscuss() {
+      const inp = document.getElementById('opt-chat-input');
+      const text = inp.value.trim();
+      if (!text || !OPT_RESULT) return;
+      inp.value = '';
+      const chat = document.getElementById('opt-chat');
+      chat.innerHTML += `<div class="text-right"><span class="text-blue-400 font-bold text-[11px]">[VOCÊ]</span> <span class="text-xs text-gray-200">${escHtml(text)}</span></div>`;
+      OPT_MSGS.push({ role: 'user', content: text });
+      chat.innerHTML += `<div id="opt-thinking" class="text-[11px] text-gray-500 italic">pensando…</div>`;
+      chat.scrollTop = chat.scrollHeight;
+      try {
+        const issues = OPT_RESULT.analysis.issues.filter((_, i) => {
+          const cb = document.querySelector(`.opt-issue[data-idx="${i}"]`);
+          return !cb || cb.checked;
+        }).map(i => `[${i.criterion}] ${i.problem}`);
+        const r = await fetch('/api/optimizer/discuss', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: OPT_RESULT.optimize.diff.before, optimized: OPT_RESULT.optimize.optimizedPrompt, issues, messages: OPT_MSGS })
+        });
+        const d = await r.json();
+        document.getElementById('opt-thinking')?.remove();
+        if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+        OPT_MSGS.push({ role: 'assistant', content: d.reply });
+        const q = d.wantsInfo ? '<span class="text-[10px] bg-amber-900/40 text-amber-300 px-1.5 py-0.5 rounded ml-1">❓ LLM quer saber</span>' : '';
+        chat.innerHTML += `<div><span class="text-amber-400 font-bold text-[11px]">[OTIMIZADOR]</span>${q} <span class="text-xs text-gray-200 whitespace-pre-wrap">${escHtml(d.reply)}</span></div>`;
+      } catch (e) {
+        document.getElementById('opt-thinking')?.remove();
+        chat.innerHTML += `<div class="text-[11px] text-red-400">⚠️ ${escHtml(e.message || e)}</div>`;
+      }
+      chat.scrollTop = chat.scrollHeight;
+    }
+
     function sendPrompt() {
       const input = document.getElementById('prompt-input');
       const text = input.value.trim();
@@ -1606,11 +1853,17 @@
           const mem = d.memory
             ? `<div class="mt-1 text-[10px] text-gray-500">🧠 Memória${d.project ? ` <span class="text-cyan-400">${d.project}</span>` : ''}: ${d.memory.continuityInjected ? '✅ continuidade injetada' : '⚪ sem continuidade'} · ${d.memory.checkpointSaved ? '💾 checkpoint salvo' : '⚠️ checkpoint falhou'}</div>`
             : '';
+          const market = d.market
+            ? (d.market.error
+              ? `<div class="mt-1 text-[10px] text-red-400/70">📊 Mercado: ⚠️ análise falhou — ${d.market.error}</div>`
+              : `<div class="mt-1 text-[10px] text-gray-500">📊 Mercado: <a href="/api/market/report/${encodeURIComponent((d.market.dashboardPath||'').split('/').pop())}" target="_blank" rel="noopener" class="text-amber-500/90 hover:underline font-semibold">abrir dashboard interativo ↗</a> · ${d.market.competitors} concorrentes · <span class="text-gray-400">${(d.market.verdict || '').slice(0, 80)}</span></div>`)
+            : '';
           el.innerHTML = `
             <span class="text-amber-400 font-bold">[HERMES ORCHESTRATOR]</span>
             <span class="text-[10px] text-gray-500 float-right font-mono">${d.model} · ${(d.latencyMs / 1000).toFixed(1)}s</span>
             <div class="max-w-none mt-2 text-gray-200 orchestrator-md">${marked.parse(d.reply || '')}</div>
             ${mem}
+            ${market}
             ${research}
           `;
           chat.scrollTop = chat.scrollHeight;

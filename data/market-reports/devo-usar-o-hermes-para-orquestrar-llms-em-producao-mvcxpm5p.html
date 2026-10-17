@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise de Mercado — Devo usar o Hermes para orquestrar LLMs em producao?</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>body{font-family:Inter,system-ui,sans-serif}</style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+<div class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <header class="border-b border-gray-800 pb-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <h1 class="text-2xl font-bold">📊 Análise de Mercado — Devo usar o Hermes para orquestrar LLMs em producao?</h1>
+      <span class="text-xs font-mono text-gray-500">2026-10-17T21:54:39.085Z</span>
+    </div>
+    <p class="text-[11px] text-amber-500/80 mt-1 font-mono">Análise crua e realista (anti-sicofância) · fontes: web, notícias e Reddit</p>
+  </header>
+
+  <section class="bg-gray-900/50 border border-amber-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-amber-400 mb-2">🎯 Resumo executivo</h2>
+    <p class="text-sm text-gray-200 leading-relaxed">Hermes Agent, lançado em fevereiro de 2026 pela Nous Research, é um framework open-source para agentes de IA autônomos e auto-hospedados. Embora tenha alcançado 150.000 estrelas no GitHub e processado 224 bilhões de tokens diários (estimativa) até maio de 2026, sua implementação exige alta proficiência técnica. A plataforma promete auto-aprendizagem e agnóstico de modelo, mas sofre com instabilidade e complexidade de setup.</p>
+  </section>
+
+  <section class="bg-red-950/20 border border-red-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-red-400 mb-2">⚖️ Veredito (sem lisonja)</h2>
+    <p class="text-sm text-gray-200 leading-relaxed">Usar Hermes em produção é uma aposta para equipes com recursos de engenharia robustos e alta tolerância a falhas. Não é uma solução &#39;out-of-the-box&#39; e exige manutenção contínua. Sua proposta de valor é o controle total e a personalização, mas os custos operacionais e de depuração são significativos.</p>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-gray-900/40 border border-emerald-900/40 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-emerald-400 mb-2">✅ Pontos fortes</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>É open-source (MIT license) e auto-hospedado, oferecendo controle máximo sobre dados e infraestrutura.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Possui um loop de auto-aprendizagem que cria e refina habilidades com a experiência do agente.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>É agnóstico de modelo, suportando diversos LLMs (Claude, GPT-4, Gemini, Qwen, DeepSeek, Ollama, vLLM, llama.cpp, SGLang).</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Demonstra alta adoção e engajamento da comunidade, com 150.000 estrelas no GitHub e 224 bilhões de tokens diários (estimativa) em OpenRouter até maio de 2026.</span></li></ul>
+    </section>
+    <section class="bg-gray-900/40 border border-red-900/40 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-red-400 mb-2">⚠️ Pontos fracos</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>O setup é complexo, exigindo conhecimento de VPS, terminal e depuração de arquivos de configuração.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Relatos de instabilidade crítica, como crash-loops com modelos Claude e erros 400 em LLMs no Windows (v0.15.1).</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>O plugin de memória apresenta falhas silenciosas, resultando em perda de contexto e dados (86 falhas não detectadas por 9 dias).</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>A documentação está desatualizada e inconsistente, com 27 inconsistências identificadas em uma auditoria.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Não oferece hospedagem gerenciada; todos os custos de hardware e API são responsabilidade do usuário.</span></li></ul>
+    </section>
+  </div>
+
+  <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-amber-400 mb-3">🥧 Participação de mercado</h2>
+    <div class="grid md:grid-cols-2 gap-6 items-center">
+      <div class="relative h-64"><canvas id="donut"></canvas></div>
+      <div class="space-y-2">
+        
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#f59e0b"></span>
+          <span class="text-sm flex-1">Hermes Agent</span>
+          <span class="text-sm font-mono font-bold text-amber-400">30%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#10b981"></span>
+          <span class="text-sm flex-1">OpenClaw</span>
+          <span class="text-sm font-mono font-bold text-amber-400">25%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#3b82f6"></span>
+          <span class="text-sm flex-1">AIsa</span>
+          <span class="text-sm font-mono font-bold text-amber-400">20%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#a855f7"></span>
+          <span class="text-sm flex-1">Composio</span>
+          <span class="text-sm font-mono font-bold text-amber-400">15%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#ef4444"></span>
+          <span class="text-sm flex-1">LangChain / OpenAI Agent SDK</span>
+          <span class="text-sm font-mono font-bold text-amber-400">10%</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 space-y-2">
+      
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Hermes Agent</span><span class="font-mono">30%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:30%;background:#f59e0b"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>OpenClaw</span><span class="font-mono">25%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:25%;background:#10b981"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>AIsa</span><span class="font-mono">20%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:20%;background:#3b82f6"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Composio</span><span class="font-mono">15%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:15%;background:#a855f7"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>LangChain / OpenAI Agent SDK</span><span class="font-mono">10%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:10%;background:#ef4444"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4 overflow-x-auto">
+    <h2 class="text-sm font-bold text-amber-400 mb-3">🏁 Concorrentes — comparação direta</h2>
+    <table class="w-full text-xs min-w-[700px]">
+      <thead><tr class="text-gray-500 text-left">
+        <th class="px-3 py-2">Player</th><th class="px-3 py-2">Share</th>
+        <th class="px-3 py-2">Posicionamento</th><th class="px-3 py-2">Forte</th><th class="px-3 py-2">Fraco</th>
+      </tr></thead>
+      <tbody>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#f59e0b"></span>Hermes Agent</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">30%</td>
+      <td class="px-3 py-2 text-gray-400">Agente autônomo, auto-hospedado, com foco em auto-aprendizagem e personalização.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Controle total, modelo-agnóstico, comunidade ativa e recursos de auto-melhoria.</td>
+      <td class="px-3 py-2 text-red-400/90">Complexidade de setup, instabilidade crítica e documentação defasada.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#10b981"></span>OpenClaw</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">25%</td>
+      <td class="px-3 py-2 text-gray-400">Motor de orquestração estruturado para agentes de IA, focado em reprodutibilidade.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Estrutura clara para definição de agentes e fluxos, boa para tarefas previsíveis.</td>
+      <td class="px-3 py-2 text-red-400/90">Menos flexível para workflows dinâmicos e troca de contexto em tempo real.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#3b82f6"></span>AIsa</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">20%</td>
+      <td class="px-3 py-2 text-gray-400">Camada de capacidade e rede de transações que unifica acesso a modelos e APIs sob uma única chave.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Simplifica a integração de múltiplos modelos e APIs, reduzindo a complexidade de credenciais.</td>
+      <td class="px-3 py-2 text-red-400/90">Não é um orquestrador de agentes por si só; requer outra ferramenta para a lógica central do agente.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#a855f7"></span>Composio</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">15%</td>
+      <td class="px-3 py-2 text-gray-400">Gateway que oferece acesso a mais de 1500 ferramentas e APIs externas para agentes.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Ampla gama de integrações de ferramentas, modelo de pagamento por chamada flexível.</td>
+      <td class="px-3 py-2 text-red-400/90">Focado principalmente no acesso a ferramentas, não na orquestração complexa de agentes autônomos.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#ef4444"></span>LangChain / OpenAI Agent SDK</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">10%</td>
+      <td class="px-3 py-2 text-gray-400">Frameworks gerais para desenvolvimento de aplicações com LLMs e agentes, com ecossistemas estabelecidos.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Ampla adoção, flexibilidade para diversos casos de uso, vasta documentação e comunidade.</td>
+      <td class="px-3 py-2 text-red-400/90">Pode forçar dependência de LLMs específicos (OpenAI SDK), complexidade para agentes autônomos persistentes.</td>
+    </tr></tbody>
+    </table>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-cyan-400 mb-2">🚀 Oportunidades</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Melhorar a estabilidade dos gateways de LLM e do plugin de memória para mitigar falhas críticas e perda de dados.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Simplificar o processo de instalação e configuração para reduzir a barreira de entrada para novos desenvolvedores.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Desenvolver suporte oficial para plataformas web e mobile, expandindo os canais de interação do agente.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Oferecer uma opção de hospedagem gerenciada (paga) para usuários que buscam menos complexidade operacional.</span></li></ul>
+    </section>
+    <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-red-400 mb-2">💣 Ameaças</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>A concorrência de plataformas mais estáveis e fáceis de usar, como OpenClaw ou frameworks mais maduros como LangChain.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>A rápida evolução dos LLMs pode tornar a arquitetura atual do Hermes obsoleta se não houver adaptação contínua.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Problemas persistentes de estabilidade e documentação inadequada podem afastar desenvolvedores e limitar a adoção.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Dependência de provedores de LLMs de terceiros, sujeitos a mudanças de preços, políticas e disponibilidade.</span></li></ul>
+    </section>
+  </div>
+
+  <section class="bg-gray-900/40 border border-orange-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-orange-400 mb-3">🗣️ Voz do usuário real (Reddit)</h2>
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <h3 class="text-xs font-bold text-gray-400 mb-1.5">Dores recorrentes</h3>
+        <ul class="text-sm space-y-1 text-gray-300"><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Dificuldade e tempo investido na configuração e depuração do Hermes em VPS.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Frustração com a instabilidade e falhas de LLMs locais e integrações.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Gerenciamento complexo de múltiplas credenciais de API e a fragmentação de toolchains.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Questionamento sobre a utilidade real dos agentes de IA e a sensação de &#39;perder a essência&#39;.</span></li></ul>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-gray-400 mb-1.5">Recursos muito pedidos</h3>
+        <ul class="text-sm space-y-1 text-gray-300"><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Melhor roteamento automático de tarefas para o modelo LLM mais adequado.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Capacidade de colaboração entre múltiplos agentes, com um agente supervisor coordenando.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Soluções para unificar o acesso a APIs e modelos, reduzindo a gestão de credenciais.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Maior persistência e memória entre sessões sem a necessidade de configuração manual constante.</span></li></ul>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-2">
+    <a href="https://www.reddit.com/r/brdev/comments/1vgl1be/llm_para_vibe_code_na_cara_dura" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/brdev</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">LLM para vibe code na cara dura : r/brdev</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">vc pode pegar os 2 usar o paseo.sh para orquestrar, e fazer review entre eles, é oq da melhores resultados. Kimi novo tbm é mt bom, mas fica</div>
+    </a>
+    <a href="https://www.reddit.com/r/LocalLLaMA/comments/1sxqa2c/im_done_with_using_local_llms_for_coding?tl=pt-pt" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/LocalLLaMA</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Estou farto de usar LLMs locais para programação</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Usei o Qwen 27B e o Gemma 4 31B, considerados os melhores modelos locais entre os LLMs de várias centenas. Também experimentei várias aplicações</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1tdb404/anthropic_just_proved_the_point_platforms_will?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">A Anthropic acabou de provar o ponto: as plataformas ...</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Projetando nossos fluxos de trabalho para que o orquestrador (Hermes/OpenClaw) seja a peça durável. Modelos vão e vêm. O sistema que roteia</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1tw1gn4/we_had_hermes_openclaw_claude_code_and_codex?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Nós tivemos Hermes, OpenClaw, Claude Code e Codex ...</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Estou experimentando com colaboração entre múltiplos agentes e recentemente fiz um teste onde um agente Supervisor coordenou 5 agentes independentes:</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1wyxh0u/new_to_hermes_agent_what_can_it_actually_do?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">new to hermes agent, what can it actually do?</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Essa era a minha pergunta sobre o Hermes. Talvez meu Dot pudesse controlar a minha equipe do Grokbot que orquestra o meu Hermes, responsável por</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1tgc5mt/just_installed_hermes_for_the_first_time_why_did?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Acabei de instalar o Hermes pela primeira vez. Por que ...</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Então, ontem eu estava usando uma IA sem estado regular e agentes não persistentes. Eu estava inicializando e configurando manualmente eles e alimentando</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1sujoxz/hermes_on_a_vps_am_i_using_it_wrong_for?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Hermes em um VPS: Estou Usando de Forma Errada para ...</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Estou rodando o Hermes em um VPS dedicado com múltiplos perfis e tentando entender o fluxo de trabalho “certo” para tarefas autônomas versus tarefas</div>
+    </a>
+    <a href="https://www.reddit.com/r/hermesagent/comments/1u21zw2/i_built_modeltaskrouter_a_hermes_skill_that?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/hermesagent</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Eu construí model-task-router, uma habilidade do Hermes ...</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Eu construí model-task-router, uma habilidade do Hermes que roteia automaticamente tarefas para o modelo certo. O V4-Pro pontua 8% em</div>
+    </a></div>
+  </section>
+
+  <section class="bg-gray-90/30 border border-gray-800 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-gray-400 mb-2">📚 Fontes</h2>
+    <ul class="text-xs space-y-1">
+      <li><a class="text-amber-500/80 hover:underline" href="https://petronellatech.com/blog/hermes-agent-ai-guide" target="_blank" rel="noopener">Hermes AI Agent Framework: Complete 2026 Guide</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.vellum.ai/blog/official-hermes-agent-breakdown" target="_blank" rel="noopener">Official Hermes Agent Breakdown (2026)</a></li><li><a class="text-amber-500/80 hover:underline" href="https://aisa.one/blog/openclaw-vs-hermes-agent-ai-workflow-review-2026" target="_blank" rel="noopener">OpenClaw vs Hermes Agent: My Experience After Testing Both Tools for Better AI Agent Workflows with AIsa in 2026 - AIsa Blog</a></li><li><a class="text-amber-500/80 hover:underline" href="https://composio.dev/content/hermes-agent-alternatives" target="_blank" rel="noopener">11 Best Hermes Agent Alternatives in 2026: Open Source &amp; Hosted Options Compared | Composio</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.vellum.ai/llm-leaderboard/ai-assistants/hermes" target="_blank" rel="noopener">Hermes AI Assistant Review 2026 - Features, Pros &amp; Cons</a></li><li><a class="text-amber-500/80 hover:underline" href="https://arxiv.org/html/2511.18760v2" target="_blank" rel="noopener">HERMES: Towards Efficient and Verifiable Mathematical Reasoning in LLMs</a></li><li><a class="text-amber-500/80 hover:underline" href="https://gist.github.com/ruvnet/8ed2d402cc98949cd54a1471113cfa94" target="_blank" rel="noopener">Gap analysis: Nous Research Hermes Agent vs. Ruflo (claude-flow) — bidirectional capability comparison + strategic recommendations (2026-05-11) · GitHub</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.leewayhertz.com/comparison-of-llms" target="_blank" rel="noopener">A comparison of LLMs: Evaluating the top large language models</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.youtube.com/watch?v=mU06NTyBsS8" target="_blank" rel="noopener">7 essential steps to using Hermes and creating agents that work for you (complete guide)</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.youtube.com/watch?v=Y3NDtqk6ags" target="_blank" rel="noopener">Nous Research’s Hermes Agent: The Case for Open Models in Production | Arize Observe 2026</a></li><li><a class="text-amber-500/80 hover:underline" href="https://arxiv.org/html/2411.06490v1" target="_blank" rel="noopener">Hermes: A Large Language Model Framework on the Journey to Autonomous Networks</a></li><li><a class="text-amber-500/80 hover:underline" href="https://dev.to/lynkr/hermes-lynkr-the-self-improving-agent-meets-the-universal-llm-proxy-3n11" target="_blank" rel="noopener">Run Hermes Agent on Any Model — Free, Local, and Cost-Routed - DEV Community</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.reddit.com/search/?q=Devo%20usar%20o%20Hermes%20para%20orquestrar%20LLMs%20em%20producao%3F%20experience%20review" target="_blank" rel="noopener">Reddit: Devo usar o Hermes para orquestrar LLMs em producao? experience review</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.reddit.com/search/?q=Devo%20usar%20o%20Hermes%20para%20orquestrar%20LLMs%20em%20producao%3F%20missing%20feature%20request" target="_blank" rel="noopener">Reddit: Devo usar o Hermes para orquestrar LLMs em producao? missing feature request</a></li>
+    </ul>
+  </section>
+
+  <footer class="text-center text-[10px] text-gray-600 pt-4">Hermes Control Center · gerado automaticamente pelo Agente Pesquisador + Orquestrador</footer>
+</div>
+
+<script>
+new Chart(document.getElementById('donut'), {
+  type: 'doughnut',
+  data: { labels: ["Hermes Agent","OpenClaw","AIsa","Composio","LangChain / OpenAI Agent SDK"],
+          datasets: [{ data: [30,25,20,15,10], backgroundColor: ["#f59e0b","#10b981","#3b82f6","#a855f7","#ef4444"],
+                       borderColor: '#0b0f19', borderWidth: 2, hoverOffset: 8 }] },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '62%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + '%' } }
+    }
+  }
+});
+</script>
+</body></html>
