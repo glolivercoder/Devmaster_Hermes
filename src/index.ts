@@ -17,6 +17,8 @@ import { loadDotEnv, ENV_PATH } from './llm/env-loader.js';
 import { resolveModel, explainModel } from './llm/routing-store.js';
 import { benchmarkRanking } from './llm/smart-router.js';
 import { LLM_MODELS } from './llm/models.js';
+import { handleOpencode } from './opencode/opencode-routes.js';
+import { handlePreview } from './preview/preview-routes.js';
 import {
   testConnection as giteaTestConnection,
   listRepos as giteaListRepos,
@@ -469,6 +471,10 @@ async function bootstrap() {
     if (req.url && req.url.startsWith('/api/gitea/') && await handleGitea(req, res, req.url, req.method ?? 'GET')) return;
     // Port & Process Guardian / MCPs — inventário e ações
     if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
+    // OpenCode (IDE multi-agente) — ponte para o servidor headless local (:4196)
+    if (req.url && req.url.startsWith('/api/opencode/') && await handleOpencode(req, res, req.url, req.method ?? 'GET')) return;
+    // Previews — navegador de arquivos + visualizador universal (pdf/md/docx/media/html)
+    if (req.url && req.url.startsWith('/api/preview/') && await handlePreview(req, res, req.url, req.method ?? 'GET')) return;
     // LLM Center API (same-origin for the dashboard UI; secrets stay masked)
     if (req.url === '/api/llm/state' && req.method === 'GET') {
       try {

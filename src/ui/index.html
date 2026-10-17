@@ -10,7 +10,21 @@
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
     code, pre { font-family: 'JetBrains Mono', monospace; }
+    /* Aba Previews — estilo do conteúdo renderizado (markdown/html via CDNs OSS) */
+    #pv-viewer h1, #pv-viewer h2, #pv-viewer h3 { font-weight: 700; margin: .8em 0 .4em; color: #f3f4f6; }
+    #pv-viewer p, #pv-viewer li, #pv-viewer td, #pv-viewer th { color: #d1d5db; margin: .35em 0; }
+    #pv-viewer a { color: #fbbf24; }
+    #pv-viewer table { border-collapse: collapse; margin: .6em 0; }
+    #pv-viewer th, #pv-viewer td { border: 1px solid #374151; padding: .3em .6em; }
+    #pv-viewer img { max-width: 100%; }
   </style>
+  <!-- ── Aba Previews: stacks open-source (PDF.js Apache-2.0 · marked MIT ·
+       highlight.js BSD-3-Clause · mammoth BSD) via CDN ── -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js" defer></script>
 </head>
 <body class="flex h-screen overflow-hidden">
 
@@ -56,6 +70,12 @@
         </button>
         <button onclick="switchTab('historico')" id="tab-btn-historico" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
           <span>📜</span> <span>Histórico &amp; Auditoria</span>
+        </button>
+        <button onclick="switchTab('opencode')" id="tab-btn-opencode" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🤖</span> <span>OpenCode</span>
+        </button>
+        <button onclick="switchTab('preview')" id="tab-btn-preview" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>👁️</span> <span>Previews</span>
         </button>
       </nav>
     </div>
@@ -715,6 +735,62 @@
       </div>
     </section>
 
+    <!-- ── Tab View: OpenCode (multi-agente) ──────────────────────────────── -->
+    <section id="view-opencode" class="hidden flex-1 flex flex-col p-6 space-y-4 overflow-hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-200">OpenCode <span class="text-gray-500 font-normal">(agentes multi-LLM via gateway local — servidor headless :4196)</span></h2>
+        <div class="flex items-center space-x-3 text-xs">
+          <span id="oc-status" class="flex items-center space-x-1.5 text-gray-400 font-mono"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span>verificando...</span></span>
+          <button onclick="ocLoad(true)" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25">⟳ Atualizar / Iniciar</button>
+        </div>
+      </div>
+      <div class="flex-1 flex gap-4 overflow-hidden min-h-0">
+        <!-- Sessões -->
+        <div class="w-72 bg-gray-950 rounded-xl border border-gray-800 flex flex-col overflow-hidden">
+          <div class="p-3 border-b border-gray-800 flex items-center justify-between">
+            <span class="text-xs font-semibold text-gray-300 uppercase tracking-wide">Sessões</span>
+            <button onclick="ocNewSession()" class="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs hover:bg-amber-500/25">＋ Nova</button>
+          </div>
+          <div id="oc-sessions" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs"></div>
+        </div>
+        <!-- Chat com o agente -->
+        <div class="flex-1 flex flex-col bg-gray-950 rounded-xl border border-gray-800 overflow-hidden">
+          <div class="p-3 border-b border-gray-800 flex items-center justify-between space-x-3">
+            <span id="oc-active-session" class="text-xs font-mono text-gray-400 truncate">nenhuma sessão selecionada</span>
+            <select id="oc-model" title="Modelo do agente" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 max-w-xs"></select>
+          </div>
+          <div id="oc-messages" class="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs"></div>
+          <div class="p-3 border-t border-gray-800 flex space-x-2">
+            <input id="oc-prompt" type="text" placeholder="Peça algo ao agente... (Enter envia)" onkeydown="if(event.key==='Enter') ocSend()" class="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-amber-500" />
+            <button id="oc-send-btn" onclick="ocSend()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold px-4 py-2 rounded-lg text-xs transition disabled:opacity-50">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tab View: Previews (visualizador universal) ────────────────────── -->
+    <section id="view-preview" class="hidden flex-1 flex flex-col p-6 space-y-4 overflow-hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-gray-200">Previews <span class="text-gray-500 font-normal">(PDF.js · marked · highlight.js · mammoth · mídia · HTML sandbox)</span></h2>
+        <div class="flex items-center space-x-3 text-xs font-mono text-gray-400">
+          <span id="pv-crumb">/</span>
+          <button onclick="pvLoad('')" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25">⟳ Raiz</button>
+        </div>
+      </div>
+      <div class="flex-1 flex gap-4 overflow-hidden min-h-0">
+        <!-- Árvore de arquivos -->
+        <div class="w-80 bg-gray-950 rounded-xl border border-gray-800 flex flex-col overflow-hidden">
+          <div class="p-3 border-b border-gray-800 text-xs font-semibold text-gray-300 uppercase tracking-wide">Arquivos do projeto</div>
+          <div id="pv-tree" class="flex-1 overflow-y-auto p-2 text-xs font-mono"></div>
+        </div>
+        <!-- Visualização -->
+        <div class="flex-1 bg-gray-950 rounded-xl border border-gray-800 flex flex-col overflow-hidden">
+          <div id="pv-head" class="p-3 border-b border-gray-800 text-xs font-mono text-gray-400 truncate">selecione um arquivo para visualizar</div>
+          <div id="pv-viewer" class="flex-1 overflow-auto p-4"></div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -953,12 +1029,225 @@
       } catch (e) { if (!silent) alert('ERRO: ' + e.message); }
     }
 
+    // ── OpenCode (aba multi-agente) ──
+    let ocState = { sessions: [], active: null, busy: false };
+
+    // Seguro para onclick inline: JSON com aspas simples escapadas p/ atributo HTML.
+    function oq(s) { return JSON.stringify(String(s)).replace(/'/g, '&#39;'); }
+
+    async function ocLoad(startIfNeeded) {
+      try {
+        let st = await llmFetch('/api/opencode/status');
+        if (!st.running && startIfNeeded) {
+          document.getElementById('oc-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span><span>iniciando servidor...</span>';
+          st = await llmFetch('/api/opencode/start', { method: 'POST' });
+        }
+        const dot = st.running ? 'bg-emerald-500 animate-pulse' : 'bg-red-500/70';
+        document.getElementById('oc-status').innerHTML = `<span class="w-2 h-2 rounded-full ${dot}"></span><span>${st.running ? 'servidor :' + st.port + ' ativo' : 'servidor offline'}</span>`;
+        if (!st.running) {
+          document.getElementById('oc-sessions').innerHTML = '<div class="p-3 text-gray-500">Servidor OpenCode offline. Clique em "⟳ Atualizar / Iniciar" para subir sob demanda.</div>';
+          return;
+        }
+        const data = await llmFetch('/api/opencode/sessions');
+        ocState.sessions = data.sessions || [];
+        ocRenderSessions();
+        ocLoadModels();
+      } catch (e) {
+        document.getElementById('oc-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span><span>erro: ${esc(e.message)}</span>`;
+      }
+    }
+
+    function ocRenderSessions() {
+      const el = document.getElementById('oc-sessions');
+      if (!ocState.sessions.length) { el.innerHTML = '<div class="p-3 text-gray-500">Nenhuma sessão. Clique em "＋ Nova".</div>'; return; }
+      el.innerHTML = ocState.sessions.map(s => `
+        <button onclick='ocOpenSession(${oq(s.id)})' class="w-full text-left p-2 rounded-lg border ${ocState.active === s.id ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-transparent text-gray-300 hover:bg-gray-900'}">
+          <div class="font-semibold truncate">${esc(s.title || s.slug || s.id)}</div>
+          <div class="text-[10px] text-gray-500 truncate">${esc(s.id)} · ${esc(s.directory || '')}</div>
+        </button>`).join('');
+    }
+
+    async function ocLoadModels() {
+      try {
+        const d = await llmFetch('/api/opencode/models');
+        const sel = document.getElementById('oc-model');
+        const cur = sel.value;
+        const opts = (d.models || []).map(m => `<option value="${esc(m.id)}">${esc(m.id)}</option>`).join('');
+        sel.innerHTML = opts || '<option value="opencode-omniroute/kr/auto">opencode-omniroute/kr/auto</option>';
+        if (cur) sel.value = cur;
+      } catch { /* seletor fica com o default */ }
+    }
+
+    async function ocNewSession() {
+      try {
+        const s = await llmFetch('/api/opencode/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Hermes ' + new Date().toLocaleString() }) });
+        await ocLoad();
+        if (s && s.id) await ocOpenSession(s.id);
+      } catch (e) { alert('Erro ao criar sessão: ' + e.message); }
+    }
+
+    async function ocOpenSession(id) {
+      ocState.active = id;
+      ocRenderSessions();
+      document.getElementById('oc-active-session').innerText = 'sessão ' + id;
+      await ocRenderMessages();
+    }
+
+    async function ocRenderMessages() {
+      const el = document.getElementById('oc-messages');
+      if (!ocState.active) { el.innerHTML = '<div class="text-gray-500 p-2">Selecione ou crie uma sessão para conversar com o agente.</div>'; return; }
+      try {
+        const d = await llmFetch(`/api/opencode/sessions/${encodeURIComponent(ocState.active)}/messages`);
+        el.innerHTML = (d.messages || []).map(ocMessageHtml).join('') || '<div class="text-gray-500 p-2">Sessão vazia — envie o primeiro prompt.</div>';
+        el.scrollTop = el.scrollHeight;
+      } catch (e) { el.innerHTML = `<div class="text-red-400 p-2">Erro: ${esc(e.message)}</div>`; }
+    }
+
+    function ocMessageHtml(m) {
+      const info = m.info || {};
+      const role = info.role || 'assistant';
+      const who = role === 'user' ? '👤 você' : `🤖 ${info.providerID && info.modelID ? info.providerID + '/' + info.modelID : 'opencode'}`;
+      const body = (m.parts || []).map(p => {
+        if (p.type === 'text' && p.text) return `<div class="whitespace-pre-wrap break-words">${esc(p.text)}</div>`;
+        if (p.type === 'reasoning') return `<details class="text-gray-500 mt-1"><summary class="cursor-pointer select-none">🧠 raciocínio</summary><div class="whitespace-pre-wrap mt-1">${esc(p.text || '')}</div></details>`;
+        if (p.type === 'tool') return `<span class="inline-block px-1.5 py-0.5 rounded bg-gray-800 text-amber-300/90 mr-1 mb-1">🔧 ${esc(p.tool || (p.state && p.state.tool) || 'tool')}</span>`;
+        if (p.type === 'file') return `<span class="text-gray-400">📎 ${esc(p.filename || 'arquivo')}</span>`;
+        if (p.type === 'patch') return '<span class="text-emerald-400">📄 patch</span>';
+        if (p.type === 'step-error') return `<div class="text-red-400">⚠️ ${esc(p.error || 'erro no passo')}</div>`;
+        return '';
+      }).join('');
+      const cls = role === 'user' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-gray-900/80 border-gray-800';
+      return `<div class="border ${cls} p-3 rounded-lg"><div class="text-[10px] font-bold text-amber-400 mb-1">${who}</div>${body || '<span class="text-gray-600">(sem conteúdo)</span>'}</div>`;
+    }
+
+    async function ocSend() {
+      const input = document.getElementById('oc-prompt');
+      const text = input.value.trim();
+      if (!text || ocState.busy) return;
+      if (!ocState.active) { await ocNewSession(); if (!ocState.active) return; }
+      ocState.busy = true;
+      const btn = document.getElementById('oc-send-btn');
+      btn.disabled = true; btn.innerText = 'Pensando...';
+      input.value = '';
+      const el = document.getElementById('oc-messages');
+      el.insertAdjacentHTML('beforeend', `<div class="border border-amber-500/20 bg-amber-500/5 p-3 rounded-lg"><div class="text-[10px] font-bold text-amber-400 mb-1">👤 você</div><div class="whitespace-pre-wrap">${esc(text)}</div></div>`);
+      el.scrollTop = el.scrollHeight;
+      try {
+        const model = document.getElementById('oc-model').value || 'opencode-omniroute/kr/auto';
+        await llmFetch(`/api/opencode/sessions/${encodeURIComponent(ocState.active)}/messages`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, model }),
+        });
+        await ocRenderMessages();
+        ocLoad(); // atualiza lista de sessões
+      } catch (e) {
+        el.insertAdjacentHTML('beforeend', `<div class="text-red-400 text-xs p-2">ERRO: ${esc(e.message)}</div>`);
+      }
+      ocState.busy = false; btn.disabled = false; btn.innerText = 'Enviar';
+    }
+
+    // ── Previews (visualizador universal de arquivos) ──
+    let pvDir = '';
+
+    async function pvLoad(dir) {
+      pvDir = dir || '';
+      document.getElementById('pv-crumb').innerText = '/' + pvDir;
+      const el = document.getElementById('pv-tree');
+      try {
+        const d = await llmFetch('/api/preview/tree?path=' + encodeURIComponent(pvDir));
+        const up = pvDir ? `<button onclick='pvLoad(${oq(pvParent())})' class="block w-full text-left p-1.5 rounded text-gray-400 hover:bg-gray-900 hover:text-white">⬅ ..</button>` : '';
+        el.innerHTML = up + (d.entries || []).map(e => {
+          const full = (pvDir ? pvDir + '/' : '') + e.name;
+          return e.type === 'dir'
+            ? `<button onclick='pvLoad(${oq(full)})' class="block w-full text-left p-1.5 rounded text-gray-300 hover:bg-gray-900 hover:text-white">📁 ${esc(e.name)}</button>`
+            : `<button onclick='pvOpen(${oq(full)})' class="block w-full text-left p-1.5 rounded text-gray-400 hover:bg-gray-900 hover:text-white truncate">📄 ${esc(e.name)} <span class="text-gray-600">${pvHuman(e.size)}</span></button>`;
+        }).join('') || '<div class="p-3 text-gray-500">(diretório vazio)</div>';
+      } catch (e) { el.innerHTML = `<div class="p-3 text-red-400">${esc(e.message)}</div>`; }
+    }
+
+    function pvParent() { const i = pvDir.lastIndexOf('/'); return i < 0 ? '' : pvDir.slice(0, i); }
+
+    function pvHuman(b) {
+      if (b == null) return '';
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+      return (b / 1048576).toFixed(1) + ' MB';
+    }
+
+    async function pvOpen(path) {
+      const head = document.getElementById('pv-head');
+      const el = document.getElementById('pv-viewer');
+      head.innerText = '/' + path;
+      el.innerHTML = '<div class="text-gray-500 text-xs animate-pulse">carregando preview...</div>';
+      const url = '/api/preview/raw?path=' + encodeURIComponent(path);
+      const ext = (path.split('.').pop() || '').toLowerCase();
+      try {
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'ico', 'bmp'].includes(ext)) {
+          el.innerHTML = `<img src="${url}" class="max-w-full max-h-full mx-auto rounded-lg shadow-lg" />`;
+        } else if (['mp4', 'webm', 'mov', 'mkv'].includes(ext)) {
+          el.innerHTML = `<video src="${url}" controls class="max-w-full max-h-full mx-auto rounded-lg"></video>`;
+        } else if (['mp3', 'wav', 'ogg', 'opus', 'flac', 'm4a'].includes(ext)) {
+          el.innerHTML = `<div class="flex items-center justify-center h-full"><audio src="${url}" controls></audio></div>`;
+        } else if (ext === 'pdf') {
+          await pvRenderPdf(url, el);
+        } else if (['md', 'markdown'].includes(ext)) {
+          const t = await (await fetch(url)).text();
+          el.innerHTML = window.marked
+            ? `<div class="max-w-none">${marked.parse(t)}</div>`
+            : `<pre class="text-xs">${esc(t)}</pre>`;
+        } else if (ext === 'docx') {
+          const buf = await (await fetch(url)).arrayBuffer();
+          if (window.mammoth) {
+            const r = await mammoth.convertToHtml({ arrayBuffer: buf });
+            el.innerHTML = `<div class="max-w-none text-gray-200" style="line-height:1.7">${r.value}</div>`;
+          } else {
+            el.innerHTML = '<div class="text-gray-500 text-xs">mammoth.js indisponível (CDN offline?)</div>';
+          }
+        } else if (['html', 'htm'].includes(ext)) {
+          el.innerHTML = `<iframe src="${url}" sandbox="allow-scripts" class="w-full rounded-lg border border-gray-800 bg-white" style="min-height:95%;height:100%"></iframe>`;
+        } else {
+          const t = await (await fetch(url)).text();
+          const lang = pvLangClass(ext);
+          el.innerHTML = `<pre class="text-xs leading-relaxed" style="background:#111827;padding:1rem;border-radius:.5rem"><code class="language-${lang} hljs">${esc(t)}</code></pre>`;
+          if (window.hljs) hljs.highlightElement(el.querySelector('code'));
+        }
+      } catch (e) { el.innerHTML = `<div class="text-red-400 text-xs">Erro ao carregar: ${esc(e.message)}</div>`; }
+    }
+
+    function pvLangClass(ext) {
+      const map = { js: 'javascript', mjs: 'javascript', cjs: 'javascript', ts: 'typescript', tsx: 'typescript', jsx: 'javascript', py: 'python', yml: 'yaml', yaml: 'yaml', sh: 'bash', ps1: 'powershell', md: 'markdown' };
+      return map[ext] || ext;
+    }
+
+    async function pvRenderPdf(url, el) {
+      el.innerHTML = '<div id="pv-pdf-pages" class="space-y-4"></div>';
+      if (!window.pdfjsLib) { // fallback: iframe nativo do navegador
+        el.innerHTML = `<iframe src="${url}" class="w-full rounded-lg border border-gray-800" style="min-height:95%;height:100%"></iframe>`;
+        return;
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      const doc = await pdfjsLib.getDocument(url).promise;
+      const holder = document.getElementById('pv-pdf-pages');
+      const max = Math.min(doc.numPages, 30);
+      for (let n = 1; n <= max; n++) {
+        const page = await doc.getPage(n);
+        const viewport = page.getViewport({ scale: 1.4 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        canvas.className = 'mx-auto rounded-lg border border-gray-800';
+        holder.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      }
+      if (doc.numPages > max) holder.insertAdjacentHTML('beforeend', `<div class="text-gray-500 text-xs text-center">mostrando ${max} de ${doc.numPages} páginas</div>`);
+    }
+
     function switchTab(tab) {
       if (tab === 'gateway') loadLlmCenter();
       if (tab === 'versionamento') loadVersionamento();
       if (tab === 'historico') loadHistorico();
       if (tab === 'mcps') loadPortsInventory();
-      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico'];
+      if (tab === 'opencode') ocLoad();
+      if (tab === 'preview') pvLoad('');
+      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico', 'opencode', 'preview'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
