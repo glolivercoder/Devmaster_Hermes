@@ -101,9 +101,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── PostgreSQL (LiteLLM Virtual Keys & Budget Tracking) ──────────────────
+  # ─── PostgreSQL (LiteLLM Virtual Keys & Budget Tracking + Memória vetorial) ─
+  # Imagem pgvector: PG16 vanilla + extensão `vector` (embeddings) pré-compilada.
+  # Mesmo major (16) → volume hermes_pg_data existente é preservado.
+  # Obs.: não existe variante alpine do pgvector → usa bookworm (Debian).
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: hermes-postgres
     ports:
       - "5434:5432"    # 5433 já ocupado pelo evolution_postgres neste host

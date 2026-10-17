@@ -169,6 +169,34 @@ export async function routeIntelligently(
   // "crítico → pago".
   if (isPrimary && pool.some((m) => !m.free)) pool = pool.filter((m) => !m.free);
 
+  // Preferência do operador: em modo 'auto' a escolha da UI (routes[targetId])
+  // é o PADRÃO — honrada enquanto estiver saudável. O smart-router só DESVIA
+  // quando o escolhido está indisponível (provider sem chave) ou DOENTE
+  // (benchmark com maioria de falhas — ex.: provider com saldo estourado).
+  // Sem esta regra, modelos do tier '$' mais barato venciam a escolha
+  // explícita do operador apenas por custo menor, ignorando a intenção humana.
+  const overrideModel = opts.override ? LLM_MODELS.find((m) => m.id === opts.override) : undefined;
+  let deviatedFromSickOverride = false;
+  if (overrideModel && pool.some((m) => m.id === overrideModel.id)) {
+    const b = store.models[overrideModel.id];
+    const sick = !!b && b.calls >= 2 && (b.success / b.calls) < 0.5;
+    if (!sick) {
+      return {
+        targetId,
+        modelId: overrideModel.id,
+        reason: b && b.calls > 0
+          ? `Preferência do operador (${overrideModel.id}) — benchmark saudável (${(b.success / b.calls * 100).toFixed(0)}% de sucesso).`
+          : `Preferência do operador (${overrideModel.id}) — sem histórico que justifique desviar.`,
+        delegatedFree: overrideModel.free,
+        confidence: b && b.calls > 0 ? Math.min(1, 0.5 + b.success / (b.calls * 2)) : 0.5,
+        candidates: [],
+      };
+    }
+    // Override doente → exclui do pool e deixa o benchmark escolher substituto.
+    deviatedFromSickOverride = true;
+    pool = pool.filter((m) => m.id !== overrideModel.id);
+  }
+
   // Pontuação composta: qualidade_do_benchmark / (peso_de_custo).
   // Tarefas secundárias recebem BÔNUS em modelos free (multiplicador < 1 no
   // custo), empurrando a delegação para LLMs gratuitas.
@@ -190,17 +218,20 @@ export async function routeIntelligently(
   const bench = store.models[winner?.modelId ?? ''];
 
   // Razão legível.
+  const sickNote = deviatedFromSickOverride
+    ? ` Preferência do operador (${opts.override}) desviada por instabilidade no benchmark.`
+    : '';
   let reason: string;
   if (!winner) {
     reason = 'Nenhum modelo disponível (nenhum provider configurado).';
   } else if (isPrimary && chosen?.free) {
     reason = `Tarefa crítica sem pago configurado — usando gratuito ${chosen.id}.`;
   } else if (!isPrimary && chosen?.free) {
-    reason = `Tarefa secundária delegada a LLM gratuita (${chosen.id}) — custo zero.`;
+    reason = `Tarefa secundária delegada a LLM gratuita (${chosen.id}) — custo zero.${sickNote}`;
   } else if (bench && bench.calls > 0) {
-    reason = `Melhor score custo/benefício: ${winner.modelId} (sucesso ${(bench.success / bench.calls * 100).toFixed(0)}%, latência ${bench.avgLatencyMs}ms).`;
+    reason = `Melhor score custo/benefício: ${winner.modelId} (sucesso ${(bench.success / bench.calls * 100).toFixed(0)}%, latência ${bench.avgLatencyMs}ms).${sickNote}`;
   } else {
-    reason = `Melhor custo/benefício sem histórico: ${winner.modelId} (tier ${chosen?.costTier}).`;
+    reason = `Melhor custo/benefício sem histórico: ${winner.modelId} (tier ${chosen?.costTier}).${sickNote}`;
   }
 
   return {

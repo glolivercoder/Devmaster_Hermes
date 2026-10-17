@@ -26,6 +26,10 @@ export type HermesEventMap = {
   'llm:request':   [{ model: string; virtualKey: string; estimatedTokens: number }];
   'llm:response':  [{ model: string; virtualKey: string; tokensUsed: number; costUsd: number }];
 
+  // Agente Pesquisador (scraping + search APIs)
+  'research:started':   [{ query: string }];
+  'research:completed': [{ query: string; model: string }];
+
   // Telegram bridge
   'telegram:message:in':  [{ chatId: string; text: string; timestamp: Date }];
   'telegram:message:out': [{ chatId: string; text: string; timestamp: Date }];

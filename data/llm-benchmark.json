@@ -1,0 +1,44 @@
+{
+  "models": {
+    "gemini-flash-free": {
+      "calls": 1,
+      "success": 0,
+      "failures": 1,
+      "avgLatencyMs": 1350,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-17T18:57:58.936Z"
+    },
+    "claude-fast": {
+      "calls": 2,
+      "success": 0,
+      "failures": 2,
+      "avgLatencyMs": 627,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-17T19:00:43.894Z"
+    },
+    "openrouter-vision-free": {
+      "calls": 1,
+      "success": 0,
+      "failures": 1,
+      "avgLatencyMs": 875,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-17T19:00:43.234Z"
+    },
+    "gemini-flash": {
+      "calls": 4,
+      "success": 3,
+      "failures": 1,
+      "avgLatencyMs": 7381,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-17T19:53:27.101Z"
+    },
+    "cheaper-opus": {
+      "calls": 3,
+      "success": 3,
+      "failures": 0,
+      "avgLatencyMs": 17416,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-17T19:53:47.193Z"
+    }
+  }
+}

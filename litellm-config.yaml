@@ -18,12 +18,12 @@ model_list:
 
   - model_name: gemini-flash         # fast + cheap, code tasks
     litellm_params:
-      model: gemini/gemini-2.0-flash
+      model: gemini/gemini-2.5-flash
       api_key: os.environ/GEMINI_API_KEY
 
   - model_name: gemini-flash-free    # same model, free-tier key pool
     litellm_params:
-      model: gemini/gemini-2.0-flash
+      model: gemini/gemini-2.5-flash
       api_key: os.environ/GEMINI_API_KEY
 
   # ─── OpenRouter (auto-routing) ────────────────────────────────────────────

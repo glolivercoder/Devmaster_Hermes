@@ -17,6 +17,19 @@
     #pv-viewer table { border-collapse: collapse; margin: .6em 0; }
     #pv-viewer th, #pv-viewer td { border: 1px solid #374151; padding: .3em .6em; }
     #pv-viewer img { max-width: 100%; }
+    /* Orquestrador — resposta em markdown */
+    .orchestrator-md h1, .orchestrator-md h2, .orchestrator-md h3 { font-weight: 700; margin: .8em 0 .4em; color: #f3f4f6; }
+    .orchestrator-md h1 { font-size: 1.05rem; } .orchestrator-md h2 { font-size: .98rem; } .orchestrator-md h3 { font-size: .92rem; }
+    .orchestrator-md p, .orchestrator-md li { margin: .4em 0; line-height: 1.55; }
+    .orchestrator-md ul, .orchestrator-md ol { padding-left: 1.3em; }
+    .orchestrator-md ul { list-style: disc; } .orchestrator-md ol { list-style: decimal; }
+    .orchestrator-md a { color: #fbbf24; }
+    .orchestrator-md code { background: #111827; border: 1px solid #1f2937; padding: 0 .35em; border-radius: 4px; font-size: .85em; }
+    .orchestrator-md pre { background: #0d1117; border: 1px solid #1f2937; border-radius: 8px; padding: .7em; overflow-x: auto; margin: .6em 0; }
+    .orchestrator-md pre code { background: none; border: none; padding: 0; }
+    .orchestrator-md blockquote { border-left: 3px solid #92400e; padding-left: .8em; color: #9ca3af; margin: .5em 0; }
+    .orchestrator-md table { border-collapse: collapse; margin: .6em 0; }
+    .orchestrator-md th, .orchestrator-md td { border: 1px solid #374151; padding: .3em .6em; }
   </style>
   <!-- ── Aba Previews: stacks open-source (PDF.js Apache-2.0 · marked MIT ·
        highlight.js BSD-3-Clause · mammoth BSD) via CDN ── -->
@@ -109,6 +122,53 @@
 
     <!-- ─── Tab View: Orchestrator Chat ─────────────────────────────────── -->
     <section id="view-orchestrator" class="flex-1 flex flex-col p-6 space-y-4">
+      <!-- Switchs de capacidade do orquestrador -->
+      <div class="bg-gray-950 rounded-xl border border-gray-800 p-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Capacidades do Orquestrador</span>
+          <span id="orch-config-badge" class="text-[10px] font-mono text-gray-600">carregando…</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
+            <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="pesquisaAvancada" onchange="orchToggle(this)" />
+            <span class="text-xs">
+              <span class="text-gray-200 font-semibold">🔎 Pesquisa avançada</span>
+              <span class="block text-gray-500 text-[11px] leading-snug">Scraping (curl_cffi/SeleniumBase/Botasaurus) + Tavily, SerpAPI, Brave, Linkup</span>
+            </span>
+          </label>
+          <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
+            <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="siteCrm" onchange="orchToggle(this)" />
+            <span class="text-xs">
+              <span class="text-gray-200 font-semibold">🏢 Site com CRM</span>
+              <span class="block text-gray-500 text-[11px] leading-snug">Site + login admin + CRM inspirado em Odoo e Twenty</span>
+            </span>
+          </label>
+          <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
+            <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="siteProfissional" onchange="orchToggle(this)" />
+            <span class="text-xs">
+              <span class="text-gray-200 font-semibold">🎨 Site Profissional</span>
+              <span class="block text-gray-500 text-[11px] leading-snug">DESIGN.md + shadcn/ui + Tailwind v4 + Motion/GSAP + Figma MCP</span>
+            </span>
+          </label>
+        </div>
+        <!-- Memória de contexto por projeto (pgvector) -->
+        <div class="mt-3 pt-3 border-t border-gray-800 flex flex-wrap items-center gap-2">
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🧠 Memória</span>
+          <input type="text" id="mem-project" list="mem-projects"
+                 placeholder="nome do projeto (ex.: hermes-core)"
+                 class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-1.5 text-xs font-mono w-64 focus:outline-none focus:border-amber-500" />
+          <datalist id="mem-projects"></datalist>
+          <span id="mem-status" class="text-[10px] font-mono text-gray-600">—</span>
+          <button onclick="memSaveCheckpoint()" title="Grava agora um checkpoint manual"
+                  class="text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            💾 Checkpoint
+          </button>
+          <button onclick="memShowContinuity()" title="Ver 'onde o código parou'"
+                  class="text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            🕘 Continuidade
+          </button>
+        </div>
+      </div>
       <div class="flex-1 bg-gray-950 rounded-xl border border-gray-800 p-4 overflow-y-auto space-y-4 font-mono text-xs" id="chat-messages">
         <div class="bg-gray-900/80 border border-gray-800 p-3 rounded-lg text-gray-300">
           <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Sistema pronto. Envie ideias de projeto ou comandos para integrar serviços via Composio (ex.: <code>"integre o github"</code> ou <code>"conectar slack"</code>).
@@ -1515,15 +1575,147 @@
           chat.scrollTop = chat.scrollHeight;
         }, 400);
       } else {
+        // ── Run real via backend (orquestrador + switches de capacidade) ──
+        const caps = [...document.querySelectorAll('.orch-switch:checked')].map(c => c.dataset.key);
+        const proj = (document.getElementById('mem-project')?.value || '').trim();
+        const thinkingId = 'orch-' + Date.now();
         chat.innerHTML += `
-          <div class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-gray-300">
-            <span class="text-amber-400 font-bold">[HERMES DEVIL'S ADVOCATE]</span> Analisando viabilidade técnica, atrito de mercado e requisitos de portas/segurança...
+          <div id="${thinkingId}" class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-gray-300">
+            <span class="text-amber-400 font-bold">[HERMES ORCHESTRATOR]</span> ${caps.length ? `capacidades ativas: <em class="text-amber-300">${caps.join(', ')}</em> — ` : ''}${proj ? `projeto: <em class="text-cyan-300">${proj}</em> — ` : ''}analisando viabilidade técnica, atrito de mercado e requisitos...
           </div>
         `;
+        fetch('/api/orchestrator/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: text, project: proj || undefined })
+        })
+        .then(async r => {
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+          const el = document.getElementById(thinkingId);
+          const research = d.research
+            ? `<div class="mt-2 pt-2 border-t border-gray-800 text-[10px] text-gray-500">🔎 Pesquisa: ${d.research.sources.length} fontes via <strong>${d.research.searchProvider}</strong> — ${d.research.sources.map(s => `<a href="${s.url}" target="_blank" rel="noopener" class="text-amber-500/80 hover:underline">${(s.title || s.url).slice(0, 40)}</a>`).join(' · ')}</div>`
+            : '';
+          const mem = d.memory
+            ? `<div class="mt-1 text-[10px] text-gray-500">🧠 Memória${d.project ? ` <span class="text-cyan-400">${d.project}</span>` : ''}: ${d.memory.continuityInjected ? '✅ continuidade injetada' : '⚪ sem continuidade'} · ${d.memory.checkpointSaved ? '💾 checkpoint salvo' : '⚠️ checkpoint falhou'}</div>`
+            : '';
+          el.innerHTML = `
+            <span class="text-amber-400 font-bold">[HERMES ORCHESTRATOR]</span>
+            <span class="text-[10px] text-gray-500 float-right font-mono">${d.model} · ${(d.latencyMs / 1000).toFixed(1)}s</span>
+            <div class="max-w-none mt-2 text-gray-200 orchestrator-md">${marked.parse(d.reply || '')}</div>
+            ${mem}
+            ${research}
+          `;
+          chat.scrollTop = chat.scrollHeight;
+        })
+        .catch(err => {
+          const el = document.getElementById(thinkingId);
+          if (el) el.innerHTML = `<span class="text-red-400 font-bold">[ERRO]</span> ${String(err.message || err)} <span class="text-gray-500">— hermes-core rodando na :4020?</span>`;
+        });
       }
 
       input.value = '';
       chat.scrollTop = chat.scrollHeight;
+    }
+
+    // ── Switches de capacidade do orquestrador (persistidos no backend) ──
+    async function orchLoadConfig() {
+      try {
+        const r = await fetch('/api/orchestrator/config');
+        const cfg = await r.json();
+        document.querySelectorAll('.orch-switch').forEach(c => {
+          c.checked = !!cfg[c.dataset.key];
+        });
+        const on = Object.entries(cfg).filter(([, v]) => v).map(([k]) => k);
+        document.getElementById('orch-config-badge').textContent =
+          on.length ? `${on.length} ativa(s)` : 'nenhuma ativa';
+      } catch {
+        document.getElementById('orch-config-badge').textContent = 'offline';
+      }
+    }
+    async function orchToggle(input) {
+      const key = input.dataset.key;
+      try {
+        await fetch('/api/orchestrator/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [key]: input.checked })
+        });
+      } catch {}
+      orchLoadConfig();
+    }
+    orchLoadConfig();
+
+    // ── Memória de contexto por projeto (pgvector) ──
+    async function memLoadProjects() {
+      try {
+        const r = await fetch('/api/memory/projects');
+        const list = await r.json();
+        const dl = document.getElementById('mem-projects');
+        dl.innerHTML = (list || []).map(p => `<option value="${p.name}">`).join('');
+        const s = document.getElementById('mem-status');
+        if (list && list.length) {
+          const total = list.reduce((a, p) => a + p.memories, 0);
+          s.textContent = `${list.length} projeto(s) · ${total} memórias`;
+          s.className = 'text-[10px] font-mono text-emerald-500';
+          const f = document.getElementById('mem-project');
+          if (!f.value) f.value = list[0].name;
+        } else {
+          s.textContent = 'nenhum projeto ainda';
+        }
+      } catch {
+        const s = document.getElementById('mem-status');
+        s.textContent = 'memória offline';
+        s.className = 'text-[10px] font-mono text-red-500';
+      }
+    }
+    memLoadProjects();
+
+    function memChatAppend(html) {
+      const chat = document.getElementById('chat-messages');
+      chat.innerHTML += `<div class="bg-gray-950 border border-cyan-900/40 p-3 rounded-lg text-gray-300">${html}</div>`;
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function memSaveCheckpoint() {
+      const proj = (document.getElementById('mem-project')?.value || '').trim();
+      if (!proj) { alert('Informe o nome do projeto na área 🧠 Memória.'); return; }
+      const task = prompt(`Checkpoint manual para "${proj}" — descreva onde o código parou:`);
+      if (!task) return;
+      try {
+        await fetch('/api/memory/state', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project: proj, lastTask: task })
+        });
+        await fetch('/api/memory/remember', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project: proj, kind: 'checkpoint', title: task.slice(0, 120), content: task, tags: ['manual'] })
+        });
+        memChatAppend(`<span class="text-cyan-400 font-bold">[MEMÓRIA]</span> Checkpoint salvo no projeto <strong>${proj}</strong>.`);
+      } catch (e) {
+        memChatAppend(`<span class="text-red-400 font-bold">[ERRO]</span> ${String(e)}`);
+      }
+    }
+
+    async function memShowContinuity() {
+      const proj = (document.getElementById('mem-project')?.value || '').trim();
+      if (!proj) { alert('Informe o nome do projeto na área 🧠 Memória.'); return; }
+      const thinkingId = 'mem-' + Date.now();
+      memChatAppend(`<div id="${thinkingId}"><span class="text-cyan-400 font-bold">[MEMÓRIA]</span> Carregando continuidade de <strong>${proj}</strong>…</div>`);
+      try {
+        const r = await fetch('/api/memory/continuity', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project: proj })
+        });
+        const d = await r.json();
+        document.getElementById(thinkingId).innerHTML =
+          `<span class="text-cyan-400 font-bold">[MEMÓRIA — ${proj}]</span>` +
+          `<div class="mt-2 text-gray-200 orchestrator-md">${marked.parse(d.block || '')}</div>`;
+        const chat = document.getElementById('chat-messages');
+        chat.scrollTop = chat.scrollHeight;
+      } catch (e) {
+        document.getElementById(thinkingId).innerHTML = `<span class="text-red-400 font-bold">[ERRO]</span> ${String(e)}`;
+      }
     }
     function createNewTicketPrompt() {
       const title = prompt('Título da Tarefa / Ticket Paperclip:');
