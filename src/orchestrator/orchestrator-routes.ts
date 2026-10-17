@@ -16,19 +16,22 @@ import { join } from 'node:path';
 import { getGateway, getVirtualKey } from '../gateway/gateway-singleton.js';
 import { resolveModel } from '../llm/routing-store.js';
 import { researchTask, type ResearchReport } from '../research/researcher.js';
-import { continuityBlock, remember, saveState, normProject } from '../memory/project-memory.js';
+import { resolveDocs } from '../research/context7.js';
+import { continuityBlock, remember, saveState, normProject, recall } from '../memory/project-memory.js';
 import { auditLogger } from '../core/audit-logger.js';
 
 const CONFIG_PATH = join(process.cwd(), 'data', 'orchestrator-config.json');
 
 export interface OrchestratorSwitches {
   pesquisaAvancada: boolean;
+  docsContext7: boolean;
   siteCrm: boolean;
   siteProfissional: boolean;
 }
 
 const DEFAULT_SWITCHES: OrchestratorSwitches = {
   pesquisaAvancada: false,
+  docsContext7: true,   // default ON: docs atualizados são requisito anti-alucinação
   siteCrm: false,
   siteProfissional: false,
 };
@@ -117,6 +120,7 @@ interface RunResult {
   research?: Pick<ResearchReport, 'query' | 'searchProvider' | 'sources' | 'model'>;
   project?: string;
   memory?: { continuityInjected: boolean; checkpointSaved: boolean };
+  docs?: { context7Fetched: number };
   latencyMs: number;
 }
 
@@ -141,6 +145,35 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     }
   }
 
+  // 0.5) Context7 — REQUISITO FUNDAMENTAL: docs de libs/APIs atualizados antes
+  //      de gerar qualquer código. Evita alucinação de assinatura (o modelo
+  //      "lembra" API desatualizada do treinamento). O doc buscado é PERSISTIDO
+  //      no RAG (kind='doc') → próxima sessão já tem em cache, sem refetch.
+  let docsFetched = 0;
+  if (switches.docsContext7) {
+    try {
+      const docs = await resolveDocs(prompt, { maxLibs: 2 });
+      for (const d of docs) {
+        blocks.push(
+          `DOCUMENTAÇÃO OFICIAL (${d.title}, via Context7 — use EXATAMENTE estas assinaturas):\n` +
+          d.markdown.slice(0, 6000),
+        );
+        docsFetched++;
+        if (proj) {
+          // Persiste: cache de conhecimento por projeto.
+          void remember({
+            project: proj, kind: 'doc',
+            title: `Context7: ${d.title}`,
+            content: d.markdown.slice(0, 8000),
+            tags: ['context7', 'docs'], metadata: { libraryId: d.libraryId },
+          }).catch(() => {});
+        }
+      }
+    } catch (e) {
+      blocks.push(`(Context7 indisponível: ${String(e instanceof Error ? e.message : e)}. Declare a limitação se for crítico.)`);
+    }
+  }
+
   // 1) Pesquisa avançada → coleta contexto real antes de responder
   if (switches.pesquisaAvancada) {
     try {
@@ -162,6 +195,19 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
 
   if (switches.siteCrm) blocks.push(SITE_CRM_BLOCK);
   if (switches.siteProfissional) blocks.push(SITE_PRO_BLOCK);
+
+  // 2) Catálogo de APIs do RAG — recall semântico por projeto "api-catalog".
+  //    Disponibiliza public-apis, BrasilAPI, mcp-brasil, Finnhub etc. para o
+  //    orquestrador/agentes escolherem a fonte certa em vez de inventar URLs.
+  try {
+    const apis = await recall('api-catalog', prompt, 4);
+    if (apis.length) {
+      blocks.push(
+        'CATÁLOGO DE APIs DISPONÍVEIS (RAG — use estas fontes ao criar apps/agentes; NÃO invente URLs):\n' +
+        apis.map((a) => `• ${a.title}\n  ${a.content.slice(0, 400)}`).join('\n'),
+      );
+    }
+  } catch { /* catálogo ainda não semeado — segue sem */ }
 
   const systemBase = [
     'Você é o HERMES ORCHESTRATOR — orquestrador técnico sênior, anti-cicofantia.',
@@ -216,6 +262,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     research,
     project: proj,
     memory: { continuityInjected, checkpointSaved },
+    docs: { context7Fetched: docsFetched },
     latencyMs: Date.now() - started,
   };
 }

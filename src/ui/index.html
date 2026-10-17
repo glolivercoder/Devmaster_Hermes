@@ -128,12 +128,19 @@
           <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Capacidades do Orquestrador</span>
           <span id="orch-config-badge" class="text-[10px] font-mono text-gray-600">carregando…</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
             <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="pesquisaAvancada" onchange="orchToggle(this)" />
             <span class="text-xs">
               <span class="text-gray-200 font-semibold">🔎 Pesquisa avançada</span>
               <span class="block text-gray-500 text-[11px] leading-snug">Scraping (curl_cffi/SeleniumBase/Botasaurus) + Tavily, SerpAPI, Brave, Linkup</span>
+            </span>
+          </label>
+          <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">
+            <input type="checkbox" class="orch-switch mt-0.5 accent-amber-500" data-key="docsContext7" onchange="orchToggle(this)" />
+            <span class="text-xs">
+              <span class="text-gray-200 font-semibold">📚 Docs Context7</span>
+              <span class="block text-gray-500 text-[11px] leading-snug">Assinaturas oficiais de libs/APIs atualizadas (requisito anti-alucinação)</span>
             </span>
           </label>
           <label class="flex items-start space-x-2 bg-gray-900/70 border border-gray-800 hover:border-amber-700/60 rounded-lg px-3 py-2 cursor-pointer transition">

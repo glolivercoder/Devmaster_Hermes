@@ -18,6 +18,7 @@ import {
   remember, recall, continuityBlock, saveState, getState,
   listProjects, history, deleteProject, normProject, type MemoryKind,
 } from './project-memory.js';
+import { seedApiCatalog } from './api-catalog.js';
 
 const MAX_BODY = 1024 * 1024;
 
@@ -58,6 +59,12 @@ export async function handleMemoryRoutes(
 
     if (pathname === '/api/memory/projects' && method === 'GET') {
       send(res, 200, await listProjects());
+      return true;
+    }
+
+    // POST /api/memory/seed-apis — semeia o catálogo de APIs no RAG (idempotente)
+    if (pathname === '/api/memory/seed-apis' && method === 'POST') {
+      send(res, 200, await seedApiCatalog());
       return true;
     }
 

@@ -13,6 +13,7 @@ import {
   researcherStatus, searchWeb, scrapeUrl, researchTask,
   type SearchProvider, type ScrapeTool,
 } from './researcher.js';
+import { context7Status, searchLibraries, fetchContext, resolveDocs } from './context7.js';
 
 const MAX_BODY = 512 * 1024;
 const PYTHON = process.env.PYTHON_BIN || 'python';
@@ -91,6 +92,40 @@ export async function handleResearchRoutes(
         Number(b.maxChars) || 24_000,
       );
       send(res, out.ok ? 200 : 422, out);
+      return true;
+    }
+
+    // GET /api/researcher/context7/status
+    if (pathname === '/api/researcher/context7/status' && method === 'GET') {
+      send(res, 200, context7Status());
+      return true;
+    }
+
+    // POST /api/researcher/context7/search {query}
+    if (pathname === '/api/researcher/context7/search' && method === 'POST') {
+      const b = await readBody(req);
+      const query = String(b.query ?? '').trim();
+      if (!query) { send(res, 400, { error: 'query obrigatória' }); return true; }
+      send(res, 200, await searchLibraries(query));
+      return true;
+    }
+
+    // POST /api/researcher/context7/docs {libraryId, query, language?}
+    if (pathname === '/api/researcher/context7/docs' && method === 'POST') {
+      const b = await readBody(req);
+      const libraryId = String(b.libraryId ?? '').trim();
+      const query = String(b.query ?? '').trim();
+      if (!libraryId || !query) { send(res, 400, { error: 'libraryId e query obrigatórios' }); return true; }
+      send(res, 200, await fetchContext(libraryId, query, b.language ? String(b.language) : undefined));
+      return true;
+    }
+
+    // POST /api/researcher/context7/resolve {prompt, maxLibs?} — pipeline p/ orquestrador
+    if (pathname === '/api/researcher/context7/resolve' && method === 'POST') {
+      const b = await readBody(req);
+      const prompt = String(b.prompt ?? '').trim();
+      if (!prompt) { send(res, 400, { error: 'prompt obrigatório' }); return true; }
+      send(res, 200, await resolveDocs(prompt, { maxLibs: Number(b.maxLibs) || 1 }));
       return true;
     }
 
