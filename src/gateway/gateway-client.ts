@@ -7,6 +7,7 @@
  */
 
 import { eventBus } from '../core/event-bus.js';
+import { recordBenchmark } from '../llm/smart-router.js';
 
 export interface CompletionRequest {
   model: string;           // logical model name from litellm-config.yaml
@@ -42,6 +43,7 @@ export class GatewayClient {
 
   /** Chat completion via virtual key — logs cost to event bus. */
   async complete(req: CompletionRequest): Promise<CompletionResponse> {
+    const started = Date.now();
     eventBus.publish('llm:request', {
       model: req.model,
       virtualKey: req.virtualKey,
@@ -64,6 +66,11 @@ export class GatewayClient {
 
     if (!res.ok) {
       const err = await res.text();
+      // Alimenta o benchmark local com a falha para o smart-router aprender.
+      void recordBenchmark(req.model, {
+        success: false,
+        latencyMs: Date.now() - started,
+      }).catch(() => {});
       throw new Error(`LiteLLM [${res.status}]: ${err}`);
     }
 
@@ -76,6 +83,14 @@ export class GatewayClient {
 
     const tokensUsed = data.usage.total_tokens;
     const costUsd    = data._hidden_params?.response_cost ?? 0;
+
+    // Registra sucesso no benchmark: aprende latência e custo reais por modelo,
+    // permitindo que o smart-router reavalie custo/benefício continuamente.
+    void recordBenchmark(req.model, {
+      success: true,
+      latencyMs: Date.now() - started,
+      costUsd,
+    }).catch(() => {});
 
     eventBus.publish('llm:response', {
       model: data.model,

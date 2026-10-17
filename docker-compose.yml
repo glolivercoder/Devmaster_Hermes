@@ -78,6 +78,9 @@ services:
       - VERTEX_AI_API_KEY=${VERTEX_AI_API_KEY}
       - VERTEX_AI_BASE_URL=${VERTEX_AI_BASE_URL}
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      # Chaves referenciadas por litellm-config.yaml via os.environ/...
+      - CHEAPER_INFERENCE_API_KEY=${CHEAPER_INFERENCE_API_KEY}
+      - OMNIROUTE_API_KEY=${OMNIROUTE_API_KEY}
       - DATABASE_URL=postgresql://hermes:${POSTGRES_PASSWORD}@postgres:5432/hermes_gateway
       - REDIS_URL=redis://redis:6379
       - LITELLM_LOG=WARNING

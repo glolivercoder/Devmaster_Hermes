@@ -1,6 +1,21 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ROUTE_TARGETS } from './models.js';
+import { routeIntelligently } from './smart-router.js';
+import { LLM_PROVIDERS } from './providers-llm.js';
+
+/**
+ * Providers com pelo menos uma chave presente no ambiente — sinal de
+ * disponibilidade repassado ao smart-router (sem isso, o router considerava
+ * até providers sem chave como candidatos e podia rotear para provider morto).
+ */
+function configuredProviderIds(): Set<string> {
+  const set = new Set<string>();
+  for (const p of LLM_PROVIDERS) {
+    if (p.envKeys.some((k) => (process.env[k] ?? '').trim())) set.add(p.id);
+  }
+  return set;
+}
 
 export interface RoutingState {
   mode: 'auto' | 'manual';
@@ -42,10 +57,32 @@ export async function saveRouting(next: Partial<RoutingState>): Promise<RoutingS
   return merged;
 }
 
-/** Resolve which logical model serves a target (manual override or default). */
+/**
+ * Resolve which logical model serves a target.
+ *
+ * Em modo 'manual' o override humano vence incondicionalmente.
+ * Em modo 'auto' a decisão é inteligente (smart-router): combina criticidade
+ * da tarefa, benchmark local histórico e disponibilidade do provider para
+ * escolher o melhor custo/benefício — delegando tarefas secundárias a LLMs
+ * gratuitas (ex.: OmniRoute) e reservando modelos pagos para o que é crítico.
+ */
 export async function resolveModel(targetId: string): Promise<string> {
   const st = await loadRouting();
   if (st.mode === 'manual') return st.routes[targetId] ?? 'deepseek-code';
-  const t = ROUTE_TARGETS.find((r) => r.id === targetId);
-  return st.routes[targetId] ?? t?.defaultModel ?? 'deepseek-code';
+  const decision = await routeIntelligently(targetId, {
+    mode: 'auto',
+    override: st.routes[targetId],
+    configuredProviders: configuredProviderIds(),
+  });
+  return decision.modelId;
+}
+
+/** Explica o PORQUÊ de uma escolha de modelo (para UI/logs de auditoria). */
+export async function explainModel(targetId: string) {
+  const st = await loadRouting();
+  return routeIntelligently(targetId, {
+    mode: st.mode,
+    override: st.routes[targetId],
+    configuredProviders: configuredProviderIds(),
+  });
 }

@@ -1,10 +1,10 @@
 {
   "mode": "auto",
   "routes": {
-    "orchestrator": "claude-code",
-    "coder": "deepseek-code",
-    "security": "claude-fast",
-    "pentest": "claude-code",
+    "orchestrator": "cheaper-opus",
+    "coder": "cheaper-code",
+    "security": "cheaper-fast",
+    "pentest": "cheaper-code",
     "qa": "gemini-flash",
     "integrator": "claude-fast",
     "computer_user": "openrouter-vision-free",

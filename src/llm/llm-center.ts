@@ -47,6 +47,8 @@ const PROVIDER_PROBES: Record<string, ProbeSpec> = {
   OPENROUTER: { path: '/models', header: 'Authorization', prefix: 'Bearer ' },
   DEEPSEEK: { path: '/models', header: 'Authorization', prefix: 'Bearer ' },
   NVIDIA: { path: '/models', header: 'Authorization', prefix: 'Bearer ' },
+  OMNIROUTE: { path: '/models', header: 'Authorization', prefix: 'Bearer ' },
+  CHEAPER_INFERENCE: { path: '/models', header: 'Authorization', prefix: 'Bearer ' },
   VERTEX_AI: { path: '/models', note: 'auth via GCP (ADC/service account), não via API key' },
 };
 

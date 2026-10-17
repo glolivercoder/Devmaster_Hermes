@@ -87,6 +87,71 @@ model_list:
       model: vertex_ai/gemini-2.0-flash-001
       api_key: os.environ/VERTEX_AI_API_KEY
 
+  # ─── OmniRoute (gateway local — auto-roteamento entre provedores grátis) ──
+  # Upstream openai-compatible rodando no host (porta 20128). O LiteLLM roda em
+  # Docker, por isso usa host.docker.internal em vez de localhost.
+  # Roteadores `auto/*` do OmniRoute estão com o pool de provedores esgotado
+  # (testes: 400 "Invalid model" e 503 "Maximum combo retry limit reached" em
+  # auto/chat, auto/cheap, auto/fast, auto/best-coding; só `kr/auto` — Kiro
+  # free — responde 200). Todos os aliases apontam para kr/auto até que
+  # provedores free sejam conectados no dashboard do OmniRoute.
+  - model_name: omniroute-auto        # melhor modelo geral disponível (auto)
+    litellm_params:
+      model: openai/kr/auto           # prefixo openai/ => api_base próprio
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://host.docker.internal:20128/v1
+
+  - model_name: omniroute-fast        # resposta rápida, custo zero
+    litellm_params:
+      model: openai/kr/auto
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://host.docker.internal:20128/v1
+
+  - model_name: omniroute-code        # melhor modelo de código disponível
+    litellm_params:
+      model: openai/kr/auto
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://host.docker.internal:20128/v1
+
+  - model_name: omniroute-free        # alias explícito de "só gratuitos"
+    litellm_params:
+      model: openai/kr/auto
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://host.docker.internal:20128/v1
+
+  # ─── Cheaper Inference (pago — api.cheaperinference.com) ───────────────────
+  # Provider pago para tarefas CRÍTICAS (orchestrator, coder, security, pentest).
+  # Catálogo real verificado: 98 modelos; chave validada (GET /v1/models → 200).
+  - model_name: cheaper-opus          # crítico — máxima qualidade
+    litellm_params:
+      model: openai/claude-opus-5.5
+      api_key: os.environ/CHEAPER_INFERENCE_API_KEY
+      api_base: https://api.cheaperinference.com/v1
+
+  - model_name: cheaper-code          # crítico — código/arquitetura
+    litellm_params:
+      model: openai/claude-sonnet-5.5
+      api_key: os.environ/CHEAPER_INFERENCE_API_KEY
+      api_base: https://api.cheaperinference.com/v1
+
+  - model_name: cheaper-fast          # crítico — respostas rápidas
+    litellm_params:
+      model: openai/claude-haiku-5.5
+      api_key: os.environ/CHEAPER_INFERENCE_API_KEY
+      api_base: https://api.cheaperinference.com/v1
+
+  - model_name: cheaper-reason        # crítico — raciocínio longo
+    litellm_params:
+      model: openai/grok-4.7
+      api_key: os.environ/CHEAPER_INFERENCE_API_KEY
+      api_base: https://api.cheaperinference.com/v1
+
+  - model_name: cheaper-vision        # visão barata (fallback visual)
+    litellm_params:
+      model: openai/gemini-3.8-flash
+      api_key: os.environ/CHEAPER_INFERENCE_API_KEY
+      api_base: https://api.cheaperinference.com/v1
+
 router_settings:
   routing_strategy: cost-based-routing    # roteia pelo custo entre modelos equivalentes
   num_retries: 3

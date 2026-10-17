@@ -14,7 +14,8 @@ import { ComposioAgent } from './integrations/composio-agent.js';
 import { getCenterState, updateRouting, testProviderConnection } from './llm/llm-center.js';
 import { setEnvVar } from './llm/env-store.js';
 import { loadDotEnv, ENV_PATH } from './llm/env-loader.js';
-import { resolveModel } from './llm/routing-store.js';
+import { resolveModel, explainModel } from './llm/routing-store.js';
+import { benchmarkRanking } from './llm/smart-router.js';
 import { LLM_MODELS } from './llm/models.js';
 import {
   testConnection as giteaTestConnection,
@@ -307,6 +308,24 @@ async function bootstrap() {
       res.end(JSON.stringify({ models: LLM_MODELS }));
       return;
     }
+    if (req.url && req.url.startsWith('/api/llm/explain') && req.method === 'GET') {
+      try {
+        const url = new URL(req.url, 'http://localhost');
+        const target = url.searchParams.get('target');
+        if (!target) { res.writeHead(400); res.end(JSON.stringify({ error: 'target é obrigatório' })); return; }
+        const decision = await explainModel(target);
+        res.writeHead(200);
+        res.end(JSON.stringify(decision));
+      } catch (err) { res.writeHead(400); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/benchmark' && req.method === 'GET') {
+      try {
+        res.writeHead(200);
+        res.end(JSON.stringify({ ranking: await benchmarkRanking() }));
+      } catch (err) { res.writeHead(500); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
     // ── API Keys persistidas no BD (env-db-store) ──
     if (req.url === '/api/env-db' && req.method === 'GET') {
       try {
@@ -492,6 +511,24 @@ async function bootstrap() {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(saved));
       } catch (err) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url && req.url.startsWith('/api/llm/explain') && req.method === 'GET') {
+      try {
+        const url = new URL(req.url, 'http://localhost');
+        const target = url.searchParams.get('target');
+        if (!target) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'target é obrigatório' })); return; }
+        const decision = await explainModel(target);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(decision));
+      } catch (err) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
+      return;
+    }
+    if (req.url === '/api/llm/benchmark' && req.method === 'GET') {
+      try {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ranking: await benchmarkRanking() }));
+      } catch (err) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(err) })); }
       return;
     }
     // ── API Keys persistidas no BD (env-db-store) ──
