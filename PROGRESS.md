@@ -166,3 +166,35 @@
 - **Pendência conhecida (ação externa)**: o auto-fallback *interno* do OmniRoute
   está com o pool `auto/*` esgotado (só `kr/auto`/Kiro responde 200) — reativar
   exige conectar provedores free no **dashboard do próprio OmniRoute**.
+
+## 📁 Orquestrador → pasta do projeto + OpenCode - Out/2026
+**Status: FUNCIONAL (E2E backend 3 runs + UI DOM/integração)**
+
+- **Campo 📁 Projeto na aba Orquestrador** (antes só "🧠 Memória"): nome do
+  projeto cria automaticamente `F:\Projetos2026\DevMaster\<nome>` e alimenta a
+  memória de continuidade (mesma chave `normProject`).
+- **`src/orchestrator/project-store.ts`**: por run grava `prompt-original.md`
+  (append com timestamp), `historico.jsonl` (índice por run) e
+  `runs/<ts>/` com `resposta-orquestrador.md` + só os arquivos das capacidades
+  com checkbox ON: `pesquisa-avancada.md` (síntese+fontes ou AVISO se falhou),
+  `analise-mercado.md` (relatório cru + dashboard), `site-crm.md`,
+  `site-profissional.md`. Falha de IO nunca derruba o run (só warn).
+- **2 rotas novas**: `GET /api/orchestrator/projects` (lista pastas+arquivos) e
+  `GET /api/orchestrator/project-file?project&file` (leitura com guarda de
+  path traversal + allowlist de extensão — 400 nos 3 testes de ataque).
+- **▶ Enviar para OpenCode** (botão após cada resposta): integração direta —
+  cria sessão `Hermes <projeto>` e envia prompt original + análise do
+  orquestrador. **Cadeia de fallback**: OmniRoute (`kr/auto`) → **Hermes
+  Control Center** (`hermes/gemini-flash-free` via LiteLLM) → **cópia para a
+  área de transferência** (`📋 Copiar prompt` manual também existe).
+- **Aba Histórico**: novo card "📁 Projetos do Orquestrador" lista as pastas
+  com badges por tipo (📝 prompt / 💬 resposta / 🔎 pesquisa / 📊 mercado /
+  🏢 site-crm / 🎨 site-pro / 🗒️ índice) + visualizador de arquivo inline;
+  carrega junto do `loadHistorico()`.
+- **E2E**: RUN A sem switches (prompt+resposta) ✓ · RUN B siteCrm ON
+  (`site-crm.md`) ✓ · RUN C pesquisa+mercado ON reais (Tavily 3 fontes +
+  dashboard 5 concorrentes, 104s) ✓ · list/read/traversal ✓ · UI: campo+run
+  (36s, "Salvo em …\ui-demo-projeto") ✓ · clique → sessão OpenCode `kind-garden`
+  (4.091 chars via OmniRoute) → aba OpenCode ✓ (1ª tentativa com Kiro instável
+  caiu no fallback de cópia — comportamento previsto) ✓ · Histórico renderizou
+  2 projetos/12 arquivos + visualizador ✓. `tsc --noEmit` EXIT=0.

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise de Mercado — Marketplace de artesanato no Brasil: demanda, concorrentes e preços praticados.</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>body{font-family:Inter,system-ui,sans-serif}</style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+<div class="max-w-6xl mx-auto p-6 space-y-6">
+
+  <header class="border-b border-gray-800 pb-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <h1 class="text-2xl font-bold">📊 Análise de Mercado — Marketplace de artesanato no Brasil: demanda, concorrentes e preços praticados.</h1>
+      <span class="text-xs font-mono text-gray-500">2026-10-18T03:00:37.803Z</span>
+    </div>
+    <p class="text-[11px] text-amber-500/80 mt-1 font-mono">Análise crua e realista (anti-sicofância) · fontes: web, notícias e Reddit</p>
+  </header>
+
+  <section class="bg-gray-900/50 border border-amber-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-amber-400 mb-2">🎯 Resumo executivo</h2>
+    <p class="text-sm text-gray-200 leading-relaxed">O mercado brasileiro de artesanato é robusto, atingindo USD 16.7 Bilhões em 2025 e projetado para USD 35.5 Bilhões até 2034, impulsionado por demanda por produtos únicos e sustentáveis. No entanto, o setor de marketplaces é volátil, evidenciado pelo fechamento abrupto do Elo7, que deixou 80 mil vendedores sem canal. A competição é acirrada, com grandes players generalistas e nichos lutando por audiência.</p>
+  </section>
+
+  <section class="bg-red-950/20 border border-red-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-red-400 mb-2">⚖️ Veredito (sem lisonja)</h2>
+    <p class="text-sm text-gray-200 leading-relaxed">O mercado de artesanato online no Brasil apresenta crescimento, mas a entrada é arriscada. A falha do Elo7 demonstra a dificuldade em construir e engajar audiência em um nicho competitivo. Vale a pena apenas para quem conseguir resolver as dores dos artesãos e consumidores de forma escalável, sem depender de um único canal e com uma proposta de valor clara contra os gigantes.</p>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-gray-900/40 border border-emerald-900/40 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-emerald-400 mb-2">✅ Pontos fortes</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Mercado em crescimento: Projeção de USD 35.5 Bilhões até 2034, com CAGR de 8.69% (2026-2034).</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Demanda por sustentabilidade: Clientes buscam produtos eco-friendly e artesanais, alinhando-se a tendências globais.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Apoio governamental: Assistência a artesãos regionais contribui para a expansão do setor.</span></li><li class="flex gap-2 items-start"><span class="text-emerald-400 mt-0.5">•</span><span>Turismo cultural: Impulsiona o interesse e a demanda por produtos artesanais diferenciados.</span></li></ul>
+    </section>
+    <section class="bg-gray-900/40 border border-red-900/40 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-red-400 mb-2">⚠️ Pontos fracos</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Alta competição: Marketplaces generalistas como Mercado Livre e Amazon dominam o volume de vendas online.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Dificuldade de engajamento: Construir e manter audiência em plataformas de nicho é um desafio, como visto no caso Elo7.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Dependência de canal: Artesãos ficam vulneráveis ao depender de uma única plataforma para a maior parte de seu faturamento.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Complexidade de precificação: Consumidores buscam comparação de preços, e artesãos lutam para precificar valor agregado.</span></li></ul>
+    </section>
+  </div>
+
+  <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-amber-400 mb-3">🥧 Participação de mercado</h2>
+    <div class="grid md:grid-cols-2 gap-6 items-center">
+      <div class="relative h-64"><canvas id="donut"></canvas></div>
+      <div class="space-y-2">
+        
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#f59e0b"></span>
+          <span class="text-sm flex-1">Mercado Livre</span>
+          <span class="text-sm font-mono font-bold text-amber-400">35%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#10b981"></span>
+          <span class="text-sm flex-1">Amazon Handmade</span>
+          <span class="text-sm font-mono font-bold text-amber-400">25%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#3b82f6"></span>
+          <span class="text-sm flex-1">Etsy</span>
+          <span class="text-sm font-mono font-bold text-amber-400">20%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#a855f7"></span>
+          <span class="text-sm flex-1">Instagram/Facebook (Meta)</span>
+          <span class="text-sm font-mono font-bold text-amber-400">15%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" style="background:#ef4444"></span>
+          <span class="text-sm flex-1">Artesanou/Illuria (combinado)</span>
+          <span class="text-sm font-mono font-bold text-amber-400">5%</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 space-y-2">
+      
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Mercado Livre</span><span class="font-mono">35%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:35%;background:#f59e0b"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Amazon Handmade</span><span class="font-mono">25%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:25%;background:#10b981"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Etsy</span><span class="font-mono">20%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:20%;background:#3b82f6"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Instagram/Facebook (Meta)</span><span class="font-mono">15%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:15%;background:#a855f7"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-1"><span>Artesanou/Illuria (combinado)</span><span class="font-mono">5%</span></div>
+        <div class="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:5%;background:#ef4444"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4 overflow-x-auto">
+    <h2 class="text-sm font-bold text-amber-400 mb-3">🏁 Concorrentes — comparação direta</h2>
+    <table class="w-full text-xs min-w-[700px]">
+      <thead><tr class="text-gray-500 text-left">
+        <th class="px-3 py-2">Player</th><th class="px-3 py-2">Share</th>
+        <th class="px-3 py-2">Posicionamento</th><th class="px-3 py-2">Forte</th><th class="px-3 py-2">Fraco</th>
+      </tr></thead>
+      <tbody>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#f59e0b"></span>Mercado Livre</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">35%</td>
+      <td class="px-3 py-2 text-gray-400">Maior marketplace da América Latina, oferece vasta audiência para qualquer tipo de produto.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Enorme base de usuários e infraestrutura logística consolidada.</td>
+      <td class="px-3 py-2 text-red-400/90">Não é especializado em artesanato, dificultando a visibilidade e valorização de produtos artesanais.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#10b981"></span>Amazon Handmade</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">25%</td>
+      <td class="px-3 py-2 text-gray-400">Seção dedicada a produtos artesanais dentro de um gigante global de e-commerce.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Acesso a uma vasta base de compradores globais e credibilidade da marca Amazon.</td>
+      <td class="px-3 py-2 text-red-400/90">Critérios de elegibilidade rigorosos e alta competição interna com outros produtos.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#3b82f6"></span>Etsy</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">20%</td>
+      <td class="px-3 py-2 text-gray-400">Referência global para produtos artesanais, vintage e autorais, com foco em comunidade.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Audiência já acostumada com produtos feitos à mão e alcance internacional.</td>
+      <td class="px-3 py-2 text-red-400/90">Taxas elevadas e concorrência global, exigindo diferenciação para artesãos brasileiros.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#a855f7"></span>Instagram/Facebook (Meta)</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">15%</td>
+      <td class="px-3 py-2 text-gray-400">Plataformas de mídia social com ferramentas de loja, permitindo venda direta e construção de audiência.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Muitos artesãos já possuem audiência e relacionamento direto com clientes.</td>
+      <td class="px-3 py-2 text-red-400/90">Exige esforço constante na criação de conteúdo e gerenciamento de vendas/logística individualmente.</td>
+    </tr>
+    <tr class="border-t border-gray-800 hover:bg-gray-900/40">
+      <td class="px-3 py-2 font-semibold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:#ef4444"></span>Artesanou/Illuria (combinado)</td>
+      <td class="px-3 py-2 text-amber-400 font-mono font-bold">5%</td>
+      <td class="px-3 py-2 text-gray-400">Marketplaces brasileiros emergentes, focados especificamente em artesanato e produtos autorais.</td>
+      <td class="px-3 py-2 text-emerald-400/90">Foco no nicho nacional, buscando preencher a lacuna deixada pelo Elo7.</td>
+      <td class="px-3 py-2 text-red-400/90">Ainda em fase de construção de audiência e reconhecimento, com menor volume de vendas.</td>
+    </tr></tbody>
+    </table>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-cyan-400 mb-2">🚀 Oportunidades</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Nicho especializado: Há uma lacuna para um marketplace de artesanato nacional robusto após o fim do Elo7, com 80 mil vendedores buscando alternativas.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Exportação cultural: Produtos com identidade brasileira têm potencial no mercado externo, como demonstrado pelo Etsy.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Integração social: Alavancar a presença de artesãos em redes sociais para vendas diretas e construção de comunidade.</span></li><li class="flex gap-2 items-start"><span class="text-cyan-400 mt-0.5">•</span><span>Foco em sustentabilidade: Posicionar-se como plataforma para produtos eco-friendly, alinhando-se à demanda crescente.</span></li></ul>
+    </section>
+    <section class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
+      <h2 class="text-sm font-bold text-red-400 mb-2">💣 Ameaças</h2>
+      <ul class="text-sm space-y-1.5 text-gray-300"><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Dominância dos gigantes: Mercado Livre e Amazon podem absorver artesãos, dificultando a captação de usuários para plataformas de nicho.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Custo de aquisição de cliente: Atrair e reter tanto vendedores quanto compradores para um novo marketplace é caro e demorado.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Sensibilidade a preços: Consumidores estão atentos a preços, e o valor agregado do artesanato pode ser difícil de justificar em um mercado competitivo.</span></li><li class="flex gap-2 items-start"><span class="text-red-400 mt-0.5">•</span><span>Instabilidade do nicho: O encerramento do Elo7 serve de alerta para a dificuldade de sustentabilidade de plataformas especializadas.</span></li></ul>
+    </section>
+  </div>
+
+  <section class="bg-gray-900/40 border border-orange-900/40 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-orange-400 mb-3">🗣️ Voz do usuário real (Reddit)</h2>
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <h3 class="text-xs font-bold text-gray-400 mb-1.5">Dores recorrentes</h3>
+        <ul class="text-sm space-y-1 text-gray-300"><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Dificuldade em comparar preços: Usuários buscam ativamente ferramentas e métodos para acompanhar e comparar preços de produtos.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Preocupação com preços dinâmicos: Há receio de manipulação de preços por IA, como visto em patentes do Walmart.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Preços elevados: Reclamações recorrentes sobre o custo de vida, produtos e serviços em comparação com outros mercados.</span></li><li class="flex gap-2 items-start"><span class="text-orange-400 mt-0.5">•</span><span>Vulnerabilidade de vendedores: O fechamento do Elo7 expôs a fragilidade de depender de um único canal de vendas.</span></li></ul>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold text-gray-400 mb-1.5">Recursos muito pedidos</h3>
+        <ul class="text-sm space-y-1 text-gray-300"><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Ferramentas de monitoramento de preços: Demanda por acompanhamento de preços de itens específicos para economizar.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Soluções de IA para otimização: Interesse em IA para reduzir custos ou aumentar eficiência em operações de varejo.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Plataformas focadas em qualidade e artesanato: Desejo por prazos previsíveis e foco em qualidade de produção.</span></li><li class="flex gap-2 items-start"><span class="text-amber-400 mt-0.5">•</span><span>Alternativas confiáveis para vendas: Artesãos buscam novos canais após a descontinuação de plataformas existentes.</span></li></ul>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-2">
+    <a href="https://www.reddit.com/r/changemyview/comments/144jpgv/cmv_supply_and_demand_is_real_it_is_a_good_way_to?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/changemyview</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Oferta e demanda é &quot;real&quot;. É uma boa maneira de entender como os preços são definidos. Faz sentido que esteja na base de tanto do nosso pensamento econômico tradicional. : r/changemyview</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Oferta e demanda é &quot;real&quot;. É uma boa maneira de entender como os preços são definidos. Faz sentido que esteja na base de tanto do nosso pensamento econôm</div>
+    </a>
+    <a href="https://www.reddit.com/r/AppIdeas/new?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/AppIdeas</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Ideias de Apps</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Ideias de Apps
+# Ideias de Apps. Skip to main contentIdeias de Apps. agobrainstormestou trabalhando em uma grande rede de farmácias, meu chefe quer que e</div>
+    </a>
+    <a href="https://www.reddit.com/r/brasil/comments/19dqt3j/por_onde_voc%C3%AAs_acompanham_pre%C3%A7os_de_produtositens" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/brasil</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">por onde vocês acompanham preços de produtos/itens específicos? : r/brasil</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: por onde vocês acompanham preços de produtos/itens específicos? : r/brasil
+Skip to main contentpor onde vocês acompanham preços de produtos/itens específ</div>
+    </a>
+    <a href="https://www.reddit.com/r/carros/comments/1bihr0k/compara%C3%A7%C3%A3o_de_pre%C3%A7os_vs" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/carros</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Comparação de preços 🇧🇷 vs 🇺🇸 : r/carros</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Fora o custo pra manter o carro no Br. 175. além da qualidade dos carros, lá Corolla é carro popular de entrada aqui é de luxo. Lembro quando cheguei aqui na Al</div>
+    </a>
+    <a href="https://www.reddit.com/r/brasil/comments/158nptk/spotify_atualiza_pre%C3%A7os_e_junto_corrige_os" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/brasil</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Spotify atualiza preços e junto corrige os valores dos planos de mais de 1 mês. : r/brasil</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Spotify atualiza preços e junto corrige os valores dos planos de mais de 1 mês. : r/brasil
+# Spotify atualiza preços e junto corrige os valores dos plano</div>
+    </a>
+    <a href="https://www.reddit.com/r/buildapc/comments/1pupihe/why_does_ai_demand_for_ram_increase_ram_prices?tl=pt-br" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/buildapc</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">por que a demanda de IA por RAM aumenta os preços da RAM? : r/buildapc</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: por que a demanda de IA por RAM aumenta os preços da RAM? : r/buildapc
+# por que a demanda de IA por RAM aumenta os preços da RAM? Skip to main contentpo</div>
+    </a>
+    <a href="https://www.reddit.com/r/brasil/comments/acifub/pre%C3%A7os_de_cursos_da_udemy" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/brasil</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">Preços de cursos da Udemy : r/brasil</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: Preços de cursos da Udemy : r/brasil
+# Preços de cursos da Udemy : r/brasil. Skip to main contentPreços de cursos da Udemy : r/brasil. Open menu Open nav</div>
+    </a>
+    <a href="https://www.reddit.com/r/portugal/comments/15ycnzo/cartaz_de_gelados_ol%C3%A1_em_espanha_gera_inveja_aos" target="_blank" rel="noopener" class="block bg-gray-900/60 border border-gray-800 rounded-lg p-3 hover:border-amber-700/60 transition">
+      <div class="flex items-center gap-2 text-[10px] font-mono text-gray-500 mb-1">
+        <span class="text-orange-400">r/portugal</span>
+      </div>
+      <div class="text-xs text-gray-200 leading-snug">🍦| Cartaz de gelados &quot;Olá&quot; em Espanha🇪🇸 gera inveja aos portugueses. Tanto pela variedade como pelo preço (se comparamos com preços praticados no Algarve e ao Poder de Compra de cada país). 👉Achas que os nossos vizinhos estão mais bem servidos? : r/portugal</div>
+      <div class="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2">Title: 🍦| Cartaz de gelados &quot;Olá&quot; em Espanha🇪🇸 gera inveja aos portugueses. Tanto pela variedade como pelo preço (se comparamos com preços praticados no Alga</div>
+    </a></div>
+  </section>
+
+  <section class="bg-gray-90/30 border border-gray-800 rounded-xl p-4">
+    <h2 class="text-sm font-bold text-gray-400 mb-2">📚 Fontes</h2>
+    <ul class="text-xs space-y-1">
+      <li><a class="text-amber-500/80 hover:underline" href="https://www.imarcgroup.com/report/pt-br/brazil-handicrafts-market" target="_blank" rel="noopener">Tamanho, participação, crescimento e perspectiva do mercado de artesanato no Brasil até 2034</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.intellux.com/blog/5-best-marketplaces-to-sell-on-in-brazil-in-2026" target="_blank" rel="noopener">Best Marketplace to Sell in Brazil? Top 5 Compared for 2026</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.marketgrowthreports.com/pt/market-reports/handicrafts-market-103248" target="_blank" rel="noopener">Tamanho do mercado de artesanato, participação | Previsão Global [2035]</a></li><li><a class="text-amber-500/80 hover:underline" href="https://revistapegn.globo.com/gestao/noticia/2026/05/elo7-encerra-atividades-8-marketplaces-onde-artesaos-podem-vender-segundo-especialistas.ghtml" target="_blank" rel="noopener">Fim do Elo7: conheça outros 8 marketplaces onde artesãos podem vender, segundo especialistas</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.imarcgroup.com/report/pt-br/brazil-handicrafts-market" target="_blank" rel="noopener">Tamanho, participação, crescimento e perspectiva do mercado de artesanato no Brasil até 2034</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.intellux.com/blog/5-best-marketplaces-to-sell-on-in-brazil-in-2026" target="_blank" rel="noopener">Best Marketplace to Sell in Brazil? Top 5 Compared for 2026</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.youtube.com/watch?v=hU5GSS8SfRU" target="_blank" rel="noopener">Qual a melhor plataforma para vender artesanato na internet em 2026?</a></li><li><a class="text-amber-500/80 hover:underline" href="https://revistapegn.globo.com/gestao/noticia/2026/05/elo7-encerra-atividades-8-marketplaces-onde-artesaos-podem-vender-segundo-especialistas.ghtml" target="_blank" rel="noopener">Fim do Elo7: conheça outros 8 marketplaces onde artesãos podem vender, segundo especialistas</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.imarcgroup.com/brazil-handicrafts-market" target="_blank" rel="noopener">Brazil Handicrafts Market Size, Share, Growth, Outlook 2034</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.artbasel.com/stories/art-market-trends-watch-2026-experience-digital-middle-east-private-sales?lang=en" target="_blank" rel="noopener">Six art market trends to watch in 2026 | Art Basel</a></li><li><a class="text-amber-500/80 hover:underline" href="https://fall.hh-americas.com/news/crafting-in-2026" target="_blank" rel="noopener">Crafting in 2026: What the Numbers Say | h+h americas</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.gov.br/empresas-e-negocios/pt-br/artesanato/artesanato-brasileiro-ganha-rota-para-o-mercado-global" target="_blank" rel="noopener">Artesanato brasileiro ganha rota para o mercado global</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.reddit.com/search/?q=Marketplace%20de%20artesanato%20no%20Brasil%3A%20demanda%2C%20concorrentes%20e%20pre%C3%A7os%20praticados.%20experience%20review" target="_blank" rel="noopener">Reddit: Marketplace de artesanato no Brasil: demanda, concorrentes e preços praticados. experience review</a></li><li><a class="text-amber-500/80 hover:underline" href="https://www.reddit.com/search/?q=Marketplace%20de%20artesanato%20no%20Brasil%3A%20demanda%2C%20concorrentes%20e%20pre%C3%A7os%20praticados.%20missing%20feature%20request" target="_blank" rel="noopener">Reddit: Marketplace de artesanato no Brasil: demanda, concorrentes e preços praticados. missing feature request</a></li>
+    </ul>
+  </section>
+
+  <footer class="text-center text-[10px] text-gray-600 pt-4">Hermes Control Center · gerado automaticamente pelo Agente Pesquisador + Orquestrador</footer>
+</div>
+
+<script>
+new Chart(document.getElementById('donut'), {
+  type: 'doughnut',
+  data: { labels: ["Mercado Livre","Amazon Handmade","Etsy","Instagram/Facebook (Meta)","Artesanou/Illuria (combinado)"],
+          datasets: [{ data: [35,25,20,15,5], backgroundColor: ["#f59e0b","#10b981","#3b82f6","#a855f7","#ef4444"],
+                       borderColor: '#0b0f19', borderWidth: 2, hoverOffset: 8 }] },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '62%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + '%' } }
+    }
+  }
+});
+</script>
+</body></html>

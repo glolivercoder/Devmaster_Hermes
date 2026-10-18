@@ -25,20 +25,20 @@
       "updatedAt": "2026-10-17T23:46:26.004Z"
     },
     "gemini-flash": {
-      "calls": 52,
-      "success": 51,
+      "calls": 54,
+      "success": 53,
       "failures": 1,
-      "avgLatencyMs": 10221,
+      "avgLatencyMs": 11976,
       "totalSpend": 0,
-      "updatedAt": "2026-10-18T01:25:27.549Z"
+      "updatedAt": "2026-10-18T03:00:37.806Z"
     },
     "cheaper-opus": {
-      "calls": 19,
-      "success": 19,
+      "calls": 24,
+      "success": 24,
       "failures": 0,
-      "avgLatencyMs": 62752,
+      "avgLatencyMs": 35166,
       "totalSpend": 0,
-      "updatedAt": "2026-10-18T01:42:17.324Z"
+      "updatedAt": "2026-10-18T03:09:12.995Z"
     },
     "cheaper-vision": {
       "calls": 1,

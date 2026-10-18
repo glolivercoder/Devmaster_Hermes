@@ -20,6 +20,9 @@ import { resolveDocs } from '../research/context7.js';
 import { runMarketAnalysis, type MarketReport } from '../market/market-analysis.js';
 import { continuityBlock, remember, saveState, normProject, recall } from '../memory/project-memory.js';
 import { auditLogger } from '../core/audit-logger.js';
+import {
+  PROJECTS_ROOT, saveRunArtifacts, listProjects, readProjectFile,
+} from './project-store.js';
 
 const CONFIG_PATH = join(process.cwd(), 'data', 'orchestrator-config.json');
 
@@ -126,6 +129,8 @@ interface RunResult {
   memory?: { continuityInjected: boolean; checkpointSaved: boolean };
   docs?: { context7Fetched: number };
   market?: { dashboardPath?: string; competitors?: number; verdict?: string; error?: string };
+  /** Pasta F:\Projetos2026\DevMaster\<proj> gravada nesta rodada (prompt + respostas). */
+  saved?: { folder: string; files: string[] };
   latencyMs: number;
 }
 
@@ -134,6 +139,8 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
   const switches = loadSwitches();
   const blocks: string[] = [];
   let research: RunResult['research'];
+  let researchSynthesis: string | undefined;
+  let researchFailed: string | undefined;
   let continuityInjected = false;
   let checkpointSaved = false;
   const proj = project ? normProject(project) : undefined;
@@ -182,6 +189,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
   if (switches.pesquisaAvancada) {
     try {
       const report = await researchTask(prompt, { maxResults: 3 });
+      researchSynthesis = report.synthesis;
       research = {
         query: report.query,
         searchProvider: report.searchProvider,
@@ -193,7 +201,8 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
         report.sources.map((s, i) => `${i + 1}. ${s.title} — ${s.url}${s.scraped ? '' : ' (só snippet)'}`).join('\n'),
       );
     } catch (e) {
-      blocks.push(`${RESEARCH_BLOCK}\n\n(aviso: a pesquisa falhou — ${String(e)}. Prossiga com seu conhecimento e declare a limitação.)`);
+      researchFailed = String(e);
+      blocks.push(`${RESEARCH_BLOCK}\n\n(aviso: a pesquisa falhou — ${researchFailed}. Prossiga com seu conhecimento e declare a limitação.)`);
     }
   }
 
@@ -284,6 +293,56 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     }
   }
 
+  // 4) 📁 Grava na pasta do projeto (F:\Projetos2026\DevMaster\<proj>):
+  //    prompt original + resposta + saída de cada capacidade com switch ON.
+  //    Falha de IO nunca derruba o run — vira warn no log.
+  let saved: RunResult['saved'];
+  if (proj) {
+    try {
+      saved = saveRunArtifacts({
+        project: proj,
+        prompt,
+        reply: out.content,
+        model: out.model || model,
+        latencyMs: Date.now() - started,
+        switches,
+        research: (research || researchFailed)
+          ? {
+              query: research?.query,
+              searchProvider: research?.searchProvider ?? undefined,
+              synthesis: researchSynthesis,
+              sources: research?.sources,
+              failed: researchFailed,
+            }
+          : undefined,
+        market: market
+          ? {
+              dashboardPath: market.dashboardPath,
+              executiveSummary: market.executiveSummary,
+              verdict: market.verdict,
+              strengths: market.strengths,
+              weaknesses: market.weaknesses,
+              opportunities: market.opportunities,
+              threats: market.threats,
+              competitors: market.competitors.map((c) => ({ name: c.name, sharePercent: c.sharePercent })),
+              reddit: {
+                painPoints: market.redditInsights?.painPoints,
+                requestedFeatures: market.redditInsights?.requestedFeatures,
+              },
+              sources: market.sources,
+            }
+          : (marketError ? { failed: marketError } : undefined),
+      });
+      auditLogger.log({
+        actor: 'SYSTEM',
+        event: 'orchestrator:project_saved',
+        payload: { project: proj, folder: saved.folder, files: saved.files.length },
+      });
+    } catch (e) {
+      console.warn('[orchestrator] falha ao salvar pasta do projeto:', String(e));
+    }
+  }
+
   return {
     reply: out.content,
     model: out.model || model,
@@ -295,6 +354,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     market: market
       ? { dashboardPath: market.dashboardPath, competitors: market.competitors.length, verdict: market.verdict }
       : (marketError ? { error: marketError } : undefined),
+    saved,
     latencyMs: Date.now() - started,
   };
 }
@@ -332,18 +392,22 @@ export async function handleOrchestratorRoutes(
   const method = req.method ?? 'GET';
 
   try {
-    if (pathname === '/api/orchestrator/config' && method === 'GET') {
+    // req.url chega COM query string (ex.: project-file?project=x&file=y).
+    const url = new URL(pathname, 'http://localhost');
+    const path = url.pathname;
+
+    if (path === '/api/orchestrator/config' && method === 'GET') {
       send(res, 200, loadSwitches());
       return true;
     }
 
-    if (pathname === '/api/orchestrator/config' && method === 'POST') {
+    if (path === '/api/orchestrator/config' && method === 'POST') {
       const b = await readBody(req);
       send(res, 200, saveSwitches(b as Partial<OrchestratorSwitches>));
       return true;
     }
 
-    if (pathname === '/api/orchestrator/run' && method === 'POST') {
+    if (path === '/api/orchestrator/run' && method === 'POST') {
       const b = await readBody(req);
       const prompt = String(b.prompt ?? '').trim();
       if (!prompt) { send(res, 400, { error: 'prompt obrigatório' }); return true; }
@@ -352,7 +416,25 @@ export async function handleOrchestratorRoutes(
       return true;
     }
 
-    send(res, 404, { error: 'rota orquestrador desconhecida', path: pathname });
+    // 📁 Projetos em F:\Projetos2026\DevMaster\<proj> (aba Histórico).
+    if (path === '/api/orchestrator/projects' && method === 'GET') {
+      send(res, 200, { root: PROJECTS_ROOT, projects: listProjects() });
+      return true;
+    }
+
+    if (path === '/api/orchestrator/project-file' && method === 'GET') {
+      const proj = url.searchParams.get('project');
+      const file = url.searchParams.get('file');
+      if (!proj || !file) { send(res, 400, { error: 'project e file obrigatórios' }); return true; }
+      try {
+        send(res, 200, { project: proj, file, content: readProjectFile(proj, file) });
+      } catch (e) {
+        send(res, 400, { error: String(e instanceof Error ? e.message : e) });
+      }
+      return true;
+    }
+
+    send(res, 404, { error: 'rota orquestrador desconhecida', path });
     return true;
   } catch (e) {
     send(res, 500, { error: String(e instanceof Error ? e.message : e) });

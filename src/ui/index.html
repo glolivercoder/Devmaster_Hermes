@@ -164,13 +164,15 @@
             </span>
           </label>
         </div>
-        <!-- Memória de contexto por projeto (pgvector) -->
+        <!-- 📁 Nome do projeto: cria a pasta em F:\Projetos2026\DevMaster\<nome> -->
         <div class="mt-3 pt-3 border-t border-gray-800 flex flex-wrap items-center gap-2">
-          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🧠 Memória</span>
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">📁 Projeto</span>
           <input type="text" id="mem-project" list="mem-projects"
                  placeholder="nome do projeto (ex.: hermes-core)"
-                 class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-1.5 text-xs font-mono w-64 focus:outline-none focus:border-amber-500" />
+                 title="Nome do projeto: cria a pasta F:\Projetos2026\DevMaster\<nome> (prompt original + pesquisas + respostas) e alimenta a memória de continuidade"
+                 class="bg-gray-950 border border-gray-800 rounded-lg px-3 py-1.5 text-xs font-mono w-72 focus:outline-none focus:border-amber-500" />
           <datalist id="mem-projects"></datalist>
+          <span class="text-[10px] text-gray-600">📁 pasta automática + 🧠 memória</span>
           <span id="mem-status" class="text-[10px] font-mono text-gray-600">—</span>
           <button onclick="memSaveCheckpoint()" title="Grava agora um checkpoint manual"
                   class="text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
@@ -902,6 +904,20 @@
       <div class="flex items-center justify-between">
         <h2 class="text-base font-bold text-gray-200">Histórico &amp; Auditoria <span class="text-gray-500 font-normal">(logs de eventos do sistema)</span></h2>
         <button onclick="loadHistorico()" id="historico-refresh-btn" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait">⟳ Atualizar</button>
+      </div>
+
+      <!-- 📁 Projetos do Orquestrador (pasta F:\Projetos2026\DevMaster\<nome>) -->
+      <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-sm font-bold text-gray-300">📁 Projetos do Orquestrador
+            <span class="text-gray-500 text-xs font-normal">(prompt original + respostas de pesquisa/mercado/sites — pasta <code>F:\Projetos2026\DevMaster</code>)</span>
+          </h3>
+          <button onclick="loadOrchProjects()" id="orch-projects-refresh" class="px-2.5 py-1 rounded-md bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-mono hover:bg-cyan-500/25 disabled:opacity-50">⟳ Carregar projetos</button>
+        </div>
+        <div id="orch-projects-list" class="space-y-2">
+          <div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono text-gray-500 text-center">Clique em "Carregar projetos" para ver as pastas criadas pelo orquestrador.</div>
+        </div>
+        <div id="orch-project-view" class="hidden space-y-2"></div>
       </div>
 
       <!-- Filtros -->
@@ -2322,13 +2338,31 @@ Responda em pt-BR.`;
               ? `<div class="mt-1 text-[10px] text-red-400/70">📊 Mercado: ⚠️ análise falhou — ${d.market.error}</div>`
               : `<div class="mt-1 text-[10px] text-gray-500">📊 Mercado: <a href="/api/market/report/${encodeURIComponent((d.market.dashboardPath||'').split('/').pop())}" target="_blank" rel="noopener" class="text-amber-500/90 hover:underline font-semibold">abrir dashboard interativo ↗</a> · ${d.market.competitors} concorrentes · <span class="text-gray-400">${(d.market.verdict || '').slice(0, 80)}</span></div>`)
             : '';
+          const saved = d.saved
+            ? `<div class="mt-1 text-[10px] text-gray-500">📁 Salvo em <code class="text-cyan-400">${escHtml(d.saved.folder)}</code> · ${d.saved.files.length} arquivo(s): ${d.saved.files.map(f => `<span class="text-gray-400">${escHtml(f)}</span>`).join(' · ')}</div>`
+            : '';
+          // Última rodada — base para "Enviar para OpenCode" / "Copiar prompt".
+          window._orchLast = { project: d.project || proj || '', prompt: text, reply: d.reply || '' };
+          const actions = `
+            <div class="mt-2 pt-2 border-t border-gray-800 flex flex-wrap gap-2">
+              <button onclick="orchSendOpenCode(this)" title="Abre sessão no OpenCode e envia prompt original + análise do orquestrador (fallback: copia para a área de transferência)"
+                      class="bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition">
+                ▶ Enviar para OpenCode
+              </button>
+              <button onclick="orchCopyPrompt()" title="Copia o prompt original para a área de transferência"
+                      class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg text-[11px] transition">
+                📋 Copiar prompt
+              </button>
+            </div>`;
           el.innerHTML = `
             <span class="text-amber-400 font-bold">[HERMES ORCHESTRATOR]</span>
             <span class="text-[10px] text-gray-500 float-right font-mono">${d.model} · ${(d.latencyMs / 1000).toFixed(1)}s</span>
             <div class="max-w-none mt-2 text-gray-200 orchestrator-md">${marked.parse(d.reply || '')}</div>
             ${mem}
             ${market}
+            ${saved}
             ${research}
+            ${actions}
           `;
           chat.scrollTop = chat.scrollHeight;
         })
@@ -2367,6 +2401,85 @@ Responda em pt-BR.`;
         });
       } catch {}
       orchLoadConfig();
+    }
+
+    // ── Integração Orquestrador → OpenCode (com fallback: cópia p/ área de transferência) ──
+    async function orchCopyPrompt(silent) {
+      const last = window._orchLast;
+      if (!last) { if (!silent) alert('Nenhum prompt para copiar — rode uma análise antes.'); return false; }
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(last.prompt);
+        ok = true;
+      } catch {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = last.prompt;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand('copy');
+          ta.remove();
+        } catch { ok = false; }
+      }
+      if (!silent) alert(ok
+        ? '📋 Prompt original copiado para a área de transferência!'
+        : '⚠️ O navegador bloqueou a cópia — selecione o texto do chat e copie manualmente.');
+      return ok;
+    }
+
+    async function orchSendOpenCode(btn) {
+      const last = window._orchLast;
+      if (!last) { orchCopyPrompt(); return; }
+      const original = btn ? btn.innerHTML : '';
+      const setState = (html) => { if (btn) btn.innerHTML = html; };
+      if (btn) btn.disabled = true;
+      const text =
+        `PROJETO: ${last.project || '(sem nome)'}\n\n` +
+        `=== PROMPT ORIGINAL (aba Orquestrador) ===\n${last.prompt}\n\n` +
+        `=== ANÁLISE / OTIMIZAÇÃO — HERMES ORCHESTRATOR ===\n${last.reply}`;
+      const newSession = async () => {
+        const r = await fetch('/api/opencode/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: `Hermes ${last.project || 'projeto'} — ${new Date().toLocaleString('pt-BR')}` }),
+        });
+        const s = await r.json().catch(() => ({}));
+        if (!r.ok || !s.id) throw new Error(s.error || ('HTTP ' + r.status));
+        return s;
+      };
+      const send = (sessionId, model) => fetch(
+        `/api/opencode/sessions/${encodeURIComponent(sessionId)}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, model }),
+        });
+      try {
+        setState('⏳ Abrindo sessão no OpenCode…');
+        let session = await newSession();
+        // 1ª tentativa: OmniRoute (grátis, rota padrão do OpenCode).
+        setState('⏳ Enviando via OmniRoute… (até 5 min)');
+        let r2 = await send(session.id, 'opencode-omniroute/kr/auto');
+        // Fallback: OmniRoute caiu → Hermes Control Center (LiteLLM :4000).
+        if (!r2.ok) {
+          setState('⚠️ OmniRoute falhou — tentando via Hermes Control Center…');
+          session = await newSession();
+          r2 = await send(session.id, 'hermes/gemini-flash-free');
+        }
+        if (!r2.ok) {
+          const m = await r2.json().catch(() => ({}));
+          throw new Error(m.error || ('HTTP ' + r2.status));
+        }
+        setState('✅ Enviado! Abrindo aba OpenCode…');
+        setTimeout(() => { switchTab('opencode'); }, 700);
+      } catch (e) {
+        // Sem integração nos dois caminhos → copia o prompt (área de transferência).
+        setState('⚠️ Sem integração — copiando prompt…');
+        const ok = await orchCopyPrompt(true);
+        setState(ok ? '📋 Prompt copiado (área de transferência)' : '⚠️ Falhou: ' + String(e.message || e));
+      }
+      setTimeout(() => { if (btn) { btn.disabled = false; setState(original); } }, 5000);
     }
     orchLoadConfig();
 
