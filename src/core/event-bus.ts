@@ -41,6 +41,10 @@ export type HermesEventMap = {
   'security:scan:completed':[{ module: string; tool: 'semgrep' | 'trufflehog'; findings: number }];
   'security:secret:found':  [{ file: string; line: number; secretType: string }];
 
+  // Deploy Agent (aba 🚀 DEPLOY)
+  'deploy:command:denied':   [{ command: string; reason: string }];
+  'deploy:command:executed': [{ command: string; tier: string; exitCode: number | null }];
+
   // System
   'system:error': [{ source: string; error: string; stack?: string }];
   'system:ready': [{ timestamp: Date }];

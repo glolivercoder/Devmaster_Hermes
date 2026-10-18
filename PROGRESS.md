@@ -38,3 +38,55 @@
 - `src/ui/index.html` — botão ✨ Otimizar, modal, abas, checklist, confronto
 - `docs/optimizer/ARCHITECTURE.md` — fluxo, contratos, ADRs
 - `src/optimizer/CONTEXT.md` — contexto do módulo p/ sessões futuras de LLM
+
+---
+
+# 🚀 DEPLOY Agent System (DeployBot) — Outubro 2026
+
+**Status: FUNCIONAL (E2E completo)** · Global: 100% do escopo pedido
+
+## Escopo entregue
+- **Aba sidebar 🚀 DEPLOY Agent** (`view-deploy`): scan → classificação →
+  ranking 🥇🥈🥉 com score → guia passo-a-passo com checkboxes → painel
+  Computer Use (screenshot ao vivo) → pós-deploy (verify + DEPLOY_INFO.md) →
+  tabela de free tiers + chat DeployBot.
+- **Classificação determinística** (8 categorias, sem LLM) com evidências.
+- **Ranking**: SCORE = COMPAT×40 + CUSTO×30 + FACIL×20 + PERF×10 (0-100).
+- **Free tiers**: 13 plataformas (Tier A/B/C) + 4 EXTINTOS nunca recomendados
+  (Heroku, Fly.io, HF Spaces, PlanetScale) + refresh via Agente Pesquisador.
+- **Command-runner seguro** (allowlist + confirmação): AUTO/CONFIRM/DENY.
+- **Computer Use real exposto por rota** (antes só interno do Orchestrator).
+
+## Bugs corrigidos pelo caminho
+1. **Screenshot cego**: `ComputerUseAgent` capturava a tela mas o
+   `GatewayClient.complete()` só aceitava `content: string` → anexava "Screenshot
+   provided." sem imagem. Corrigido com suporte multimodal
+   (`ContentPart[]` + `image_url`) — compute vision de verdade agora.
+2. **Fallback de visão** (requisito do usuário): cadeia `openrouter-vision-free`
+   → `cheaper-vision` (Gemini 3.8 Flash pago barato) → `cheaper-fast`. E2E:
+   free falhou → cheaper-vision executou `mouse_move [960,540]` ✓.
+3. **Classificação de servidor invisível**: projetos com `node:http` puro (sem
+   express) eram classificados como SPA → heurística `createServer(|.listen(` no
+   entrypoint + `.html` em dirs de UI. Hermes agora → FULLSTACK_MONO/PaaS ✓.
+
+## E2E validado (porta 4020)
+- analyze (Hermes → FULLSTACK_MONO, Postgres, Docker, PaaS) ✓
+- recommend (6 opções; Supabase 87, Railway 86, Neon 86) ✓
+- guide (gemini-flash; 5 passos, máx 2 computerUse, 4 comandos reais) ✓
+- run-command: `git status` AUTO-exec, `rm -rf`/`sudo` DENY, `npm run build` CONFIRM ✓
+- verify (HTTP 200, 121ms, SSL) ✓
+- write-file: sem confirm → needsConfirmation; com confirm → grava; `.env` → 403 ✓
+- chat (PT-BR, Render sleep explanation) ✓
+- computer-use: fallback free→pago comprovado ✓
+- refresh-tiers: Tavily + análise com degradação markdown se JSON falhar ✓
+
+## Arquivos
+- `src/deploy/deploy-agent.ts` - classificação + free tiers + score + prompt
+- `src/deploy/command-runner.ts` - executor AUTO/CONFIRM/DENY
+- `src/deploy/deploy-routes.ts` - API `/api/deploy/*` (12 rotas)
+- `src/deploy/CONTEXT.md` - contexto do módulo
+- `src/ui/index.html` - aba + 6 painéis + ~300 linhas de JS (dp*)
+- `src/computer-use/computer-agent.ts` - multimodal + cadeia de fallback
+- `src/gateway/gateway-client.ts` - ContentPart (texto + imagem)
+- `src/llm/models.ts` - target `deploy` no smart-router
+- `src/core/event-bus.ts` - eventos deploy:command:*

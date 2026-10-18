@@ -90,6 +90,9 @@
         <button onclick="switchTab('preview')" id="tab-btn-preview" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
           <span>👁️</span> <span>Previews</span>
         </button>
+        <button onclick="switchTab('deploy')" id="tab-btn-deploy" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>🚀</span> <span>DEPLOY Agent</span>
+        </button>
       </nav>
     </div>
 
@@ -924,6 +927,109 @@
       </div>
     </section>
 
+    <!-- ── Tab View: DEPLOY Agent ────────────────────────────────────────── -->
+    <section id="view-deploy" class="hidden flex-1 flex-col p-6 space-y-4 overflow-y-auto">
+      <!-- Cabeçalho + ação primária -->
+      <div class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-base font-bold text-gray-200">🚀 DEPLOY Agent <span class="text-gray-500 font-normal">(DeployBot — do zero ao app publicado)</span></h2>
+            <p class="text-xs text-gray-500 mt-1">Escaneio seu projeto, recomendo a plataforma gratuita ideal e guio cada passo — inclusive com automação visual quando precisar de login/dashboard.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="dpRefreshTiers()" id="dp-btn-refresh" class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-emerald-600" title="Agente Pesquisador confere free tiers na web">🔄 Atualizar free tiers</button>
+            <button onclick="dpAnalyze()" id="dp-btn-analyze" class="px-4 py-2 rounded-lg bg-amber-500/15 border border-amber-500/50 text-amber-300 text-sm font-semibold hover:bg-amber-500/25">📂 Escanear projeto</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Classificação -->
+      <div id="dp-class-card" class="hidden bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-3">🔎 Resultado da análise</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3" id="dp-class-grid"></div>
+        <div id="dp-indicators" class="mt-3 text-[11px] text-gray-500 font-mono"></div>
+      </div>
+
+      <!-- 2. Ranking de plataformas -->
+      <div id="dp-rank-card" class="hidden bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🏆 Recomendação para o seu projeto</span>
+          <span id="dp-rank-badge" class="text-[10px] font-mono text-gray-600"></span>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3" id="dp-rank-grid"></div>
+        <div id="dp-retired" class="mt-3 text-[11px] text-gray-600"></div>
+      </div>
+
+      <!-- 3. Guia passo-a-passo -->
+      <div id="dp-guide-card" class="hidden bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">📋 <span id="dp-guide-title">Guia de deploy</span></span>
+          <span id="dp-guide-progress" class="text-xs font-mono text-gray-400">[0/0]</span>
+        </div>
+        <div id="dp-guide-steps" class="space-y-2" aria-live="polite"></div>
+        <div id="dp-cmd-out" class="mt-3 max-h-48 overflow-y-auto bg-black/60 border border-gray-800 rounded-lg p-2 space-y-1"></div>
+        <div id="dp-risks" class="mt-3 text-xs text-amber-400/80"></div>
+      </div>
+
+      <!-- 4. Painel Computer Use -->
+      <div id="dp-cu-card" class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🤖 Computer Use <span class="text-gray-600 normal-case">(assistência visual — login, dashboards, DNS)</span></span>
+          <button onclick="dpShot()" class="px-2.5 py-1 rounded-md bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-amber-600">📷 Screenshot</button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <input id="dp-cu-goal" type="text" placeholder="ex.: Abrir https://dash.cloudflare.com/sign-up e orientar o cadastro" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 mb-2" />
+            <div class="flex space-x-2">
+              <button onclick="dpCU()" id="dp-btn-cu" class="px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-500/50 text-purple-300 text-xs font-semibold hover:bg-purple-500/25">▶️ Executar ação visual</button>
+              <span class="text-[11px] text-gray-600 self-center font-mono">visão: free → pago barato (fallback automático)</span>
+            </div>
+            <div id="dp-cu-result" class="mt-3 text-xs text-gray-400 font-mono whitespace-pre-wrap"></div>
+          </div>
+          <div class="bg-black rounded-lg border border-gray-800 flex items-center justify-center min-h-[220px] overflow-hidden">
+            <img id="dp-cu-shot" class="max-h-[320px] object-contain" alt="screenshot" />
+            <span id="dp-cu-empty" class="text-xs text-gray-600 font-mono">sem captura ainda</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Pós-deploy -->
+      <div id="dp-post-card" class="hidden bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-3">✅ Pós-deploy</div>
+        <div class="flex flex-wrap items-center space-x-2 gap-2 mb-3">
+          <input id="dp-verify-url" type="text" placeholder="https://seu-app.pages.dev" class="flex-1 min-w-[240px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200" />
+          <button onclick="dpVerify()" class="px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/50 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/25">🔍 Verificar site no ar</button>
+          <button onclick="dpWriteInfo()" class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-amber-600">📝 Gerar DEPLOY_INFO.md</button>
+        </div>
+        <div id="dp-verify-out" class="text-xs font-mono text-gray-400"></div>
+        <div class="mt-3 space-y-1" id="dp-post-steps"></div>
+      </div>
+
+      <!-- 6. Tabela de free tiers + chat -->
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div class="xl:col-span-2 bg-gray-950 rounded-xl border border-gray-800 p-4">
+          <div class="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-3">💰 Free tiers (out/2026 — atualizáveis)</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead><tr class="text-gray-500 text-[10px] uppercase font-mono border-b border-gray-800">
+                <th class="text-left py-1.5 pr-2">Plataforma</th><th class="text-left py-1.5 pr-2">Limite</th><th class="text-left py-1.5 pr-2">Fortes</th><th class="text-left py-1.5">Fracos</th>
+              </tr></thead>
+              <tbody id="dp-tiers-body"></tbody>
+            </table>
+          </div>
+          <div id="dp-tiers-refresh" class="mt-3 text-xs text-gray-400"></div>
+        </div>
+        <div class="bg-gray-950 rounded-xl border border-gray-800 p-4 flex flex-col">
+          <div class="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-2">💬 DeployBot</div>
+          <div id="dp-chat" class="flex-1 overflow-y-auto space-y-2 text-xs mb-2 min-h-[160px] max-h-[300px]"></div>
+          <div class="flex space-x-2">
+            <input id="dp-chat-in" type="text" placeholder="Pergunte: por que Render dorme? Preciso de domínio?" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200" onkeydown="if(event.key==='Enter')dpChat()" />
+            <button onclick="dpChat()" id="dp-btn-chat" class="px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/50 text-amber-300 text-xs font-semibold hover:bg-amber-500/25">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -1380,7 +1486,8 @@
       if (tab === 'mcps') loadPortsInventory();
       if (tab === 'opencode') ocLoad();
       if (tab === 'preview') pvLoad('');
-      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico', 'opencode', 'preview'];
+      if (tab === 'deploy') dpInit();
+      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico', 'opencode', 'preview', 'deploy'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -1981,6 +2088,316 @@
       const title = prompt('Título da Tarefa / Ticket Paperclip:');
       if (!title) return;
       alert(`[PAPERCLIP] Novo ticket criado: "${title}". Atribuído ao próximo agente disponível na Virtual Agency!`);
+    }
+
+    // ── DEPLOY Agent (DeployBot) ─────────────────────────────────────────────
+    const dpState = { profile: null, ranking: [], chosen: null, guide: null, verify: null, init: false };
+    const dpChatHistory = [];
+    const dpPostSteps = [];
+
+    async function dpJson(url, body) {
+      const r = await fetch(url, body
+        ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+        : undefined);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+      return j;
+    }
+
+    async function dpInit() {
+      if (dpState.init) return;
+      dpState.init = true;
+      try {
+        const r = await dpJson('/api/deploy/tiers');
+        dpRenderTiers(r.tiers || [], r.retired || []);
+        dpPostSteps.length = 0;
+        (r.postSteps || []).forEach(s => dpPostSteps.push({ label: s, done: false }));
+        document.getElementById('dp-post-steps').innerHTML = dpPostSteps.map((s, i) => `
+          <label class="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer">
+            <input type="checkbox" class="accent-emerald-500" onchange="dpTogglePost(${i}, this.checked)" />
+            <span>${esc(s.label)}</span>
+          </label>`).join('');
+      } catch (e) { /* tabela é opcional */ }
+    }
+
+    function dpRenderTiers(tiers, retired) {
+      const tierColor = { A: 'bg-emerald-500/15 text-emerald-300 border-emerald-600/50', B: 'bg-amber-500/15 text-amber-300 border-amber-600/50', C: 'bg-rose-500/15 text-rose-300 border-rose-600/50' };
+      document.getElementById('dp-tiers-body').innerHTML = tiers.map(t => `
+        <tr class="border-b border-gray-800/60 hover:bg-gray-900/40">
+          <td class="py-1.5 pr-2 whitespace-nowrap">
+            <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold mr-1.5 ${tierColor[t.tier] || ''}">${esc(t.tier)}</span>
+            <a href="${esc(t.url)}" target="_blank" rel="noopener" class="text-gray-200 hover:text-amber-300">${esc(t.emoji)} ${esc(t.name)}</a>
+            ${t.noCard ? '' : '<span class="text-rose-400 ml-1" title="exige cartão">💳</span>'}
+          </td>
+          <td class="py-1.5 pr-2 text-gray-400">${esc(t.limit)}</td>
+          <td class="py-1.5 pr-2 text-gray-500">${esc(t.strengths)}</td>
+          <td class="py-1.5 text-gray-600">${esc(t.weaknesses || '—')}</td>
+        </tr>`).join('');
+      document.getElementById('dp-retired').innerHTML =
+        '❌ Nunca recomendados: ' + retired.map(r => `<span class="text-gray-500">${esc(r.name)}</span> <span class="text-gray-700">(${esc(r.reason)})</span>`).join(' · ');
+    }
+
+    async function dpAnalyze() {
+      const btn = document.getElementById('dp-btn-analyze');
+      btn.disabled = true; btn.textContent = '⏳ Escaneando…';
+      try {
+        const r = await dpJson('/api/deploy/analyze', {});
+        dpState.profile = r.profile;
+        document.getElementById('dp-class-card').classList.remove('hidden');
+        const p = r.profile;
+        const cells = [
+          ['Tipo', p.typeLabel], ['Framework', p.framework], ['Linguagem', p.language], ['Banco', p.database],
+          ['Docker', p.docker ? 'sim' : 'não'], ['Tamanho', p.sizeLabel], ['Hospedagem', p.hostingCategory], ['Arquivos', String((r.scan.files || []).length)],
+        ];
+        document.getElementById('dp-class-grid').innerHTML = cells.map(([k, v]) => `
+          <div class="bg-gray-900/70 border border-gray-800 rounded-lg px-3 py-2">
+            <div class="text-[10px] font-mono text-gray-500 uppercase">${esc(k)}</div>
+            <div class="text-sm text-gray-200 font-semibold truncate" title="${esc(v)}">${esc(v)}</div>
+          </div>`).join('');
+        document.getElementById('dp-indicators').textContent = 'Evidências: ' + (p.indicators || []).join(' · ');
+        document.getElementById('dp-post-card').classList.remove('hidden');
+        await dpRecommend();
+      } catch (e) { alert('Falha ao escanear: ' + e.message); }
+      finally { btn.disabled = false; btn.textContent = '📂 Escanear projeto'; }
+    }
+
+    async function dpRecommend() {
+      const r = await dpJson('/api/deploy/recommend', { profile: dpState.profile });
+      dpState.ranking = r.ranking || [];
+      const medals = ['🥇', '🥈', '🥉'];
+      document.getElementById('dp-rank-card').classList.remove('hidden');
+      document.getElementById('dp-rank-badge').textContent = `${dpState.ranking.length} opções compatíveis · score = compat×40 + custo×30 + facilidade×20 + performance×10`;
+      document.getElementById('dp-rank-grid').innerHTML = dpState.ranking.slice(0, 6).map((s, i) => {
+        const t = s.platform;
+        const tierColor = { A: 'text-emerald-400', B: 'text-amber-400', C: 'text-rose-400' };
+        return `
+        <div class="bg-gray-900/70 border ${i === 0 ? 'border-amber-600/60' : 'border-gray-800'} rounded-lg p-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-bold text-gray-100">${medals[i] || '🔹'} ${esc(t.name)}</span>
+            <span class="text-xs font-mono ${tierColor[t.tier] || 'text-gray-400'}">Tier ${esc(t.tier)}</span>
+          </div>
+          <div class="mt-2 flex items-center space-x-2">
+            <div class="flex-1 h-2 rounded bg-gray-800 overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-600 to-amber-400" style="width:${Math.min(100, s.score)}%"></div></div>
+            <span class="text-xs font-mono text-gray-300">${s.score}/100</span>
+          </div>
+          <div class="mt-2 text-[11px] text-gray-400 leading-snug">${esc(s.why)}</div>
+          ${s.warnings.length ? `<div class="mt-1 text-[11px] text-amber-500/80">⚠️ ${esc(s.warnings.join(' · '))}</div>` : ''}
+          <div class="mt-2 flex space-x-2">
+            <button onclick="dpGuide('${esc(t.name).replace(/'/g, "\\'")}')" class="flex-1 px-2 py-1.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-500/25">✅ Usar esta plataforma</button>
+            <button onclick="dpAsk('${esc(t.name)} — por que ${esc(s.score)}/100? me explique os prós e contras')" class="px-2 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-xs hover:border-amber-600" title="Detalhes no chat">[?]</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function dpGuide(platform) {
+      dpState.chosen = platform;
+      const card = document.getElementById('dp-guide-card');
+      card.classList.remove('hidden');
+      document.getElementById('dp-guide-steps').innerHTML = '<div class="text-xs text-gray-500 font-mono">⏳ DeployBot montando o plano…</div>';
+      try {
+        const g = await dpJson('/api/deploy/guide', { profile: dpState.profile, platform });
+        dpState.guide = g;
+        document.getElementById('dp-guide-title').textContent = g.planTitle + ` — ${platform}`;
+        document.getElementById('dp-cmd-out').innerHTML = '';
+        document.getElementById('dp-guide-steps').innerHTML = g.steps.map((s, i) => `
+          <div class="bg-gray-900/70 border border-gray-800 rounded-lg p-3">
+            <div class="flex items-start space-x-3">
+              <input type="checkbox" class="dp-step-check mt-1 accent-emerald-500" onchange="dpToggleStep()" />
+              <div class="flex-1">
+                <div class="text-sm text-gray-100 font-semibold"><span class="text-amber-400 font-mono mr-1">${i + 1}.</span>${esc(s.title)}</div>
+                <div class="text-xs text-gray-500 mt-0.5">${esc(s.why)}</div>
+                ${(s.commands || []).map((c, ci) => `
+                  <div class="mt-2 flex items-center space-x-2">
+                    <code class="flex-1 text-[11px] font-mono text-emerald-300 bg-black/50 border border-gray-800 rounded px-2 py-1 overflow-x-auto">${esc(c)}</code>
+                    <span id="dp-cmd-badge-${i}-${ci}" class="text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-700 text-gray-500">…</span>
+                    <button onclick="dpRunCommand(${i}, ${JSON.stringify(c).replace(/"/g, '&quot;')})" class="px-2 py-1 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-[11px] hover:border-emerald-600">▶ rodar</button>
+                  </div>`).join('')}
+                ${s.computerUse ? `<div class="mt-2 text-[11px] text-purple-300">🤖 Este passo usa <strong>Computer Use</strong> — desça até o painel roxo e clique em "Executar ação visual" com o objetivo deste passo.</div>` : ''}
+                ${(s.checklist || []).map(ck => `<div class="mt-1 text-[11px] text-gray-500">☐ ${esc(ck)}</div>`).join('')}
+              </div>
+            </div>
+          </div>`).join('');
+        document.getElementById('dp-risks').innerHTML = (g.risks || []).map(r => `⚠️ ${esc(r)}`).join('<br/>');
+        dpUpdateProgress();
+        dpClassifyBadges(g);
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {
+        document.getElementById('dp-guide-steps').innerHTML = `<div class="text-red-400 text-xs">Erro no guia: ${esc(e.message)}</div>`;
+      }
+    }
+
+    async function dpClassifyBadges(g) {
+      // Preenche o badge AUTO/CONFIRM/DENY de cada comando via servidor.
+      for (const s of (g.steps || [])) {
+        for (const c of (s.commands || [])) {
+          try {
+            const r = await dpJson('/api/deploy/classify-command', { command: c });
+            const badge = [...document.querySelectorAll(`#dp-guide-steps code`)]
+              .find(el => el.textContent === c)?.parentElement?.querySelector('[id^="dp-cmd-badge-"]');
+            if (!badge) continue;
+            const map = { AUTO: ['bg-emerald-500/15 text-emerald-300 border-emerald-600/50', 'AUTO'], CONFIRM: ['bg-amber-500/15 text-amber-300 border-amber-600/50', 'CONFIRM'], DENY: ['bg-rose-500/15 text-rose-300 border-rose-600/50', 'DENY'] };
+            const [cls, label] = map[r.tier] || ['', r.tier];
+            badge.className = `text-[10px] font-mono px-1.5 py-0.5 rounded border ${cls}`;
+            badge.textContent = label;
+            badge.title = r.reason || '';
+          } catch { /* badge fica "…" */ }
+        }
+      }
+    }
+
+    function dpToggleStep() {
+      const all = [...document.querySelectorAll('.dp-step-check')];
+      dpUpdateProgress(all);
+    }
+    function dpUpdateProgress(all) {
+      const list = all || [...document.querySelectorAll('.dp-step-check')];
+      const done = list.filter(c => c.checked).length;
+      document.getElementById('dp-guide-progress').textContent = `[${done}/${list.length}]`;
+    }
+
+    async function dpRunCommand(stepIdx, command) {
+      const outBox = document.getElementById('dp-cmd-out');
+      const addLine = (text, cls) => {
+        const d = document.createElement('div');
+        d.className = `text-[11px] font-mono whitespace-pre-wrap ${cls || 'text-gray-300'}`;
+        d.textContent = text;
+        outBox.appendChild(d);
+        outBox.scrollTop = outBox.scrollHeight;
+      };
+      try {
+        let r = await dpJson('/api/deploy/run-command', { command });
+        if (r.needsConfirmation) {
+          addLine(`⏳ exige confirmação: "${command}" — abrindo diálogo…`, 'text-amber-300');
+          if (!confirm(`O DeployBot quer executar:\n\n  ${command}\n\nTier: ${r.tier} (exige sua confirmação)\n\nExecutar?`)) {
+            addLine('⛔ usuário cancelou.', 'text-gray-500');
+            return;
+          }
+          r = await dpJson('/api/deploy/run-command', { command, confirm: true });
+        }
+        addLine(`$ ${command}`);
+        if (r.deniedReason) addLine(`⛔ ${r.deniedReason}`, 'text-rose-400');
+        else addLine(`exit=${r.exitCode} em ${r.durationMs}ms`, 'text-gray-500');
+        if (r.stdout?.trim()) addLine('── stdout ──\n' + r.stdout.trim().slice(0, 4000));
+        if (r.stderr?.trim()) addLine('── stderr ──\n' + r.stderr.trim().slice(0, 2000), 'text-amber-300/80');
+      } catch (e) { addLine('❌ ' + e.message, 'text-rose-400'); }
+    }
+
+    async function dpCU() {
+      const goal = document.getElementById('dp-cu-goal').value.trim();
+      if (!goal) { alert('Descreva o objetivo da ação visual.'); return; }
+      const btn = document.getElementById('dp-btn-cu');
+      const out = document.getElementById('dp-cu-result');
+      btn.disabled = true; btn.textContent = '⏳ Vendo a tela…';
+      out.textContent = 'analisando screenshot…';
+      try {
+        const r = await dpJson('/api/deploy/computer-use', { goal });
+        const a = r.result;
+        out.textContent = [
+          ` modelo usado: ${a.model}${a.model.includes('free') ? '' : ' (fallback pago barato ativado)'}`,
+          ` raciocínio: ${a.modelReasoning}`,
+          ` ação: ${a.action.action}${a.action.coordinate ? ` @ [${a.action.coordinate}]` : ''}${a.action.text ? ` digita: "${a.action.text}"` : ''}${a.action.hotkeys ? ` hotkey: ${a.action.hotkeys.join('+')}` : ''}`,
+          ` sucesso: ${a.success ? '✅' : '❌'}`,
+        ].join('\n');
+        if (r.screenshotPost) dpSetShot(r.screenshotPost);
+      } catch (e) { out.textContent = '❌ ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = '▶️ Executar ação visual'; }
+    }
+
+    async function dpShot() {
+      try {
+        const r = await dpJson('/api/deploy/computer-use/screenshot');
+        dpSetShot(r.base64);
+      } catch (e) { alert('Screenshot indisponível: ' + e.message); }
+    }
+    function dpSetShot(b64) {
+      const img = document.getElementById('dp-cu-shot');
+      img.src = 'data:image/png;base64,' + b64;
+      img.onload = () => document.getElementById('dp-cu-empty').classList.add('hidden');
+    }
+
+    async function dpVerify() {
+      const url = document.getElementById('dp-verify-url').value.trim();
+      if (!url) { alert('Cole a URL do site publicado.'); return; }
+      const out = document.getElementById('dp-verify-out');
+      out.textContent = '⏳ verificando…';
+      try {
+        const r = await dpJson('/api/deploy/verify', { url });
+        dpState.verify = r;
+        out.innerHTML = r.ok
+          ? `<span class="text-emerald-400">✅ HTTP ${r.status} · ${r.timeMs}ms · SSL: ${r.ssl ? 'sim' : 'não'} — ${esc(r.hint || '')}</span>`
+          : `<span class="text-rose-400">❌ ${r.status ? 'HTTP ' + r.status : esc(r.error || 'falhou')} · ${r.timeMs}ms</span>`;
+      } catch (e) { out.textContent = '❌ ' + e.message; }
+    }
+
+    function dpTogglePost(i, checked) { if (dpPostSteps[i]) dpPostSteps[i].done = checked; }
+
+    async function dpWriteInfo() {
+      const p = dpState.profile;
+      if (!p) { alert('Escaneie o projeto primeiro.'); return; }
+      const md = [
+        '# 🚀 Informações de Deploy', '',
+        `**Projeto:** ${p.typeLabel} (${p.language}${p.framework !== '—' ? ' · ' + p.framework : ''})`,
+        `**Data do Deploy:** ${new Date().toLocaleString('pt-BR')}`,
+        `**Plataforma:** ${dpState.chosen || '(a definir)'}`,
+        `**URL de Produção:** ${dpState.verify?.finalUrl || document.getElementById('dp-verify-url').value.trim() || '(a definir)'}`,
+        `**Status verificado:** ${dpState.verify ? `HTTP ${dpState.verify.status} em ${dpState.verify.timeMs}ms` : '(não verificado)'}`, '',
+        '## Configurações do Projeto',
+        `- Framework: ${p.framework}`, `- Banco de dados: ${p.database}`,
+        `- Docker: ${p.docker ? 'sim' : 'não'}`, `- Tamanho: ${p.sizeLabel}`, `- Hospedagem: ${p.hostingCategory}`, '',
+        '## Plano de Deploy', ...(dpState.guide ? dpState.guide.steps.map((s, i) => `${i + 1}. ${s.title}${(s.commands || []).length ? ' — `' + s.commands.join('`, `') + '`' : ''}`) : ['(guia ainda não gerado)']), '',
+        '## Próximos Passos', ...dpPostSteps.map(s => `- [${s.done ? 'x' : ' '}] ${s.label}`), '',
+        '_Gerado pelo Hermes Deploy Agent (aba 🚀 DEPLOY)._',
+      ].join('\n');
+      if (!confirm('Gravar DEPLOY_INFO.md na raiz do projeto?')) return;
+      try {
+        const r = await dpJson('/api/deploy/write-file', { path: 'DEPLOY_INFO.md', content: md, confirm: true });
+        alert(`✅ DEPLOY_INFO.md gravado (${r.bytes} bytes).`);
+      } catch (e) { alert('Erro: ' + e.message); }
+    }
+
+    async function dpRefreshTiers() {
+      const btn = document.getElementById('dp-btn-refresh');
+      btn.disabled = true; btn.textContent = '⏳ Pesquisando…';
+      try {
+        const r = await dpJson('/api/deploy/refresh-tiers', {});
+        document.getElementById('dp-tiers-refresh').innerHTML = `
+          <div class="text-gray-300">${esc(r.analysis.summary)}</div>
+          <div class="mt-1 text-gray-500">${esc(r.analysis.recommendation)}</div>
+          <div class="mt-1 text-[11px] font-mono text-gray-600">fontes (${esc(r.provider)}): ${r.sources.slice(0, 3).map(s => `<a class="text-amber-400/70 hover:underline" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title.slice(0, 40))}</a>`).join(' · ')}</div>`;
+      } catch (e) { document.getElementById('dp-tiers-refresh').innerHTML = `<span class="text-rose-400">❌ ${esc(e.message)}</span>`; }
+      finally { btn.disabled = false; btn.textContent = '🔄 Atualizar free tiers'; }
+    }
+
+    function dpAsk(msg) {
+      document.getElementById('dp-chat-in').value = msg;
+      dpChat();
+    }
+
+    async function dpChat() {
+      const inp = document.getElementById('dp-chat-in');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      inp.value = '';
+      const chat = document.getElementById('dp-chat');
+      chat.insertAdjacentHTML('beforeend', `<div class="text-gray-200 bg-gray-900 rounded-lg p-2"><strong class="text-amber-400">você:</strong> ${esc(msg)}</div>`);
+      dpChatHistory.push({ role: 'user', content: msg });
+      chat.insertAdjacentHTML('beforeend', '<div id="dp-chat-wait" class="text-gray-500 font-mono text-[11px] p-1">⏳ DeployBot respondendo…</div>');
+      chat.scrollTop = chat.scrollHeight;
+      try {
+        const r = await dpJson('/api/deploy/chat', {
+          message: msg, history: dpChatHistory.slice(0, -1),
+          profile: dpState.profile || undefined,
+          project: dpState.chosen ? `${dpState.chosen}-deploy` : 'deploy-geral',
+        });
+        document.getElementById('dp-chat-wait')?.remove();
+        chat.insertAdjacentHTML('beforeend', `<div class="text-gray-300 bg-gray-950 border border-gray-800 rounded-lg p-2 whitespace-pre-wrap"><strong class="text-emerald-400">DeployBot:</strong> ${esc(r.reply)}</div>`);
+        dpChatHistory.push({ role: 'assistant', content: r.reply });
+        chat.scrollTop = chat.scrollHeight;
+      } catch (e) {
+        document.getElementById('dp-chat-wait')?.remove();
+        chat.insertAdjacentHTML('beforeend', `<div class="text-rose-400 text-[11px]">❌ ${esc(e.message)}</div>`);
+      }
     }
   </script>
 </body>

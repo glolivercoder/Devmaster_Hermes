@@ -17,20 +17,20 @@
       "updatedAt": "2026-10-17T19:00:43.894Z"
     },
     "openrouter-vision-free": {
-      "calls": 1,
+      "calls": 2,
       "success": 0,
-      "failures": 1,
-      "avgLatencyMs": 875,
+      "failures": 2,
+      "avgLatencyMs": 937,
       "totalSpend": 0,
-      "updatedAt": "2026-10-17T19:00:43.234Z"
+      "updatedAt": "2026-10-17T23:46:26.004Z"
     },
     "gemini-flash": {
-      "calls": 17,
-      "success": 16,
+      "calls": 29,
+      "success": 28,
       "failures": 1,
-      "avgLatencyMs": 13847,
+      "avgLatencyMs": 9128,
       "totalSpend": 0,
-      "updatedAt": "2026-10-17T21:54:39.087Z"
+      "updatedAt": "2026-10-17T23:53:31.155Z"
     },
     "cheaper-opus": {
       "calls": 14,
@@ -39,6 +39,14 @@
       "avgLatencyMs": 24592,
       "totalSpend": 0,
       "updatedAt": "2026-10-17T22:29:54.240Z"
+    },
+    "cheaper-vision": {
+      "calls": 1,
+      "success": 1,
+      "failures": 0,
+      "avgLatencyMs": 13196,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-17T23:46:40.095Z"
     }
   }
 }

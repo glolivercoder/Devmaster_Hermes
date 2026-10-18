@@ -19,25 +19,36 @@ export interface ComputerUseStepResult {
   action: ComputerAction;
   modelReasoning: string;
   success: boolean;
+  model: string;          // modelo que respondeu (após fallback)
 }
 
 export class ComputerUseAgent {
   private driver: ScreenDriver;
   private gateway: GatewayClient;
   private virtualKey: string;
-  private visionModel: string;
+  private visionModels: string[];
 
+  /**
+   * @param visionModels cadeia de modelos de visão em ordem de preferência —
+   *   o primeiro é gratuito; se falhar (rate-limit/sem visão/erro), cai para o
+   *   próximo (pago barato). Padrão: OpenRouter free → Gemini 3.8 Flash barato
+   *   (cheaper-vision) → Haiku barato (cheaper-fast).
+   */
   constructor(
     gateway: GatewayClient,
     virtualKey: string,
-    visionModel = 'openrouter-vision-free',
+    visionModels: string | string[] = ['openrouter-vision-free', 'cheaper-vision', 'cheaper-fast'],
     driver?: ScreenDriver
   ) {
     this.gateway = gateway;
     this.virtualKey = virtualKey;
-    this.visionModel = visionModel;
+    this.visionModels = Array.isArray(visionModels) ? visionModels : [visionModels];
     this.driver = driver ?? new ScreenDriver();
   }
+
+  /** Screenshot atual da tela (base64) — usado pela UI para mostrar o que o agente vê. */
+  getScreenshot(): string { return this.driver.takeScreenshot(); }
+  getScreenSize(): { width: number; height: number } { return this.driver.getScreenSize(); }
 
   /**
    * Run a single autonomous Computer Use step towards a goal.
@@ -50,11 +61,11 @@ export class ComputerUseAgent {
       description: `Computer use action for: ${goal}`,
     });
 
-    // 1. Perception: capture screenshot
+    // 1. Perception: capture screenshot (ANEXADO ao prompt — antes era descartado)
     const screenshotBase64 = this.driver.takeScreenshot();
     const dimensions = this.driver.getScreenSize();
+    const imageUrl = `data:image/png;base64,${screenshotBase64}`;
 
-    // 2. Multimodal LLM decision
     const systemPrompt = `
 You are the Hermes Computer Use GUI Agent.
 Screen dimensions: ${dimensions.width}x${dimensions.height}.
@@ -69,7 +80,7 @@ Analyze the screenshot. Return a JSON object with your action:
 }
 `.trim();
 
-    let decision: {
+    type Decision = {
       reasoning: string;
       action: ComputerAction['action'];
       coordinate?: [number, number];
@@ -77,44 +88,51 @@ Analyze the screenshot. Return a JSON object with your action:
       hotkeys?: string[];
     };
 
-    try {
-      const response = await this.gateway.complete({
-        model: this.visionModel,
-        virtualKey: this.virtualKey,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `Screenshot provided. Dimensions: ${dimensions.width}x${dimensions.height}. What is the next action for: "${goal}"?`,
-          },
-        ],
-      });
+    // 2. Multimodal decision com FALLBACK de modelo (free → pago barato)
+    let decision: Decision | undefined;
+    let usedModel = '';
+    const errors: string[] = [];
 
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
+    for (const model of this.visionModels) {
+      try {
+        const response = await this.gateway.complete({
+          model,
+          virtualKey: this.virtualKey,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: `Screenshot attached (${dimensions.width}x${dimensions.height}). Next action for: "${goal}"?` },
+                { type: 'image_url', image_url: { url: imageUrl } },
+              ],
+            },
+          ],
+        });
+        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('sem JSON na resposta');
+        const parsed = JSON.parse(jsonMatch[0]) as Decision;
+        if (!parsed || typeof parsed.action !== 'string') throw new Error('JSON sem campo action válido');
+        decision = parsed;
+        usedModel = model;
+        break;
+      } catch (error: any) {
+        errors.push(`${model}: ${error?.message || String(error)}`);
         auditLogger.log({
           actor: 'SUBAGENT',
-          event: 'computer_use:parse_failure',
-          payload: { goal, responseLength: response.content.length },
+          event: 'computer_use:model_fallback',
+          payload: { goal, model, error: error?.message || String(error) },
         });
-        throw new Error('Vision model did not return valid JSON with an action object.');
       }
-      decision = JSON.parse(jsonMatch[0]);
-      if (!decision || typeof decision.action !== 'string') {
-        auditLogger.log({
-          actor: 'SUBAGENT',
-          event: 'computer_use:invalid_action',
-          payload: { goal, decision: JSON.stringify(decision) },
-        });
-        throw new Error('Vision model did not return a valid action field.');
-      }
-    } catch (error: any) {
+    }
+
+    if (!decision) {
       auditLogger.log({
         actor: 'SUBAGENT',
         event: 'computer_use:vision_failure',
-        payload: { goal, error: error?.message || String(error) },
+        payload: { goal, errors },
       });
-      throw new Error(`cannot proceed with GUI automation: ${(error?.message || 'Vision model unreachable')}. Ensure Windows Forms and GDI+ are available. Install: https://github.com/obra/superpowers — Evidence over claims`);
+      throw new Error(`GUI automation indisponível — Vision model did not return valid JSON action em nenhum modelo da cadeia: ${errors.join(' | ')}`);
     }
 
     // 3. Execution
@@ -132,6 +150,7 @@ Analyze the screenshot. Return a JSON object with your action:
       action: computerAction,
       modelReasoning: decision.reasoning,
       success,
+      model: usedModel,
     };
 
     eventBus.publish('agent:task:completed', {

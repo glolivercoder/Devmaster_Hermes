@@ -39,7 +39,7 @@ function parseJson<T>(raw: string): T {
   }
 }
 
-async function structuredJson<T>(
+export async function structuredJson<T>(
   model: string, virtualKey: string, system: string, user: string,
   maxTokens = 3072,
 ): Promise<T> {

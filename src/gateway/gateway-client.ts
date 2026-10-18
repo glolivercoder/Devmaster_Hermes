@@ -9,9 +9,13 @@
 import { eventBus } from '../core/event-bus.js';
 import { recordBenchmark } from '../llm/smart-router.js';
 
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
 export interface CompletionRequest {
   model: string;           // logical model name from litellm-config.yaml
-  messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+  messages: { role: 'user' | 'assistant' | 'system'; content: string | ContentPart[] }[];
   virtualKey: string;      // sk-virtual-xxx (module-scoped virtual key)
   maxTokens?: number;
   temperature?: number;
@@ -47,7 +51,8 @@ export class GatewayClient {
     eventBus.publish('llm:request', {
       model: req.model,
       virtualKey: req.virtualKey,
-      estimatedTokens: req.messages.reduce((acc, m) => acc + m.content.length / 4, 0),
+      estimatedTokens: req.messages.reduce((acc, m) =>
+        acc + (typeof m.content === 'string' ? m.content.length / 4 : 800), 0), // imagem ≈ 800 tok
     });
 
     const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
