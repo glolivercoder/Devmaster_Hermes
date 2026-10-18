@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onboarding — ui-demo-projeto</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-md bg-gray-950 border border-gray-800 rounded-2xl p-8 space-y-6 shadow-2xl">
+
+    <!-- Progress indicator -->
+    <div class="text-center">
+      <span data-testid="onboarding-progress" class="text-xs font-mono text-gray-400"></span>
+    </div>
+
+    <!-- Step 1: Account -->
+    <div data-testid="onboarding-step-1" class="space-y-5">
+      <div class="text-center space-y-1">
+        <h2 class="text-lg font-bold text-white">Criar sua conta</h2>
+        <p class="text-xs text-gray-400">Preencha os dados para começar</p>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-mono text-gray-400 mb-1">Nome completo</label>
+          <input
+            data-testid="input-name"
+            type="text"
+            placeholder="Ada Lovelace"
+            class="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500 text-gray-200"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-mono text-gray-400 mb-1">E-mail</label>
+          <input
+            data-testid="input-email"
+            type="email"
+            placeholder="ada@exemplo.com"
+            class="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500 text-gray-200"
+          />
+          <p data-testid="email-error" class="hidden mt-1 text-xs text-red-400 font-mono">E-mail inválido.</p>
+        </div>
+      </div>
+
+      <button
+        data-testid="btn-step1-next"
+        onclick="goStep1()"
+        class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-950 font-bold py-2.5 rounded-lg text-sm transition sticky bottom-0"
+      >
+        Continuar →
+      </button>
+    </div>
+
+    <!-- Step 2: Goal -->
+    <div data-testid="onboarding-step-2" class="hidden space-y-5">
+      <div class="text-center space-y-1">
+        <h2 class="text-lg font-bold text-white">Qual é seu objetivo?</h2>
+        <p class="text-xs text-gray-400">Escolha uma opção</p>
+      </div>
+
+      <div class="space-y-2" id="goal-options">
+        <label data-testid="goal-option-leads" class="flex items-center space-x-3 p-3 bg-gray-900 border border-gray-800 rounded-lg cursor-pointer hover:border-amber-500/60 transition has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10">
+          <input type="radio" name="goal" value="Captar leads" class="accent-amber-500" />
+          <span class="text-sm text-gray-200">Captar leads</span>
+        </label>
+        <label data-testid="goal-option-sell" class="flex items-center space-x-3 p-3 bg-gray-900 border border-gray-800 rounded-lg cursor-pointer hover:border-amber-500/60 transition has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10">
+          <input type="radio" name="goal" value="Vender online" class="accent-amber-500" />
+          <span class="text-sm text-gray-200">Vender online</span>
+        </label>
+        <label data-testid="goal-option-event" class="flex items-center space-x-3 p-3 bg-gray-900 border border-gray-800 rounded-lg cursor-pointer hover:border-amber-500/60 transition has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10">
+          <input type="radio" name="goal" value="Divulgar evento" class="accent-amber-500" />
+          <span class="text-sm text-gray-200">Divulgar evento</span>
+        </label>
+      </div>
+
+      <div class="flex space-x-2">
+        <button
+          data-testid="btn-step2-back"
+          onclick="showStep(1)"
+          class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-2.5 rounded-lg text-sm transition"
+        >
+          ← Voltar
+        </button>
+        <button
+          data-testid="btn-step2-next"
+          onclick="goStep2()"
+          class="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold py-2.5 rounded-lg text-sm transition"
+        >
+          Continuar →
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirmation -->
+    <div data-testid="onboarding-step-3" class="hidden space-y-5">
+      <div class="text-center space-y-1">
+        <h2 class="text-lg font-bold text-white">Confirme seus dados</h2>
+        <p class="text-xs text-gray-400">Revise antes de finalizar</p>
+      </div>
+
+      <div class="space-y-2 bg-gray-900/60 border border-gray-800 rounded-xl p-4 text-sm font-mono">
+        <div class="flex justify-between">
+          <span class="text-gray-400">Nome</span>
+          <span data-testid="summary-name" class="text-gray-200 text-right max-w-[60%] truncate"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">E-mail</span>
+          <span data-testid="summary-email" class="text-gray-200 text-right max-w-[60%] truncate"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Objetivo</span>
+          <span data-testid="summary-goal" class="text-gray-200 text-right max-w-[60%] truncate"></span>
+        </div>
+      </div>
+
+      <div class="flex space-x-2">
+        <button
+          data-testid="btn-step3-back"
+          onclick="showStep(2)"
+          class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-2.5 rounded-lg text-sm transition"
+        >
+          ← Voltar
+        </button>
+        <button
+          data-testid="btn-step3-finish"
+          onclick="finish()"
+          class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition"
+        >
+          Finalizar ✓
+        </button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div data-testid="success-message" class="hidden text-center space-y-4">
+      <div class="text-5xl">🎉</div>
+      <h2 class="text-lg font-bold text-emerald-400">Conta criada com sucesso!</h2>
+      <p class="text-xs text-gray-400 font-mono">Obrigado, <span data-testid="success-name" class="text-gray-200"></span>. Seu acesso está pronto.</p>
+      <button onclick="restart()" class="text-xs text-amber-400 hover:underline font-mono">Recomeçar demo</button>
+    </div>
+
+  </div>
+
+  <script>
+    const state = { name: '', email: '', goal: '' };
+    let currentStep = 1;
+
+    function isValidEmail(v) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    }
+
+    function showStep(n) {
+      currentStep = n;
+      [1, 2, 3].forEach(i => {
+        document.querySelector(`[data-testid="onboarding-step-${i}"]`).classList.toggle('hidden', i !== n);
+      });
+      document.querySelector('[data-testid="success-message"]').classList.add('hidden');
+      document.querySelector('[data-testid="onboarding-progress"]').textContent = `Passo ${n} de 3`;
+    }
+
+    function goStep1() {
+      const nameEl  = document.querySelector('[data-testid="input-name"]');
+      const emailEl = document.querySelector('[data-testid="input-email"]');
+      const errEl   = document.querySelector('[data-testid="email-error"]');
+
+      if (!isValidEmail(emailEl.value)) {
+        errEl.classList.remove('hidden');
+        emailEl.classList.add('border-red-500');
+        emailEl.classList.remove('border-gray-800');
+        return;
+      }
+
+      errEl.classList.add('hidden');
+      emailEl.classList.remove('border-red-500');
+      emailEl.classList.add('border-gray-800');
+
+      state.name  = nameEl.value.trim();
+      state.email = emailEl.value.trim();
+      showStep(2);
+    }
+
+    function goStep2() {
+      const checked = document.querySelector('input[name="goal"]:checked');
+      if (!checked) return;
+      state.goal = checked.value;
+
+      document.querySelector('[data-testid="summary-name"]').textContent  = state.name;
+      document.querySelector('[data-testid="summary-email"]').textContent = state.email;
+      document.querySelector('[data-testid="summary-goal"]').textContent  = state.goal;
+      showStep(3);
+    }
+
+    function finish() {
+      [1, 2, 3].forEach(i => {
+        document.querySelector(`[data-testid="onboarding-step-${i}"]`).classList.add('hidden');
+      });
+      document.querySelector('[data-testid="onboarding-progress"]').textContent = 'Concluído';
+      document.querySelector('[data-testid="success-name"]').textContent = state.name;
+      document.querySelector('[data-testid="success-message"]').classList.remove('hidden');
+    }
+
+    function restart() {
+      state.name = ''; state.email = ''; state.goal = '';
+      document.querySelector('[data-testid="input-name"]').value  = '';
+      document.querySelector('[data-testid="input-email"]').value = '';
+      document.querySelectorAll('input[name="goal"]').forEach(r => r.checked = false);
+      showStep(1);
+    }
+
+    showStep(1);
+  </script>
+</body>
+</html>
