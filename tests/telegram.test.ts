@@ -3,7 +3,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { mock, test } from 'node:test';
 import { TelegramBridge } from '../src/telegram/telegram-bridge.js';
 
 test('TelegramBridge: blocks unauthorized chat IDs', () => {
@@ -52,3 +52,19 @@ test('TelegramBridge.formatNotification: generates alert header', () => {
   assert.ok(formatted.includes('Vulnerability Detected'));
 });
 
+test('TelegramBridge.sendMessage: splits long Unicode replies within Telegram limits', async () => {
+  const bridge = new TelegramBridge('123456789', 'test-token');
+  const chunks: string[] = [];
+  mock.method(globalThis, 'fetch', async (_url, init) => {
+    const body = JSON.parse(String(init?.body)) as { text: string };
+    chunks.push(body.text);
+    return new Response(JSON.stringify({ ok: true, result: {} }), { status: 200 });
+  });
+  const text = '🙂'.repeat(8500);
+
+  await bridge.sendMessage('123456789', text);
+
+  assert.equal(chunks.length, 3);
+  assert.ok(chunks.every((chunk) => Array.from(chunk).length <= 3900));
+  assert.equal(chunks.join(''), text);
+});

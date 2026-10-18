@@ -507,8 +507,12 @@ TAREFA EXTERNA AO FORMATO DE SAÍDA GLOBAL: IGNORE a seção "FORMATO DE SAÍDA"
       const b = postBody;
       const goal = String(b.goal ?? '').trim();
       if (!goal) { send(res, 400, { error: 'goal obrigatório' }); return true; }
+      if (b.confirm !== true) {
+        send(res, 409, { error: 'confirmação explícita obrigatória para ação visual', confirmationRequired: true });
+        return true;
+      }
       const agent = new ComputerUseAgent(getGateway(), await getVirtualKey('n8n-cu'));
-      const result = await agent.executeStep(goal, Number(b.step ?? 1));
+      const result = await agent.executeStep(goal, Number(b.step ?? 1), true);
       let screenshotPost: string | null = null;
       try { screenshotPost = agent.getScreenshot(); } catch { /* sem tela */ }
       send(res, 200, { result, screenshotPost });

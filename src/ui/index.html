@@ -217,6 +217,9 @@
         <button onclick="openOptimizer()" title="Otimizar prompt (análise fria + pesquisa + reescrita)" class="bg-gray-800 hover:bg-gray-700 border border-amber-700/50 text-amber-300 font-semibold px-4 py-2.5 rounded-lg text-sm transition">
           ✨ Otimizar
         </button>
+        <button onclick="coordinatePrompt()" title="Gera plano, delega tarefas respeitando dependências e sintetiza resultados. Não altera arquivos." class="bg-cyan-900/70 hover:bg-cyan-800 border border-cyan-700 text-cyan-200 font-semibold px-3 py-2.5 rounded-lg text-sm transition">
+          🤖 Delegar plano
+        </button>
         <button onclick="sendPrompt()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold px-5 py-2.5 rounded-lg text-sm transition">
           Enviar
         </button>
@@ -2677,8 +2680,8 @@ Responda em pt-BR.`;
           const saved = d.saved
             ? `<div class="mt-1 text-[10px] text-gray-500">📁 Salvo em <code class="text-cyan-400">${escHtml(d.saved.folder)}</code> · ${d.saved.files.length} arquivo(s): ${d.saved.files.map(f => `<span class="text-gray-400">${escHtml(f)}</span>`).join(' · ')}</div>`
             : '';
-          const pacts = (Array.isArray(d.processActions) && d.processActions.length)
-            ? `<div class="mt-2 p-2 bg-gray-950 border border-amber-500/30 rounded-lg text-[10px] font-mono space-y-0.5"><div class="text-amber-400 font-bold">⚡ Gestão de processos (executada pelo Hermes)</div>${d.processActions.map(a => `<div>${a.ok ? '✅' : '⛔'} PID ${a.pid} (${escHtml(a.action)}): <span class="${a.ok ? 'text-emerald-400' : 'text-red-400'}">${escHtml(a.detail)}</span>${a.reason ? ` · <span class="text-gray-500">motivo: ${escHtml(a.reason)}</span>` : ''}</div>`).join('')}</div>`
+          const pacts = (Array.isArray(d.processActionProposals) && d.processActionProposals.length)
+            ? `<div class="mt-2 p-2 bg-gray-950 border border-amber-500/30 rounded-lg text-[10px] font-mono space-y-1"><div class="text-amber-400 font-bold">⚠️ Sugestões de processo — nada foi executado</div>${d.processActionProposals.map(a => `<div class="flex items-center gap-2"><span>PID ${a.pid} (${escHtml(a.action)}): ${escHtml(a.reason)}</span><button onclick="orchApproveProcessAction(this,${Number(a.pid)},'${escHtml(a.action)}')" class="bg-amber-500/20 border border-amber-600/50 text-amber-200 rounded px-2 py-1">Confirmar ação</button></div>`).join('')}</div>`
             : '';
           // Última rodada — base para "Enviar para OpenCode" / "Copiar prompt".
           window._orchLast = { project: d.project || proj || '', prompt: text, reply: d.reply || '' };
@@ -2715,6 +2718,60 @@ Responda em pt-BR.`;
 
       input.value = '';
       chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function coordinatePrompt() {
+      const input = document.getElementById('prompt-input');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+      const chat = document.getElementById('chat-messages');
+      const resultId = 'coord-' + Date.now();
+      chat.insertAdjacentHTML('beforeend', `
+        <div class="bg-gray-900 p-3 rounded-lg text-gray-200 text-right"><span class="text-blue-400 font-bold">[USER]</span> ${escHtml(prompt)}</div>
+        <div id="${resultId}" class="bg-gray-950 border border-cyan-800 p-3 rounded-lg text-gray-300"><span class="text-cyan-300 font-bold">[HERMES COORDINATOR]</span> decompondo e delegando...</div>
+      `);
+      input.value = '';
+      chat.scrollTop = chat.scrollHeight;
+      try {
+        const response = await fetch('/api/orchestrator/coordinate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        const tasks = (data.tasks || []).map(task =>
+          `<li><strong>${escHtml(task.name)}</strong> — ${escHtml(task.status)}${task.error ? `: ${escHtml(task.error)}` : ''}</li>`
+        ).join('');
+        window._orchLast = { project: '', prompt, reply: data.summary || '' };
+        const el = document.getElementById(resultId);
+        if (el) el.innerHTML = `<span class="text-cyan-300 font-bold">[HERMES COORDINATOR]</span><div class="mt-2 whitespace-pre-wrap">${escHtml(data.summary || '')}</div><ul class="mt-2 list-disc pl-5">${tasks}</ul><div class="mt-2 text-[10px] text-amber-300">${escHtml(data.note || '')}</div><button onclick="orchSendOpenCode(this)" class="mt-2 bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 px-3 py-1.5 rounded-lg text-[11px] font-semibold">Enviar síntese para OpenCode</button>`;
+      } catch (error) {
+        const el = document.getElementById(resultId);
+        if (el) el.innerHTML = `<span class="text-red-400 font-bold">[COORDENAÇÃO FALHOU]</span> ${escHtml(error.message || error)}`;
+      }
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function orchApproveProcessAction(button, pid, action) {
+      const labels = { fechar: 'encerrar processo', pausar: 'pausar processo', retomar: 'retomar processo', reiniciar: 'reiniciar processo' };
+      if (!confirm(`Confirmar ${labels[action] || action} PID ${pid}?`)) return;
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/processes/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pid, action, confirm: true }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || result.detail || `HTTP ${response.status}`);
+        button.textContent = 'Executado';
+        button.classList.add('text-emerald-300');
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Falhou — tentar novamente';
+        button.title = error.message || String(error);
+      }
     }
 
     // ── Credenciais opcionais: skip (⏭) e skip-all (⏭⏭) por seção ─────────
@@ -3682,12 +3739,13 @@ Responda em pt-BR.`;
     async function dpCU() {
       const goal = document.getElementById('dp-cu-goal').value.trim();
       if (!goal) { alert('Descreva o objetivo da ação visual.'); return; }
+      if (!confirm(`Autorizar o Computer Use a executar uma ação real na tela para:\n\n${goal}?`)) return;
       const btn = document.getElementById('dp-btn-cu');
       const out = document.getElementById('dp-cu-result');
       btn.disabled = true; btn.textContent = '⏳ Vendo a tela…';
       out.textContent = 'analisando screenshot…';
       try {
-        const r = await dpJson('/api/deploy/computer-use', { goal });
+        const r = await dpJson('/api/deploy/computer-use', { goal, confirm: true });
         const a = r.result;
         out.textContent = [
           ` modelo usado: ${a.model}${a.model.includes('free') ? '' : ' (fallback pago barato ativado)'}`,
@@ -4241,12 +4299,13 @@ Responda em pt-BR.`;
     async function n8nCU() {
       const goal = document.getElementById('n8n-cu-goal').value.trim();
       if (!goal) { alert('Descreva a ação visual desejada (ex.: abrir Settings > API).'); return; }
+      if (!confirm(`Autorizar o Computer Use a executar uma ação real na tela para:\n\n${goal}?`)) return;
       const btn = document.getElementById('n8n-btn-cu');
       const out = document.getElementById('n8n-cu-result');
       btn.disabled = true; btn.textContent = '⏳ Vendo a tela…';
       out.textContent = 'analisando screenshot…';
       try {
-        const r = await n8nApi('/api/n8n/computer-use', { goal });
+        const r = await n8nApi('/api/n8n/computer-use', { goal, confirm: true });
         const a = r.result;
         out.textContent = [
           ` modelo: ${a.model}${String(a.model).includes('free') ? '' : ' (fallback pago barato)'}`,

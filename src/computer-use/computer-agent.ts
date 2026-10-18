@@ -54,7 +54,9 @@ export class ComputerUseAgent {
    * Run a single autonomous Computer Use step towards a goal.
    * e.g., "Open Command Palette and run Git: Pull in Cursor"
    */
-  async executeStep(goal: string, stepNumber = 1): Promise<ComputerUseStepResult> {
+  async executeStep(goal: string, stepNumber = 1, confirmed = false): Promise<ComputerUseStepResult> {
+    if (!confirmed) throw new Error('Computer-use action requires explicit user confirmation.');
+
     eventBus.publish('agent:task:started', {
       agentId: 'subagent-computer-use',
       taskId: `cu-step-${stepNumber}`,
@@ -168,4 +170,3 @@ Analyze the screenshot. Return a JSON object with your action:
     return result;
   }
 }
-

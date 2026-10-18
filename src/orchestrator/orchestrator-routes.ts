@@ -23,12 +23,14 @@ import { runMarketAnalysis, type MarketReport } from '../market/market-analysis.
 import { continuityBlock, remember, saveState, normProject, recall } from '../memory/project-memory.js';
 import { auditLogger } from '../core/audit-logger.js';
 import {
-  getPortMapText, executeProcessAction, parseProcessDirectives, buildPortManagementBlock,
+  getPortMapText, parseProcessDirectives, buildPortManagementBlock,
 } from '../guardian/process-agent.js';
 import {
   PROJECTS_ROOT, saveRunArtifacts, listProjects, readProjectFile,
 } from './project-store.js';
 import { getCodeMapBlock } from './code-map.js';
+import { Orchestrator, type PlanTaskResult, type SubagentTask } from './orchestrator.js';
+import { SecurityScanner, type SecurityScanReport } from '../security/security-scanner.js';
 
 const CONFIG_PATH = join(process.cwd(), 'data', 'orchestrator-config.json');
 
@@ -180,8 +182,8 @@ interface RunResult {
   market?: { dashboardPath?: string; competitors?: number; verdict?: string; error?: string };
   /** Pasta F:\Projetos2026\DevMaster\<proj> gravada nesta rodada (prompt + respostas). */
   saved?: { folder: string; files: string[] };
-  /** Diretivos [[PROCESSO:…]] executados nesta rodada (fechar/pausar serviços). */
-  processActions?: Array<{ pid: number; action: string; ok: boolean; detail: string; reason?: string }>;
+  /** Ações de processo sugeridas pelo modelo; execução exige confirmação explícita. */
+  processActionProposals?: Array<{ pid: number; action: string; reason: string; confirmationRequired: true }>;
   /** Digest do mapa de código (Archify) injetado como memória de contexto. */
   codeMap?: { title: string; url: string };
   latencyMs: number;
@@ -341,7 +343,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
   eventBus.publish('agent:task:started', {
     agentId: 'hermes-orchestrator',
     taskId: runTaskId,
-    description: prompt.slice(0, 100),
+    description: 'Processing orchestrator request',
   });
 
   let out: { content: string; model: string };
@@ -381,23 +383,24 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
   // 3.6) Gestão de processos — parseia diretivos [[PROCESSO:…]] emitidos pelo
   //      modelo e EXECUTA (fechar/pausar) com validação de PID no snapshot +
   //      proteção do núcleo. O resultado é anotado na própria resposta.
-  let processActions: RunResult['processActions'];
+  let processActionProposals: RunResult['processActionProposals'];
   if (switches.portasProcessos) {
     const directives = parseProcessDirectives(out.content);
     if (directives.length) {
-      processActions = [];
-      const lines: string[] = [];
-      for (const d of directives) {
-        const r = await executeProcessAction(d.pid, d.action, 'orchestrator');
-        processActions.push({ pid: d.pid, action: d.action, ok: r.ok, detail: r.detail, reason: d.reason });
-        lines.push(`- ${r.ok ? '✅' : '⛔'} PID ${d.pid} (${d.action}) — ${r.detail}${d.reason ? ` · motivo: ${d.reason}` : ''}`);
+      processActionProposals = directives.map((directive) => ({
+        ...directive,
+        confirmationRequired: true,
+      }));
+      out.content = out.content.replace(/\[\[PROCESSO:[^\]]+\]\]/g, '').trimEnd();
+      out.content += '\n\n---\n\n### ⚠️ Ações de processo sugeridas\nNenhum processo foi alterado. Revise e confirme cada ação abaixo.\n';
+      for (const proposal of processActionProposals) {
         auditLogger.log({
-          actor: 'SUBAGENT',
-          event: 'orchestrator:process_action',
-          payload: { pid: d.pid, action: d.action, ok: r.ok },
+          actor: 'ORCHESTRATOR',
+          event: 'orchestrator:process_action:proposed',
+          payload: { pid: proposal.pid, action: proposal.action, reason: proposal.reason },
         });
+        out.content += `- PID ${proposal.pid} · ${proposal.action} — ${proposal.reason}\n`;
       }
-      out.content += `\n\n---\n\n### ⚡ Gestão de processos (executada pelo Hermes)\n${lines.join('\n')}\n`;
     }
   }
 
@@ -499,7 +502,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
       ? { dashboardPath: market.dashboardPath, competitors: market.competitors.length, verdict: market.verdict }
       : (marketError ? { error: marketError } : undefined),
     saved,
-    processActions,
+    processActionProposals,
     codeMap,
     latencyMs: Date.now() - started,
   };
@@ -559,6 +562,71 @@ export async function handleOrchestratorRoutes(
       if (!prompt) { send(res, 400, { error: 'prompt obrigatório' }); return true; }
       const result = await runOrchestrator(prompt, b.project ? String(b.project) : undefined);
       send(res, 200, result);
+      return true;
+    }
+
+    if (path === '/api/orchestrator/coordinate' && method === 'POST') {
+      const b = await readBody(req);
+      const prompt = String(b.prompt ?? '').trim();
+      if (!prompt) { send(res, 400, { error: 'prompt obrigatório' }); return true; }
+
+      const orchestratorModel = await resolveModel('orchestrator');
+      const orchestratorKey = await getVirtualKey('orchestrator');
+      const planner = new Orchestrator(getGateway(), orchestratorKey, orchestratorModel);
+      const plan = await planner.analyzeIdea(prompt);
+      const needsSecurityScan = plan.modules.some((module) => /security|seguran|pentest/i.test(module.name));
+      const securityReport: SecurityScanReport | undefined = needsSecurityScan
+        ? new SecurityScanner().scanSecrets(process.cwd())
+        : undefined;
+      const results: PlanTaskResult[] = await planner.executePlan(plan, prompt, async (module, taskId) => {
+        const moduleName = module.name.toLowerCase();
+        const role: SubagentTask['agentRole'] =
+          /pentest/.test(moduleName) ? 'PENTEST' :
+          /security|seguran/.test(moduleName) ? 'SECURITY' :
+          /qa|test|qualidade/.test(moduleName) ? 'QA' :
+          /integrat/.test(moduleName) ? 'INTEGRATOR' : 'CODER';
+        const target = role.toLowerCase();
+        return {
+          taskId,
+          agentRole: role,
+          assignedModel: await resolveModel(target),
+          virtualKey: await getVirtualKey(target),
+          instructions: role === 'SECURITY' || role === 'PENTEST'
+            ? `Read-only secret scan report (not a penetration test) for ${process.cwd()}:\n${JSON.stringify(securityReport)}`
+            : '',
+        };
+      });
+
+      const synthesisResults = results.map(({ name, status, result, error }) => ({
+        name,
+        status,
+        model: result?.model,
+        content: result?.content.slice(0, 2500),
+        error,
+      }));
+      const synthesis = await planner.dispatchSubagent({
+        taskId: `plan-synthesis-${Date.now()}`,
+        agentRole: 'ORCHESTRATOR',
+        assignedModel: orchestratorModel,
+        virtualKey: orchestratorKey,
+        instructions: [
+          `Original request:\n${prompt}`,
+          `Plan:\n${JSON.stringify(plan)}`,
+          `Delegated task results (bounded excerpts):\n${JSON.stringify(synthesisResults)}`,
+          'Synthesize completed outputs, report failed or blocked tasks, identify conflicts and state clearly that no files or external systems were changed.',
+        ].join('\n\n'),
+      });
+
+      send(res, 200, {
+        plan,
+        tasks: results,
+        summary: synthesis.content,
+        securityScan: securityReport
+          ? { filesScanned: securityReport.filesScanned, passed: securityReport.passed, findings: securityReport.secretsFound.length }
+          : undefined,
+        executionMode: 'model_only',
+        note: 'Subagents produced text deliverables only; no source files or external systems were modified.',
+      });
       return true;
     }
 

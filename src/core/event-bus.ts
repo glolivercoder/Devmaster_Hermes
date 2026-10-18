@@ -23,8 +23,8 @@ export type HermesEventMap = {
   'agent:task:failed':     [{ agentId: string; taskId: string; error: string }];
 
   // LLM Gateway (LiteLLM)
-  'llm:request':   [{ model: string; virtualKey: string; estimatedTokens: number }];
-  'llm:response':  [{ model: string; virtualKey: string; tokensUsed: number; costUsd: number }];
+  'llm:request':   [{ model: string; estimatedTokens: number }];
+  'llm:response':  [{ model: string; tokensUsed: number; costUsd: number }];
 
   // Agente Pesquisador (scraping + search APIs)
   'research:started':   [{ query: string }];

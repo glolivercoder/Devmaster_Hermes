@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { test, mock } from 'node:test';
 import { GatewayClient } from '../src/gateway/gateway-client.js';
+import { eventBus } from '../src/core/event-bus.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function mockFetch(body: unknown, status = 200) {
@@ -39,6 +40,10 @@ test('GatewayClient.isHealthy: returns false on network error', async () => {
 
 test('GatewayClient.complete: parses response and publishes cost event', async () => {
   const client = new GatewayClient('http://localhost:4000', 'sk-master');
+  const requests: unknown[] = [];
+  const responses: unknown[] = [];
+  const unsubscribeRequest = eventBus.subscribe('llm:request', (payload) => requests.push(payload));
+  const unsubscribeResponse = eventBus.subscribe('llm:response', (payload) => responses.push(payload));
 
   const fakeResponse = {
     choices: [{ message: { content: 'Bug in auth middleware. Fix token expiry.' } }],
@@ -58,6 +63,9 @@ test('GatewayClient.complete: parses response and publishes cost event', async (
   assert.equal(result.content, 'Bug in auth middleware. Fix token expiry.');
   assert.equal(result.tokensUsed, 120);
   assert.equal(result.costUsd, 0.0018);
+  unsubscribeRequest();
+  unsubscribeResponse();
+  assert.equal(JSON.stringify([...requests, ...responses]).includes('sk-virtual-module-00'), false);
 });
 
 test('GatewayClient.complete: throws on non-200 status', async () => {

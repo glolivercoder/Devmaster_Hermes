@@ -50,7 +50,6 @@ export class GatewayClient {
     const started = Date.now();
     eventBus.publish('llm:request', {
       model: req.model,
-      virtualKey: req.virtualKey,
       estimatedTokens: req.messages.reduce((acc, m) =>
         acc + (typeof m.content === 'string' ? m.content.length / 4 : 800), 0), // imagem ≈ 800 tok
     });
@@ -108,7 +107,6 @@ export class GatewayClient {
 
         eventBus.publish('llm:response', {
           model,
-          virtualKey: req.virtualKey,
           tokensUsed,
           costUsd,
         });
@@ -191,4 +189,3 @@ export class GatewayClient {
     }
   }
 }
-

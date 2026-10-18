@@ -74,13 +74,23 @@ test('ComputerUseAgent: executes autonomous step using vision model and returns 
     costUsd: 0,
   }));
 
-  const stepResult = await agent.executeStep('Open Command Palette in Cursor and type Git: Pull', 1);
+  const stepResult = await agent.executeStep('Open Command Palette in Cursor and type Git: Pull', 1, true);
 
   assert.equal(stepResult.step, 1);
   assert.equal(stepResult.action.action, 'hotkey');
   assert.deepEqual(stepResult.action.hotkeys, ['Control', 'Shift', 'P']);
   assert.ok(stepResult.modelReasoning.includes('Command Palette'));
   assert.equal(stepResult.success, true);
+});
+
+test('ComputerUseAgent: refuses desktop actions without explicit confirmation', async () => {
+  const gateway = new GatewayClient('http://localhost:4000', 'sk-master');
+  const agent = new ComputerUseAgent(gateway, 'sk-virtual-cu', 'openrouter-vision-free', createFakeDriver());
+
+  await assert.rejects(
+    () => agent.executeStep('Click the Run button'),
+    /requires explicit user confirmation/,
+  );
 });
 
 test('ComputerUseAgent: surfaces vision failure when model returns no JSON action', async () => {
@@ -101,7 +111,7 @@ test('ComputerUseAgent: surfaces vision failure when model returns no JSON actio
   }));
 
   await assert.rejects(
-    () => agent.executeStep('Click the Run button', 2),
+    () => agent.executeStep('Click the Run button', 2, true),
     /Vision model did not return valid JSON/
   );
 });
@@ -131,7 +141,8 @@ test('Orchestrator: triggers Computer Use fallback when APIs/MCPs unavailable', 
   const result = await orchestrator.requestComputerUseFallback(
     cuAgent,
     'Cursor',
-    'Trigger AI agent prompt input'
+    'Trigger AI agent prompt input',
+    true
   );
 
   assert.equal(result.success, true);

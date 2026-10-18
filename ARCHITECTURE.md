@@ -15,6 +15,8 @@ flowchart TD
     subgraph Core ["Hermes Core Gateway & Event Bus (Node.js/TypeScript / Fastify)"]
         EventBus["Central Event Bus (EventEmitter / Redis PubSub)"]
         Orchestrator["Agente Orquestrador Central"]
+        PlanDAG["Plano DAG + subagentes especializados"]
+        Approval["Gate de confirmação explícita"]
         PortGuardian["Port & Process Guardian"]
         AuditLogger["Audit Logger & State Tracker"]
     end
@@ -41,12 +43,18 @@ flowchart TD
     end
 
     Chat <--> EventBus
+    Chat --> Orchestrator
     Sidebar <--> EventBus
     TabMCP <--> PortGuardian
     TabTelegram <--> TelegramBot
     TabAPI <--> LiteLLM
 
     Orchestrator <--> EventBus
+    Orchestrator --> PlanDAG
+    PlanDAG --> LiteLLM
+    PlanDAG --> Approval
+    PlanDAG --> SecurityScanner
+    Approval --> PortGuardian
     Orchestrator <--> PortGuardian
     PortGuardian <--> MCPRegistry
 
@@ -56,7 +64,10 @@ flowchart TD
     LiteLLM --> Providers
     SecurityScanner --> AuditLogger
     TelegramBot <--> EventBus
+    TelegramBot --> Orchestrator
 ```
+
+`POST /api/orchestrator/run` executa capacidades configuradas. `POST /api/orchestrator/coordinate` valida e agenda módulos por dependência; subagentes retornam entregáveis textuais e a síntese não altera arquivos ou serviços. Ações com efeitos externos permanecem nas rotas próprias e exigem confirmação explícita.
 
 ## Módulos Principais e Dependências
 
@@ -67,4 +78,3 @@ flowchart TD
 5. **Módulo 04: Telegram Bridge 1-to-1** (grammY bot, fila FIFO local, notificações de incidentes e gates).
 6. **Módulo 05: Security, Pentest & Quality Gates** (Semgrep, TruffleHog, verificação de segredos e conformidade).
 7. **Módulo 06: Frontend Dashboard & Modular Sidebar** (shadcn/ui, Framer Motion, visualização de custos, MCPs e chats).
-

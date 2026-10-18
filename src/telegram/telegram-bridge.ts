@@ -71,7 +71,20 @@ export class TelegramBridge {
 
   /** Send a text message to a chat (plain text — no parse_mode to avoid entity errors) */
   async sendMessage(chatId: string, text: string): Promise<void> {
-    await this.apiCall('sendMessage', { chat_id: chatId, text });
+    const characters = Array.from(text);
+    let offset = 0;
+    while (offset < characters.length) {
+      let end = Math.min(offset + 3900, characters.length);
+      if (end < characters.length) {
+        const lineBreak = characters.lastIndexOf('\n', end - 1);
+        if (lineBreak > offset + 1000) end = lineBreak + 1;
+      }
+      await this.apiCall('sendMessage', {
+        chat_id: chatId,
+        text: characters.slice(offset, end).join(''),
+      });
+      offset = end;
+    }
   }
 
   /** Validate the bot token via getMe — returns bot username or throws */
@@ -229,4 +242,3 @@ export class TelegramBridge {
     return `🔔 *[HERMES ALERT]* ${title}\n\n${body}`;
   }
 }
-

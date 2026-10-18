@@ -443,15 +443,13 @@ function renderPortsInventory() {
 /** Ações de processo (fechar/pausar/retomar/reiniciar) via /api/processes/action. */
 async function procAction(pid, action, btn) {
   const labels = { fechar: 'Fechar (encerrar)', pausar: 'Pausar (suspender)', retomar: 'Retomar', reiniciar: 'Reiniciar' };
-  if (action === 'fechar' || action === 'reiniciar') {
-    if (!confirm((labels[action] || action) + ' o processo PID ' + pid + '?')) return;
-  }
+  if (!confirm((labels[action] || action) + ' o processo PID ' + pid + '?')) return;
   if (btn) btn.disabled = true;
   try {
     let out = null;
     for (const u of apiUrls('/api/processes/action')) {
       try {
-        const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: pid, action: action }) });
+        const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: pid, action: action, confirm: true }) });
         if (r.ok) { out = await r.json(); break; }
       } catch (e) { /* next */ }
     }
