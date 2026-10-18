@@ -37,6 +37,7 @@ import {
 import { getEnvSettings, setEnvSetting, deleteEnvSetting } from './llm/env-db-store.js';
 import { readAuditLog } from './core/audit-api.js';
 import { GiteaOpsAgent } from './gitea/gitea-ops-agent.js';
+import { handleVersionAgent, initVersionAgent } from './gitea/version-agent-routes.js';
 import { scanPorts } from './guardian/port-inventory.js';
 import { portOwner, type McpRegistry } from './core/registry.js';
 
@@ -244,6 +245,9 @@ async function bootstrap() {
 
   console.log('[HERMES] Core foundation online. Event bus active.');
 
+  // Monitor de versionamento de pastas de projeto (se habilitado na config).
+  initVersionAgent();
+
   // ── Process Guardian API (4010) — health, status & LLM Center ──
   const apiServer = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -253,6 +257,8 @@ async function bootstrap() {
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     // Versionamento & Backup (Gitea) — mesma API nos dois servidores
     if (req.url && req.url.startsWith('/api/gitea/') && await handleGitea(req, res, req.url, req.method ?? 'GET')) return;
+    // Agente de Versionamento de Projetos (Gitea local + GitHub remoto)
+    if (req.url && req.url.startsWith('/api/version/') && await handleVersionAgent(req, res, req.url, req.method ?? 'GET')) return;
     // Port & Process Guardian / MCPs — inventário e ações
     if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
     if (req.url === '/health') {
@@ -476,6 +482,8 @@ async function bootstrap() {
     }
     // Versionamento & Backup (Gitea) — mesma API nos dois servidores
     if (req.url && req.url.startsWith('/api/gitea/') && await handleGitea(req, res, req.url, req.method ?? 'GET')) return;
+    // Agente de Versionamento de Projetos (Gitea local + GitHub remoto)
+    if (req.url && req.url.startsWith('/api/version/') && await handleVersionAgent(req, res, req.url, req.method ?? 'GET')) return;
     // Port & Process Guardian / MCPs — inventário e ações
     if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
     // OpenCode (IDE multi-agente) — ponte para o servidor headless local (:4196)

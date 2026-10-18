@@ -861,6 +861,37 @@
       </div>
       <div id="gitea-status" class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500">Clique em “Testar conexão” para verificar o Gitea (defina GITEA_BASE_URL / GITEA_TOKEN / GITEA_OWNER no .env).</div>
 
+      <!-- 🕵️ Agente de Versionamento de Projetos (Gitea local + GitHub remoto) -->
+      <div class="p-4 bg-gray-950 rounded-xl border border-cyan-900/50 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-sm font-bold text-gray-300">🕵️ Agente de Versionamento de Projetos
+            <span class="text-gray-500 text-xs font-normal">(monitora <code>F:\Projetos2026\DevMaster</code> — commits locais + push simultâneo)</span>
+          </h3>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center space-x-1.5 text-xs text-gray-300 cursor-pointer" title="Salva point automático das pastas de projeto a cada intervalo">
+              <input type="checkbox" id="va-enabled" onchange="vaToggle(this)" class="accent-cyan-500" />
+              <span>monitor ativo</span>
+            </label>
+            <input id="va-interval" type="number" min="10" max="3600" onchange="vaInterval(this)" title="intervalo do monitor em segundos"
+                   class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-200 font-mono" />
+            <button onclick="vaRunAll(this)" id="va-run-btn" class="px-2.5 py-1 rounded-md bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-mono hover:bg-cyan-500/25 disabled:opacity-50 disabled:cursor-wait">▶ Rodar agora</button>
+            <button onclick="vaLoad()" class="px-2 py-1 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-[11px] font-mono hover:bg-gray-700">⟳</button>
+          </div>
+        </div>
+        <div class="text-[11px] text-gray-500 leading-relaxed">
+          🔒 <b class="text-gray-400">GitHub remoto</b>: <code class="text-gray-400">.gitignore gerenciado</code> + <b class="text-gray-400">scan de segredos</b> — se houver chave/token/chave privada em arquivo rastreado, o push é <b class="text-red-400">BLOQUEADO</b> (relatório só com arquivo+linha+tipo, sem expor o valor).
+          · 🏠 <b class="text-gray-400">Gitea local</b>: guarda <b class="text-emerald-400">TUDO</b> — branch <code class="text-gray-400">hermes-full</code> leva .env/keys no save point completo.
+        </div>
+        <div id="va-badges" class="flex flex-wrap gap-2 text-[11px] font-mono"></div>
+        <div id="va-projects" class="space-y-2">
+          <div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono text-gray-500 text-center animate-pulse">carregando projetos...</div>
+        </div>
+        <div class="space-y-1">
+          <div class="text-[11px] font-mono text-gray-500 uppercase tracking-wider">📋 log do agente</div>
+          <div id="va-log" class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 max-h-44 overflow-y-auto space-y-0.5">—</div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Repositórios -->
         <div class="space-y-3">
@@ -1822,6 +1853,159 @@
     async function loadVersionamento() {
       // Ao abrir a aba, testa o status; se conectar, já carrega repos e backups.
       await testGitea(null);
+      vaLoad();
+    }
+
+    // ── 🕵️ Agente de Versionamento de Projetos (Gitea local + GitHub remoto) ──
+    function vaEsc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function vaCall(path, opts) {
+      const urls = apiUrls(path);
+      let lastErr = null;
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, opts);
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok && !data) { lastErr = 'HTTP ' + r.status; continue; }
+          return { ok: r.ok, data: data || {} };
+        } catch (e) { lastErr = e.message; }
+      }
+      return { ok: false, data: { error: lastErr || 'indisponível' } };
+    }
+
+    async function vaLoad() {
+      const el = document.getElementById('va-projects');
+      if (!el) return;
+      const { ok, data } = await vaCall('/api/version/status');
+      if (!ok || (data && data.error && !data.config)) {
+        el.innerHTML = '<div class="p-3 bg-red-950/20 rounded-lg border border-red-900/50 text-xs font-mono text-red-400 text-center">Erro ao carregar status: ' + vaEsc((data && data.error) || 'sem detalhe') + '</div>';
+        return;
+      }
+      // Config → controles
+      const cfg = data.config || {};
+      const cb = document.getElementById('va-enabled');
+      const inp = document.getElementById('va-interval');
+      if (cb) cb.checked = !!cfg.enabled;
+      if (inp) inp.value = cfg.intervalSec || 60;
+
+      // Badges dos remotes
+      const gh = data.github || {}, gt = data.gitea || {}, mo = data.monitor || {};
+      const badge = (cls, html) => '<span class="px-2 py-0.5 rounded border ' + cls + '">' + html + '</span>';
+      const badges = document.getElementById('va-badges');
+      if (badges) badges.innerHTML = [
+        gh.configured
+          ? badge('bg-emerald-950 text-emerald-300 border-emerald-900', '🐙 GitHub: ' + vaEsc(gh.login || 'token ok') + (cfg.github === false ? ' · push off' : ''))
+          : badge('bg-red-950 text-red-300 border-red-900', '🐙 GitHub: sem GITHUB_TOKEN no .env'),
+        gt.connected
+          ? badge('bg-emerald-950 text-emerald-300 border-emerald-900', '🏠 Gitea: ' + vaEsc(gt.owner || '?') + ' @ ' + vaEsc(gt.base) + (cfg.gitea === false ? ' · push off' : ''))
+          : badge('bg-amber-950 text-amber-300 border-amber-900', '🏠 Gitea: offline (configure GITEA_* no .env)'),
+        badge(mo.enabled ? 'bg-cyan-950 text-cyan-300 border-cyan-900' : 'bg-gray-800 text-gray-400 border-gray-700',
+          mo.enabled ? '⏱ monitor: a cada ' + (cfg.intervalSec || 60) + 's' : '⏱ monitor: desligado'),
+        badge('bg-gray-800 text-gray-400 border-gray-700', cfg.githubPrivate ? '🔒 repos GitHub privados' : '🌐 repos GitHub públicos'),
+      ].join('');
+
+      // Projetos
+      const projects = data.projects || [];
+      if (!projects.length) {
+        el.innerHTML = '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum projeto ainda — crie um na aba <strong>Orquestrador</strong> (campo 📁 Projeto).</div>';
+      } else {
+        el.innerHTML = projects.map(p => {
+          const status = !p.isRepo
+            ? '<span class="text-amber-400">não versionado</span>'
+            : (p.changes > 0 ? '<span class="text-amber-400">' + p.changes + ' alteração(ões)</span>' : '<span class="text-emerald-400">limpo</span>');
+          const last = p.lastCommit
+            ? '<div class="text-[10px] font-mono text-gray-500 truncate max-w-[320px]" title="' + vaEsc(p.lastCommit) + '">último: ' + vaEsc(p.lastCommit) + '</div>'
+            : '';
+          return '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800 flex flex-wrap items-center justify-between gap-2">' +
+            '<div class="min-w-0 space-y-0.5">' +
+            '<div class="text-xs font-mono text-gray-200 font-bold">📁 ' + vaEsc(p.name) + ' · ' + status + '</div>' +
+            '<div class="text-[10px] font-mono text-gray-600 break-all">' + vaEsc(p.path) + '</div>' +
+            last +
+            '</div>' +
+            '<div class="flex gap-1.5">' +
+            '<button onclick="vaSavePoint(\'' + p.name + '\', this)" title="Commit local + push simultâneo: Gitea guarda TUDO, GitHub só o limpo (scan de segredos)" class="px-2.5 py-1 rounded-md bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[11px] font-mono hover:bg-cyan-500/25 disabled:opacity-50 disabled:cursor-wait">💾 Save point</button>' +
+            '<button onclick="vaGhRepo(\'' + p.name + '\', this)" title="Cria o repositório no GitHub (privado)" class="px-2.5 py-1 rounded-md bg-gray-800 border border-gray-700 text-gray-300 text-[11px] font-mono hover:bg-gray-700 disabled:opacity-50 disabled:cursor-wait">➕ Repo GitHub</button>' +
+            '</div>' +
+            '</div>';
+        }).join('');
+      }
+
+      // Log
+      const logEl = document.getElementById('va-log');
+      if (logEl) {
+        const entries = data.log || [];
+        const cores = { info: 'text-gray-400', ok: 'text-emerald-400', aviso: 'text-amber-400', erro: 'text-red-400' };
+        logEl.innerHTML = entries.length
+          ? entries.map(l => '<div class="' + (cores[l.level] || 'text-gray-400') + '">' +
+              '<span class="text-gray-600">' + new Date(l.ts).toLocaleTimeString('pt-BR') + '</span> ' + vaEsc(l.msg) + '</div>').join('')
+          : '<span class="text-gray-600">sem eventos ainda.</span>';
+      }
+    }
+
+    async function vaToggle(cb) {
+      const r = await vaCall('/api/version/config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: cb.checked }),
+      });
+      if (!r.ok) { alert('Falha ao salvar config: ' + (r.data.error || '')); cb.checked = !cb.checked; return; }
+      vaLoad();
+    }
+
+    async function vaInterval(inp) {
+      const v = parseInt(inp.value, 10);
+      if (!(v >= 10)) { inp.value = 60; return; }
+      await vaCall('/api/version/config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalSec: v }),
+      });
+      vaLoad();
+    }
+
+    async function vaRunAll(btn) {
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ rodando...'; }
+      const r = await vaCall('/api/version/run', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      });
+      if (btn) { btn.disabled = false; btn.innerText = '▶ Rodar agora'; }
+      if (!r.ok) alert('Falha: ' + (r.data.error || 'sem detalhe'));
+      vaLoad();
+    }
+
+    async function vaSavePoint(project, btn) {
+      const orig = btn.innerText;
+      btn.disabled = true; btn.innerText = '⏳ salvando...';
+      const r = await vaCall('/api/version/run', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project }),
+      });
+      btn.disabled = false; btn.innerText = orig;
+      const res = r.data && r.data.results && r.data.results[0];
+      if (res && res.github && res.github.blocked) {
+        alert('🔒 Push ao GitHub BLOQUEADO — segredos em arquivos rastreados:\n\n' +
+          (res.github.findings || []).map(f => '• ' + f.file + (f.line ? ':' + f.line : '') + ' → ' + f.pattern).join('\n') +
+          '\n\nOs valores nunca são exibidos. Mova o segredo para .env (ignorado) ou adicione o arquivo ao .gitignore.\n' +
+          'O save point no Gitea local foi feito normalmente.');
+      } else if (!r.ok) {
+        alert('Falha: ' + (r.data.error || (res && res.errors && res.errors.join('; ')) || 'sem detalhe'));
+      }
+      vaLoad();
+    }
+
+    async function vaGhRepo(project, btn) {
+      const orig = btn.innerText;
+      btn.disabled = true; btn.innerText = '⏳ criando...';
+      const r = await vaCall('/api/version/github/repo', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project }),
+      });
+      btn.disabled = false; btn.innerText = orig;
+      alert(r.ok
+        ? ('✅ ' + (r.data.detail || 'ok') + (r.data.full ? '\nhttps://github.com/' + r.data.full : ''))
+        : ('❌ ' + (r.data.detail || r.data.error || 'falha')));
+      vaLoad();
     }
 
     function switchComposioSubtab(subtab) {

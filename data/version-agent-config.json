@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "intervalSec": 60,
+  "gitea": true,
+  "github": true,
+  "githubPrivate": true
+}

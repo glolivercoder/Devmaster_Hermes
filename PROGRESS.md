@@ -198,3 +198,46 @@
   (4.091 chars via OmniRoute) → aba OpenCode ✓ (1ª tentativa com Kiro instável
   caiu no fallback de cópia — comportamento previsto) ✓ · Histórico renderizou
   2 projetos/12 arquivos + visualizador ✓. `tsc --noEmit` EXIT=0.
+
+## 🕵️ Agente de Versionamento de Projetos — Out/2026
+**Status: FUNCIONAL (E2E completo backend + UI + monitor + gate de segredos)**
+
+- **`src/gitea/project-version-agent.ts`**: monitora as pastas em
+  `F:\Projetos2026\DevMaster\<proj>` e a cada save point faz **commit local +
+  push SIMULTÂNEO** (`Promise.all`) para dois remotes:
+  - **Gitea local (guarda TUDO)**: cria o repo se faltar e empurra `main`
+    (limpa) + **`hermes-full`** — branch montada com **índice temporário**
+    (`GIT_INDEX_FILE`/`commit-tree`, sem tocar na working tree) que force-adda
+    `.env`/keys/tokens ignorados → save point completo sem derrubar o `main`.
+  - **GitHub remoto (NUNCA segredos)**: `main:main` explícito; `hermes-full`
+    jamais sai. Proteção em 2 camadas: **`.gitignore gerenciado`** (bloco
+    `>>> HERMES-SEGREDOS <<<`: .env, *.pem/*.key, tokens, credentials, sqlite…)
+    + **scan de segredos** (sk-, ghp_/github_pat_, xox, AKIA, AIza, PEM,
+    Bearer, atribuições api_key=…) que **BLOQUEIA o push** se achar segredo em
+    arquivo rastreado — relatório só com arquivo+linha+tipo, **valor nunca
+    exibido** (`redact()` também limpa tokens de qualquer saída/log/audit).
+  - Tokens entram via `git -c http.extraHeader` (nunca gravados na URL do
+    remote). `execFileSync` sem shell (sem bugs de quoting no Windows).
+  - **Monitor** (`enabled`/`intervalSec` em `data/version-agent-config.json`,
+    default desligado/60s): tick com trava anti-sobreposição, skip quando não
+    há mudanças, e projeto **novo sem repo conta como mudança** (fix de bug
+    detectado no E2E). Config viva — trocar intervalo religa o timer.
+- **5 rotas** (`/api/version/*` nos dois servidores): `status` (config+monitor+
+  remotes+projetos+log), `config` (POST), `run` ({project?, message?} — save
+  point agora), `github/repo` (cria repo privado), `log`. Audit:
+  `version:savepoint` / `version:blocked:secrets` / `version:error` /
+  `version:config` / `version:github:repo`.
+- **UI (aba Versionamento & Backup)**: card "🕵️ Agente de Versionamento de
+  Projetos" com toggle do monitor, intervalo, ▶ Rodar agora, badges de
+  status (🐙 GitHub login · 🏠 Gitea base/owner · ⏱ monitor · 🔒 repos
+  privados), cartão por projeto (status/l último commit) com **💾 Save point**
+  e **➕ Repo GitHub**, e log em tempo real (novo no `loadVersionamento`).
+- **E2E real**: status ✓ (login `glolivercoder` + Gitea v1.22.6
+  `hermes-admin`) · save point 8,4s (init+.gitignore+commit `beb96d9` 9 files +
+  gitea main&full + github) ✓ · **gate**: chave sk- falsa → GitHub BLOQUEADO
+  (`config-teste.json:2`), gitea seguiu, **valor ausente da resposta** ✓ ·
+  `.env` presente → fora do `main`, **dentro de `hermes-full`**, github não
+  bloqueado ✓ · monitor 15s → projeto novo auto-commitado em 15,8s ✓ ·
+  UI DOM: badges/cards/log/botões + Save point clicado ✓ · repos criados:
+  `glolivercoder/{loja-artesanato-teste,ui-demo-projeto}` (privados) +
+  `hermes-admin/{...}` no Gitea ✓ · `tsc --noEmit` EXIT=0.
