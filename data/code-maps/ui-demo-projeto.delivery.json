@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "5ce5b9dd-6edb-4b00-b9f9-edfd8ceb156d",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "F:\\Projetos2026\\DevMaster_Hermes\\data\\code-maps\\work\\ui-demo-projeto-20261018171634\\candidate.json",
+  "output": "F:\\Projetos2026\\DevMaster_Hermes\\data\\code-maps\\ui-demo-projeto.html",
+  "specification": {
+    "sha256": "267dd11d2f08b745295e1699c072c4b2d09b1aa80ef8f8ca892bbbdd7ea8f1de",
+    "bytes": 4706
+  },
+  "artifact": {
+    "sha256": "d97210b6d03391ef99052dcf2d1c84c043d86df37245b2e7657bbb5e2dda996b",
+    "bytes": 822544
+  }
+}

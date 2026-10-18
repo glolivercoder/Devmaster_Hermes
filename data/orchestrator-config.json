@@ -3,6 +3,6 @@
   "analiseMercado": false,
   "siteCrm": false,
   "siteProfissional": false,
-  "portasProcessos": true,
+  "portasProcessos": false,
   "mapaCodigo": true
 }

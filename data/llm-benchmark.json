@@ -33,12 +33,12 @@
       "updatedAt": "2026-10-18T03:00:37.806Z"
     },
     "cheaper-opus": {
-      "calls": 49,
-      "success": 49,
-      "failures": 0,
-      "avgLatencyMs": 23588,
+      "calls": 54,
+      "success": 52,
+      "failures": 2,
+      "avgLatencyMs": 48828,
       "totalSpend": 0,
-      "updatedAt": "2026-10-18T18:39:48.361Z"
+      "updatedAt": "2026-10-18T19:08:14.611Z"
     },
     "cheaper-vision": {
       "calls": 1,

@@ -1,0 +1,13 @@
+{
+  "slug": "ui-demo-projeto",
+  "title": "Hermes Orchestrator — Arquitetura em runtime",
+  "file": "ui-demo-projeto.html",
+  "target": "F:\\Projetos2026\\DevMaster\\ui-demo-projeto",
+  "project": "ui-demo-projeto",
+  "generatedAt": "2026-10-18T17:17:12.585Z",
+  "model": "cheaper-opus",
+  "components": 8,
+  "connections": 7,
+  "boundaries": 1,
+  "digest": "MAPA DE ARQUITETURA DO PROJETO (Archify — \"Hermes Orchestrator — Arquitetura em runtime\", gerado 2026-10-18):\nComponentes (8): Operador (autor do pedido) · prompt-original.md (pedido de entrada) · Hermes Orchestrator (coordena cada run) · Modelo de linguagem (provedor remoto) · Executor de run (pasta por timestamp ISO) · runs/<timestamp>/ (resposta-orquestrador.md) · historico.jsonl (log append-only) · NOTAS.md (notas manuais)\nConexões (7): Operador → prompt-original.md [escreve]; prompt-original.md → Hermes Orchestrator [lê pedido]; Hermes Orchestrator → Modelo de linguagem [prompt / resposta]; Hermes Orchestrator → Executor de run [cria run]; Executor de run → runs/<timestamp>/ [grava .md]; Executor de run → historico.jsonl [append JSONL]; Operador → NOTAS.md [anota]\nFronteiras: region: Workspace local · filesystem\nNotas: Caminho principal: Operador escreve o pedido em prompt-original.md, O orquestrador lê o pedido e consulta o modelo, Cada execução gera runs/<timestamp>/resposta-orquestrador.md | Persistência: Seis runs registrados em 2026-10-18 (03:02 a 16:43 UTC), historico.jsonl acumula uma linha por execução, NOTAS.md guarda observações manuais do operador | Fronteira de confiança: Todo estado vive no filesystem local, Somente a chamada ao modelo sai do workspace, Provedor do modelo inferido: não visível na árvore de arquivos\nUse este mapa como memória de contexto da arquitetura antes de propor mudanças neste projeto."
+}
