@@ -38,3 +38,12 @@
 - [ ] 6.2 Testes Vitest (unit contracts + pipeline)
 - [ ] 6.3 Testes Playwright (e2e UI)
 - [ ] 6.4 Rate-limit por IP + cache de fontes (pg)
+
+## M6b SEO Optimizer (checklist no popup) — Out/2026 ✅
+- [x] Rota `GET /api/optimizer/seo-repo` — GitHub search ao vivo (q=claude+seo+skill) + fallback curado
+- [x] Painel 🔍 SEO Optimizer no modal: toggle, repo card (melhor skill + destaques + alternativas)
+- [x] 7 categorias: SAAS_WEBAPP, ECOMMERCE, NEGOCIO_LOCAL, PUBLISHER_BLOG, AGENCIA_SERVICOS, MARKETPLACE_PORTAL, INSTITUCIONAL
+- [x] Campos URL/nome + Diferenciais e propostas do site/webapp
+- [x] Módulo da categoria (bullets) + checklist de 8 itens (desmarcáveis)
+- [x] `seoGenerate()` — prompt mestre: PAPEL + metodologia do repo + CONTEXTO + PROCESSO filtrado + MÓDULO + FORMATO SAÍDA (tabela comparativa site vs concorrentes + plano 90 dias)
+- [x] E2E: claude-seo 19.133★ MIT live · prompt 3.241 chars · screenshots UI

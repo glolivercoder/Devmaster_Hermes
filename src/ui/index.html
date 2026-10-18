@@ -93,6 +93,9 @@
         <button onclick="switchTab('deploy')" id="tab-btn-deploy" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
           <span>🚀</span> <span>DEPLOY Agent</span>
         </button>
+        <button onclick="switchTab('n8n')" id="tab-btn-n8n" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-gray-400 hover:bg-gray-900 hover:text-white">
+          <span>⚡</span> <span>Automação N8N</span>
+        </button>
       </nav>
     </div>
 
@@ -626,6 +629,58 @@
               <textarea id="opt-urls" rows="2" placeholder="https://exemplo.com/docs" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-gray-300 focus:outline-none focus:border-amber-500"></textarea>
             </div>
           </div>
+
+          <!-- ── 🔍 SEO Optimizer (checklist por categoria) ───────────────── -->
+          <div class="border border-gray-800 rounded-xl bg-gray-900/40 p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🔍 SEO Optimizer — checklist p/ sites &amp; webapps</span>
+              <button id="seo-toggle-btn" onclick="seoToggle()" class="text-[11px] font-mono text-amber-400 hover:text-amber-300">mostrar ▾</button>
+            </div>
+            <div id="seo-panel" class="hidden space-y-3">
+              <!-- melhor skill/repositório -->
+              <div id="seo-repo-card" class="text-[11px] text-gray-500 font-mono">carregando melhor skill de SEO…</div>
+
+              <!-- categoria + contexto -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-mono text-gray-400 mb-1">Categoria do site/webapp</label>
+                  <select id="seo-category" onchange="seoRenderCategory()" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500">
+                    <option value="">— selecione —</option>
+                    <option value="SAAS_WEBAPP">SaaS / Webapp</option>
+                    <option value="ECOMMERCE">E-commerce</option>
+                    <option value="NEGOCIO_LOCAL">Negócio local</option>
+                    <option value="PUBLISHER_BLOG">Publisher / Blog</option>
+                    <option value="AGENCIA_SERVICOS">Agência / Serviços</option>
+                    <option value="MARKETPLACE_PORTAL">Marketplace / Portal</option>
+                    <option value="INSTITUCIONAL">Institucional</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-mono text-gray-400 mb-1">URL/nome do projeto (opcional)</label>
+                  <input id="seo-url" type="text" placeholder="https://meusite.com" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Diferenciais e propostas do site/webapp (opcional — o que difere dos concorrentes)</label>
+                <textarea id="seo-diffs" rows="2" placeholder="ex.: preço 40% abaixo do concorrente, suporte em pt-BR 24h, integração nativa com X…" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-2 text-xs text-gray-300 focus:outline-none focus:border-amber-500"></textarea>
+              </div>
+
+              <!-- módulo da categoria -->
+              <div id="seo-module" class="hidden border border-teal-800/40 bg-teal-950/20 rounded-lg p-2.5 text-[11px] text-teal-200/90 leading-relaxed"></div>
+
+              <!-- checklist -->
+              <div>
+                <div class="text-[10px] font-mono text-gray-500 uppercase mb-1.5">Checklist (desmarque o que não quiser no prompt)</div>
+                <div id="seo-checklist" class="grid grid-cols-1 sm:grid-cols-2 gap-1"></div>
+              </div>
+
+              <div class="flex items-center justify-end space-x-2">
+                <span id="seo-gen-hint" class="text-[10px] text-gray-600 font-mono"></span>
+                <button onclick="seoGenerate()" class="bg-teal-500 hover:bg-teal-600 text-gray-950 font-bold px-4 py-1.5 rounded-lg text-xs transition">🔍 Gerar prompt SEO</button>
+              </div>
+            </div>
+          </div>
+
           <div class="flex justify-end">
             <button id="opt-run-btn" onclick="optRun()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50">
               ⚙️ Executar pipeline
@@ -1025,6 +1080,132 @@
           <div class="flex space-x-2">
             <input id="dp-chat-in" type="text" placeholder="Pergunte: por que Render dorme? Preciso de domínio?" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200" onkeydown="if(event.key==='Enter')dpChat()" />
             <button onclick="dpChat()" id="dp-btn-chat" class="px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/50 text-amber-300 text-xs font-semibold hover:bg-amber-500/25">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tab View: Automação N8N ────────────────────────────────────────── -->
+    <section id="view-n8n" class="hidden flex-1 flex-col p-6 space-y-4 overflow-y-auto">
+      <!-- Cabeçalho + conexão -->
+      <div class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-base font-bold text-gray-200">⚡ Automação N8N <span class="text-gray-500 font-normal">(Arquiteto &amp; SRE — do objetivo ao monitoramento)</span></h2>
+            <p class="text-xs text-gray-500 mt-1">Wizard guiado em 4 fases, design de workflow com a documentação oficial, templates da página oficial do n8n, score de saúde e computer use para credenciais. A chave fica só em memória — nas respostas aparece apenas o nome <span class="font-mono text-gray-400">N8N_API_KEY</span>.</p>
+          </div>
+          <span id="n8n-status-pill" class="px-3 py-1.5 rounded-full text-[11px] font-mono border border-gray-700 text-gray-400 shrink-0">● desconectado</span>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <input id="n8n-url" type="text" placeholder="https://n8n.seusite.com (ou n8n.cloud)" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200" />
+          <input id="n8n-key" type="password" placeholder="N8N_API_KEY  (Settings &gt; API)" autocomplete="off" class="flex-1 min-w-[200px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono text-gray-200" />
+          <button onclick="n8nConnect()" id="n8n-btn-connect" class="px-4 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/50 text-emerald-300 text-sm font-semibold hover:bg-emerald-500/25">🔌 Conectar</button>
+          <button onclick="n8nDisconnect()" class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-400 text-xs font-mono hover:border-rose-600">limpar</button>
+        </div>
+        <div id="n8n-conn-out" class="mt-2 text-xs font-mono text-gray-500"></div>
+      </div>
+
+      <!-- Wizard guiado -->
+      <div class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🧭 Wizard guiado — passo a passo até a automação finalizada</span>
+          <span id="n8n-wiz-badge" class="text-[10px] font-mono text-gray-600"></span>
+        </div>
+        <div id="n8n-stepper" class="flex flex-wrap items-center gap-1 mb-4"></div>
+        <div id="n8n-phase-body" class="space-y-3" aria-live="polite"></div>
+        <div id="n8n-guide-out" class="hidden mt-3 border border-amber-800/40 bg-amber-950/20 rounded-lg p-3 text-xs text-amber-100/90 whitespace-pre-wrap"></div>
+        <div class="mt-4 flex items-center justify-between flex-wrap gap-2">
+          <button onclick="n8nPhasePrev()" id="n8n-btn-prev" class="px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-400 text-xs font-mono hover:border-gray-500">◀ Anterior</button>
+          <div class="flex items-center space-x-2">
+            <button onclick="n8nPhaseAi()" class="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-500/20">✨ Passo a passo com IA</button>
+            <button onclick="n8nPhaseNext()" id="n8n-btn-next" class="px-4 py-2 rounded-lg bg-teal-500 text-gray-950 text-xs font-bold hover:bg-teal-400">Avançar ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saída do Design (Fase 2) -->
+      <div id="n8n-design-card" class="hidden bg-gray-950 rounded-xl border border-teal-800/40 p-4 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <span class="text-[11px] font-mono text-teal-300 uppercase tracking-wider">🗺️ Design gerado <span id="n8n-design-model" class="text-gray-600 normal-case"></span></span>
+          <div class="flex space-x-2">
+            <button onclick="n8nCopyJson()" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-teal-600">📋 Copiar workflow.json</button>
+            <button onclick="n8nCreate()" id="n8n-btn-create" class="px-3 py-1.5 rounded-lg bg-teal-500/15 border border-teal-500/50 text-teal-300 text-xs font-semibold hover:bg-teal-500/25">🚀 Criar na instância</button>
+          </div>
+        </div>
+        <div class="text-[11px] font-mono text-gray-500" id="n8n-design-name"></div>
+        <div id="n8n-design-diagram" class="text-xs font-mono text-gray-200 bg-black/50 border border-gray-800 rounded-lg p-3 whitespace-pre-wrap"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div class="text-[10px] font-mono text-gray-500 uppercase mb-1">Passos de implantação</div>
+            <div id="n8n-design-steps" class="space-y-1 text-xs text-gray-400"></div>
+          </div>
+          <div>
+            <div class="text-[10px] font-mono text-gray-500 uppercase mb-1">Credenciais — SÓ NOMES (valores só no sistema do n8n)</div>
+            <div id="n8n-design-creds" class="flex flex-wrap gap-1 mb-2"></div>
+            <div class="text-[10px] font-mono text-gray-500 uppercase mb-1">Referências oficiais</div>
+            <div id="n8n-design-docs" class="text-[11px] space-y-0.5"></div>
+          </div>
+        </div>
+        <details class="text-xs">
+          <summary class="cursor-pointer text-gray-500 font-mono text-[11px]">ver workflow.json (importável no n8n)</summary>
+          <pre id="n8n-design-json" class="mt-2 max-h-64 overflow-auto bg-black/60 border border-gray-800 rounded-lg p-2 text-[11px] text-gray-300 font-mono"></pre>
+        </details>
+        <div id="n8n-design-risks" class="text-xs text-amber-400/80 space-y-0.5"></div>
+        <div id="n8n-create-out" class="text-xs font-mono"></div>
+      </div>
+
+      <!-- Templates oficiais + Score -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🧩 Templates oficiais <span class="normal-case text-gray-600">(fonte da página n8n.io/workflows)</span></span>
+            <span id="n8n-tpl-src" class="text-[10px] font-mono text-gray-600"></span>
+          </div>
+          <div class="flex space-x-2 mb-3">
+            <input id="n8n-tpl-q" type="text" placeholder="buscar: slack, webhook, AI agent, relatório…" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200" onkeydown="if(event.key==='Enter')n8nTplSearch()" />
+            <button onclick="n8nTplSearch()" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-xs hover:border-teal-600">🔍 Buscar</button>
+          </div>
+          <div id="n8n-tpl-grid" class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+          <div class="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-2">🏥 Score de saúde do workflow <span class="normal-case text-gray-600">(0–100 · determinístico)</span></div>
+          <textarea id="n8n-score-json" rows="4" placeholder='Cole aqui o JSON do workflow (no n8n: ⋯ → Export → Copiar) ou use "carregar da instância"…' class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-[11px] font-mono text-gray-300"></textarea>
+          <div class="flex flex-wrap space-x-2 mt-2">
+            <button onclick="n8nScore()" id="n8n-btn-score" class="px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/50 text-amber-300 text-xs font-semibold hover:bg-amber-500/25">🧮 Calcular score</button>
+            <button onclick="n8nLoadWfForScore()" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-emerald-600">📥 Carregar da instância</button>
+          </div>
+          <div id="n8n-score-out" class="mt-3 space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Computer use + Chat -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="bg-gray-950 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-mono text-gray-400 uppercase tracking-wider">🖱️ Computer use <span class="text-gray-600 normal-case">(preencher credenciais/dashboards na UI do n8n)</span></span>
+            <button onclick="n8nShot()" class="px-2.5 py-1 rounded-md bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-amber-600">📷 Screenshot</button>
+          </div>
+          <input id="n8n-cu-goal" type="text" placeholder="ex.: Abrir http://localhost:5678/settings/api e orientar a criação da API key" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 mb-2" />
+          <div class="flex items-center space-x-2">
+            <button onclick="n8nCU()" id="n8n-btn-cu" class="px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-500/50 text-purple-300 text-xs font-semibold hover:bg-purple-500/25">▶️ Executar ação visual</button>
+            <span class="text-[11px] text-gray-600 font-mono">visão: free → pago barato (fallback)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div id="n8n-cu-result" class="text-xs text-gray-400 font-mono whitespace-pre-wrap max-h-[240px] overflow-y-auto"></div>
+            <div class="bg-black rounded-lg border border-gray-800 flex items-center justify-center min-h-[180px] overflow-hidden">
+              <img id="n8n-cu-shot" class="max-h-[260px] object-contain hidden" alt="screenshot n8n" />
+              <span id="n8n-cu-empty" class="text-xs text-gray-600 font-mono">sem captura ainda</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-950 rounded-xl border border-gray-800 p-4 flex flex-col">
+          <div class="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-2">💬 Arquiteto N8N</div>
+          <div id="n8n-chat" class="flex-1 overflow-y-auto space-y-2 text-xs mb-2 min-h-[160px] max-h-[300px]"></div>
+          <div class="flex space-x-2">
+            <input id="n8n-chat-in" type="text" placeholder="Pergunte: como fazer idempotência? Qual gatilho p/ relatório diário?" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200" onkeydown="if(event.key==='Enter')n8nChat()" />
+            <button onclick="n8nChat()" id="n8n-btn-chat" class="px-3 py-2 rounded-lg bg-teal-500/15 border border-teal-500/50 text-teal-300 text-xs font-semibold hover:bg-teal-500/25">Enviar</button>
           </div>
         </div>
       </div>
@@ -1487,7 +1668,8 @@
       if (tab === 'opencode') ocLoad();
       if (tab === 'preview') pvLoad('');
       if (tab === 'deploy') dpInit();
-      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico', 'opencode', 'preview', 'deploy'];
+      if (tab === 'n8n') n8nInit();
+      const tabs = ['orchestrator', 'office', 'composio', 'mcps', 'gateway', 'telegram', 'security', 'versionamento', 'historico', 'opencode', 'preview', 'deploy', 'n8n'];
       tabs.forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -1725,6 +1907,181 @@
     let OPT_MSGS = [];       // histórico da discussão (confronto)
 
     function escHtml(s){ return String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    // ═══ SEO Optimizer (checklist por categoria no modal) ═══════════════════
+    // Módulos por categoria (base: metodologia AgriciDaniel/claude-seo + extensões
+    // Marketplace/Institucional e regras de webapp SSR/SSG).
+    const SEO_MODULES = {
+      SAAS_WEBAPP: [
+        'Separe as páginas de marketing (indexáveis) do app logado (noindex, bloqueado no robots e fora do sitemap).',
+        'SPA: exija SSR ou SSG nas páginas públicas; confira se o HTML inicial já traz conteúdo e metatags.',
+        'Páginas essenciais: funcionalidades, casos de uso por persona/setor, integrações, preços, comparativos "X vs Y" e "alternativas a X", templates e ferramentas gratuitas.',
+        'SEO programático (integrações, templates) só com conteúdo único por página.',
+        'Schema: Organization, SoftwareApplication (com offers), BreadcrumbList.',
+      ],
+      ECOMMERCE: [
+        'Categorias como páginas-alvo principais, com texto útil acima ou abaixo da grade de produtos.',
+        'Filtros e navegação facetada: controle com canonical/noindex para evitar indexação em massa de URLs.',
+        'Produtos sem estoque: mantenha a página e sugira alternativas; descontinuados recebem 301 para a página mais próxima.',
+        'Descrições únicas, avaliações e perguntas frequentes do produto.',
+        'Schema: Product, Offer, AggregateRating, Review, BreadcrumbList, MerchantReturnPolicy, OfferShippingDetails.',
+      ],
+      NEGOCIO_LOCAL: [
+        'Google Business Profile completo; NAP (nome, endereço, telefone) idêntico em todos os canais.',
+        'Uma página por serviço e uma por cidade ou bairro atendido, com conteúdo local real.',
+        'Estratégia de avaliações e citações em diretórios locais.',
+        'Schema: LocalBusiness (subtipo específico), com horários, geo e areaServed.',
+      ],
+      PUBLISHER_BLOG: [
+        'Clusters temáticos com autoridade e páginas de autor com credenciais.',
+        'Atualização de conteúdo: o que manter, atualizar, consolidar ou remover.',
+        'Paginação, arquivos e tags: evite páginas ralas indexadas.',
+        'Schema: Article ou NewsArticle, Person (autor), Organization, BreadcrumbList.',
+      ],
+      AGENCIA_SERVICOS: [
+        'Páginas por serviço, por setor atendido e cases com resultados verificáveis.',
+        'Iscas de captação (diagnóstico grátis, calculadoras).',
+        'Schema: Organization ou ProfessionalService, Service, Review.',
+      ],
+      MARKETPLACE_PORTAL: [
+        'Controle de páginas geradas por usuários (anúncios expirados, duplicados, páginas ralas).',
+        'Gestão do orçamento de rastreio e sitemaps segmentados.',
+        'Schema conforme o tipo de item (Product, JobPosting, Event, etc.).',
+      ],
+      INSTITUCIONAL: [
+        'Foco em busca pela marca, Knowledge Panel, páginas de confiança e conteúdo informativo do setor.',
+        'Schema: Organization com sameAs e logo.',
+      ],
+    };
+    const SEO_MODULE_LABELS = {
+      SAAS_WEBAPP: 'SaaS / Webapp', ECOMMERCE: 'E-commerce', NEGOCIO_LOCAL: 'Negócio local',
+      PUBLISHER_BLOG: 'Publisher / Blog', AGENCIA_SERVICOS: 'Agência / Serviços',
+      MARKETPLACE_PORTAL: 'Marketplace / Portal', INSTITUCIONAL: 'Institucional',
+    };
+    // Checklist comum (passos do PROCESSO) — chave interna alinhada ao texto.
+    const SEO_COMMON = [
+      ['tecnico', 'Diagnóstico técnico (robots, canonical, sitemap, HTTPS, mobile, Core Web Vitals)'],
+      ['intencao', 'Arquitetura de intenção (palavras-chave por intenção + clusters pilar/satélite)'],
+      ['onpage', 'On-page (title ~60c, meta ~155c, 1 H1, hierarquia, links internos, alt, WebP/AVIF)'],
+      ['eeat', 'Conteúdo & E-E-A-T (autoria, experiência real, fontes, datas, Sobre/Contato/Políticas)'],
+      ['schema', 'Schema JSON-LD validado e adequado à categoria (sem campos fictícios)'],
+      ['geo', 'GEO/AEO (blocos de resposta 40–60 palavras, perguntas reais, llms.txt, crawlers de IA)'],
+      ['diffs', 'Diferenciais e propostas do site vs concorrentes (diferenciação declarada e comunicada)'],
+    ];
+    let SEO_REPO = null;   // {best, alternatives} — cache da rota /api/optimizer/seo-repo
+    let SEO_OPEN = false;
+
+    function seoToggle() {
+      SEO_OPEN = !SEO_OPEN;
+      document.getElementById('seo-panel').classList.toggle('hidden', !SEO_OPEN);
+      document.getElementById('seo-toggle-btn').textContent = SEO_OPEN ? 'ocultar ▴' : 'mostrar ▾';
+      if (SEO_OPEN) {
+        if (!document.getElementById('seo-checklist').children.length) seoRenderChecklist();
+        if (!SEO_REPO) seoLoadRepo();
+      }
+    }
+
+    async function seoLoadRepo() {
+      const card = document.getElementById('seo-repo-card');
+      try {
+        const r = await fetch('/api/optimizer/seo-repo');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        SEO_REPO = await r.json();
+        const b = SEO_REPO.best;
+        card.innerHTML = `
+          <div class="border border-amber-700/40 bg-amber-950/20 rounded-lg p-2.5 space-y-1">
+            <div class="text-amber-300 font-semibold">⭐ Melhor skill/repositório para SEO: <a href="${escHtml(b.url)}" target="_blank" rel="noopener" class="underline hover:text-amber-200">${escHtml(b.fullName)}</a></div>
+            <div class="text-gray-400">${b.stars ? '⭐ ' + b.stars.toLocaleString('pt-BR') + ' stars · ' : ''}${escHtml(b.license)} · <span class="text-gray-500">${escHtml(b.source)}</span></div>
+            <div class="text-gray-400 leading-relaxed">${escHtml(b.description)}</div>
+            ${(b.highlights || []).map(h => `<div class="text-gray-500">• ${escHtml(h)}</div>`).join('')}
+            <div class="text-gray-600 pt-0.5">Alternativas: ${(SEO_REPO.alternatives || []).map(a => `<a href="${escHtml(a.url)}" target="_blank" rel="noopener" class="hover:text-gray-400 underline decoration-dotted">${escHtml(a.name)}</a>`).join(' · ')}</div>
+          </div>`;
+      } catch (e) {
+        card.innerHTML = `<div class="text-gray-500">⚠️ Sem acesso ao GitHub agora (${escHtml(e.message)}) — usando referência curada: <a class="underline" href="https://github.com/AgriciDaniel/claude-seo" target="_blank" rel="noopener">AgriciDaniel/claude-seo</a></div>`;
+      }
+    }
+
+    function seoRenderChecklist() {
+      const cat = document.getElementById('seo-category').value;
+      const box = document.getElementById('seo-checklist');
+      const prev = {};
+      box.querySelectorAll('input[data-seo]').forEach(i => prev[i.dataset.seo] = i.checked);
+      const items = SEO_COMMON.map(([k, label]) => ({ k, label }));
+      if (cat) items.push(['mod', `Módulo ${SEO_MODULE_LABELS[cat]} (${SEO_MODULES[cat].length} itens)`]);
+      box.innerHTML = items.map(it => `
+        <label class="flex items-start space-x-2 text-[11px] text-gray-400 cursor-pointer hover:text-gray-300">
+          <input type="checkbox" data-seo="${it.k}" class="seo-check mt-0.5 accent-teal-500" ${prev[it.k] !== false ? 'checked' : ''} />
+          <span>${escHtml(it.label)}</span>
+        </label>`).join('');
+    }
+
+    function seoRenderCategory() {
+      const cat = document.getElementById('seo-category').value;
+      const mod = document.getElementById('seo-module');
+      if (cat && SEO_MODULES[cat]) {
+        mod.classList.remove('hidden');
+        mod.innerHTML = `<div class="font-semibold text-teal-300 mb-1">Módulo ${escHtml(SEO_MODULE_LABELS[cat])}</div>` +
+          SEO_MODULES[cat].map(b => `<div>• ${escHtml(b)}</div>`).join('');
+      } else {
+        mod.classList.add('hidden');
+      }
+      seoRenderChecklist();
+    }
+
+    function seoGenerate() {
+      const cat = document.getElementById('seo-category').value;
+      const hint = document.getElementById('seo-gen-hint');
+      if (!cat) { hint.textContent = '✗ selecione a categoria primeiro'; document.getElementById('seo-category').focus(); return; }
+      const checked = new Set([...document.querySelectorAll('.seo-check:checked')].map(i => i.dataset.seo));
+      if (!checked.size) { hint.textContent = '✗ marque ao menos 1 item do checklist'; return; }
+      const url = document.getElementById('seo-url').value.trim() || '{URL_DO_PROJETO}';
+      const diffs = document.getElementById('seo-diffs').value.trim();
+      const repoUrl = SEO_REPO?.best?.url || 'https://github.com/AgriciDaniel/claude-seo';
+      const repoName = SEO_REPO?.best?.fullName || 'AgriciDaniel/claude-seo';
+
+      const proc = [];
+      if (checked.has('tecnico')) proc.push('1. Diagnóstico técnico: rastreabilidade, indexação (robots.txt, meta robots, canonical), sitemap XML, status HTTP, HTTPS, mobile, renderização JavaScript, Core Web Vitals (LCP ≤ 2,5s, INP ≤ 200ms, CLS ≤ 0,1).');
+      if (checked.has('intencao')) proc.push('2. Arquitetura e intenção: mapeie palavras-chave por intenção (informacional, comercial, transacional, navegacional) e organize em clusters (página pilar + satélite).');
+      if (checked.has('onpage')) proc.push('3. On-page: title (até ~60 caracteres), meta description (até ~155), um H1, hierarquia de Hs, URLs limpas, links internos, alt text, imagens WebP/AVIF com lazy-load (exceto a do LCP).');
+      if (checked.has('eeat')) proc.push('4. Conteúdo e E-E-A-T: autoria, experiência real, fontes, datas de atualização, páginas Sobre/Contato/Políticas.');
+      if (checked.has('schema')) proc.push('5. Schema JSON-LD adequado à categoria (módulo abaixo), validado e sem campos fictícios.');
+      if (checked.has('geo')) proc.push('6. GEO/AEO: blocos de resposta direta (40–60 palavras), perguntas reais do público, dados citáveis, llms.txt, política de crawlers de IA no robots.txt.');
+      proc.push(`7. Aplique o MÓDULO DA CATEGORIA ${SEO_MODULE_LABELS[cat]} abaixo.`);
+      if (checked.has('diffs')) proc.push('8. Diferenciais e propostas: identifique o que ESTE site/webapp oferece que os concorrentes não oferecem e como comunicar isso em title, meta, conteúdo, rich results e canais (tabela comparativa).');
+
+      const out = [];
+      out.push('1. Score geral de 0 a 100 e score por área (Técnico, On-page, Conteúdo, Schema, GEO, Categoria).');
+      out.push('2. Tabela de achados: Achado | Evidência | Impacto | Correção | Severidade (Crítico/Alerta/OK) | Confiança (Confirmado/Provável/Hipótese).');
+      out.push('3. Top 10 ações priorizadas por impacto ÷ esforço.');
+      out.push('4. Código pronto: metatags, JSON-LD e trechos de robots.txt e sitemap.');
+      out.push('5. Diferenciais e propostas: tabela comparativa (este site vs concorrentes) + como cada diferencial vira title/meta/conteúdo/schema — divulgue o que só este site oferece.');
+      out.push('6. Plano de 90 dias (semanas 1–4, 5–8, 9–12), com métricas de sucesso e, para cada ação, "como saberemos se falhou".');
+
+      const prompt = `# PAPEL
+Você é um especialista sênior em SEO técnico, conteúdo (E-E-A-T), Schema.org e GEO/AEO (otimização para AI Overviews, ChatGPT, Perplexity e Gemini). Siga as diretrizes oficiais do Google Search Central. Nunca invente métricas: quando faltar dado, marque como [HIPÓTESE] e diga como verificar.
+Metodologia de referência: skill "${repoName}" (${repoUrl}) — aplique o nível de detalhe e a estrutura "recomendação + observação que a justifica + teste de verificação" dela.
+
+# CONTEXTO DO PROJETO
+- URL / nome: ${url}
+- Categoria: ${cat}
+${diffs ? `- Diferenciais e propostas já conhecidos: ${diffs}\n` : ''}- Público e região: {ex.: PMEs no Brasil, pt-BR}
+- Stack: {ex.: Next.js, React SPA, WordPress, Shopify, Laravel}
+- Concorrentes: {lista}
+
+# PROCESSO (siga nesta ordem)
+${proc.join('\n')}
+
+# MÓDULO DA CATEGORIA — ${cat}
+${SEO_MODULES[cat].map(b => '- ' + b).join('\n')}
+
+# FORMATO DE SAÍDA
+${out.join('\n')}
+Responda em pt-BR.`;
+
+      document.getElementById('opt-prompt').value = prompt;
+      hint.textContent = `✓ prompt SEO gerado (${proc.length} passos) — revise e clique ⚙️ Executar pipeline`;
+      document.getElementById('opt-prompt').focus();
+    }
 
     function openOptimizer() {
       const pre = (document.getElementById('prompt-input')?.value || '').trim();
@@ -2397,6 +2754,510 @@
       } catch (e) {
         document.getElementById('dp-chat-wait')?.remove();
         chat.insertAdjacentHTML('beforeend', `<div class="text-rose-400 text-[11px]">❌ ${esc(e.message)}</div>`);
+      }
+    }
+  </script>
+
+  <script>
+    // ── Automação N8N (Arquiteto N8N & SRE) ───────────────────────────────────
+    const n8nState = {
+      init: false, status: null, phase: 0, answers: {}, design: null,
+      chat: [], templates: [], checks: {},
+    };
+
+    // Fases espelhadas do backend (src/n8n/n8n-agent.ts → WIZARD_PHASES)
+    const N8N_PHASES = [
+      { id: 'levantamento', icon: '📝', title: 'Fase 1 — Levantamento',
+        questions: [
+          { id: 'objetivo', label: 'Objetivo da automação (o que ela precisa fazer?)', type: 'textarea', required: true,
+            placeholder: 'ex.: Enviar relatório diário de vendas via Slack às 8h', why: 'Objetivo claro evita escopo elástico e nodes desnecessários.' },
+          { id: 'categoria', label: 'Categoria do projeto', type: 'select', required: true,
+            options: ['SAAS', 'ECOMMERCE', 'NEGOCIO_LOCAL', 'PUBLISHER', 'AGENCIA', 'MARKETPLACE', 'INSTITUCIONAL', 'INTERNO'],
+            why: 'Define o módulo de prioridades e nodes-chave aplicáveis.' },
+          { id: 'gatilho', label: 'Gatilho principal', type: 'select', required: true,
+            options: ['webhook', 'schedule', 'manual', 'event', 'form'],
+            why: 'Webhook = endpoint público (avalie autenticação); schedule exige fuso correto.' },
+          { id: 'integracoes', label: 'Integrações necessárias (separadas por vírgula)', required: true,
+            placeholder: 'ex.: Slack, PostgreSQL, Gmail, OpenAI', why: 'Confirme cada uma na referência oficial: docs.n8n.io/integrations/' },
+          { id: 'ambiente', label: 'Ambiente', type: 'select', options: ['self-hosted', 'n8n.cloud', 'ambos'] },
+          { id: 'dadosSensiveis', label: 'Dados sensíveis? (PII, financeiro, LGPD)', type: 'select', options: ['não', 'sim'],
+            why: 'Se sim, exige mascaramento de PII antes de qualquer API externa/IA.' },
+        ],
+        checklist: [
+          'Gatilho definido (webhook/schedule/manual/event/form)',
+          'Integrações confirmadas na referência oficial de nodes',
+          'Ponto de filtro de PII identificado (se houver dados sensíveis)',
+          'Frequência de execução verificada contra rate limits das APIs',
+          'Risco de ação duplicada avaliado (idempotência necessária?)',
+          'Comportamento esperado em caso de falha definido',
+        ] },
+      { id: 'design', icon: '🗺️', title: 'Fase 2 — Design', questions: [],
+        checklist: [
+          'Diagrama textual revisado (fluxo faz sentido ponta a ponta)',
+          'Validação de payload no início do fluxo',
+          'Filtro de PII posicionado ANTES de APIs externas/IA',
+          'Human-in-the-loop em ações de alto risco (Send and Wait)',
+          'JSON exportado como workflow.json (versionado em Git)',
+        ] },
+      { id: 'geracao', icon: '⚙️', title: 'Fase 3 — Geração e credenciais',
+        questions: [
+          { id: 'credenciais', label: 'Credenciais que você vai preencher no n8n (só NOMES)', type: 'textarea',
+            placeholder: 'ex.: N8N_API_KEY, SLACK_API_TOKEN, OPENAI_API_KEY',
+            why: 'NUNCA cole valores — valores ficam só no sistema de credentials do n8n.' },
+        ],
+        checklist: [
+          'Workflow criado na instância (API ou import do JSON)',
+          'Credenciais criadas no sistema do n8n (nada hardcoded)',
+          'Teste manual executado com dados de exemplo',
+          'Erros de node resolvidos (Retry on Fail onde fizer sentido)',
+          'Ativação APENAS após validação',
+        ] },
+      { id: 'monitoramento', icon: '📡', title: 'Fase 4 — Monitoramento',
+        questions: [
+          { id: 'alerta', label: 'Para onde vão os alertas de falha?', type: 'select',
+            options: ['Slack', 'Email', 'Telegram', 'PagerDuty/Better Stack'] },
+        ],
+        checklist: [
+          'Error Workflow global configurado nas configurações do workflow',
+          'Workflow de erro central: Error Trigger → parse → classificar → alerta',
+          'Heartbeat: ping externo a cada N min (silêncio = alerta de down)',
+          'Log externo persistente (banco/planilha — logs nativos são purgados)',
+          'Nomenclatura padronizada: [DOMÍNIO] Ação — Gatilho',
+          'Retenção de execuções configurada (Settings > Executions)',
+        ] },
+    ];
+
+    async function n8nApi(path, body) {
+      let last = null;
+      for (const u of apiUrls(path)) {
+        try {
+          const r = await fetch(u, body !== undefined
+            ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+            : undefined);
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || j.error) { last = new Error(j.error || `HTTP ${r.status}`); continue; }
+          return j;
+        } catch (e) { last = e; }
+      }
+      throw last || new Error('API Automação N8N indisponível');
+    }
+
+    async function n8nInit() {
+      if (n8nState.init) return;
+      n8nState.init = true;
+      try {
+        const s = await n8nApi('/api/n8n/status');
+        n8nRenderStatus(s);
+        if (s.url) document.getElementById('n8n-url').value = s.url;
+      } catch { /* offline */ }
+      n8nRenderPhase();
+      n8nLoadTemplates();
+    }
+
+    function n8nRenderStatus(s) {
+      const pill = document.getElementById('n8n-status-pill');
+      if (s.connected) {
+        pill.className = 'px-3 py-1.5 rounded-full text-[11px] font-mono border border-emerald-600 text-emerald-400 bg-emerald-500/10 shrink-0';
+        pill.textContent = '● conectado';
+      } else {
+        pill.className = 'px-3 py-1.5 rounded-full text-[11px] font-mono border border-gray-700 text-gray-400 shrink-0';
+        pill.textContent = '● desconectado';
+      }
+      n8nState.status = s;
+    }
+
+    async function n8nConnect() {
+      const url = document.getElementById('n8n-url').value.trim();
+      const apiKey = document.getElementById('n8n-key').value.trim();
+      const out = document.getElementById('n8n-conn-out');
+      if (!url || !apiKey) { out.innerHTML = '<span class="text-amber-400">informe a URL e a API key (n8n → Settings &gt; API)</span>'; return; }
+      const btn = document.getElementById('n8n-btn-connect');
+      btn.disabled = true; btn.textContent = '⏳ testando…';
+      try {
+        const r = await n8nApi('/api/n8n/connect', { url, apiKey });
+        document.getElementById('n8n-key').value = '';   // some da tela — fica só no backend (memória)
+        if (r.ok) {
+          out.innerHTML = `<span class="text-emerald-400">✅ conectado a ${esc(r.url)}</span>${r.version ? ` · n8n ${esc(String(r.version))}` : ''} · ${r.workflows ?? '?'} workflow(s) visíveis`;
+          n8nRenderStatus({ connected: true, url: r.url });
+        } else {
+          out.innerHTML = `<span class="text-rose-400">✗ ${esc(r.error || 'falha na conexão')}</span> <span class="text-gray-600">— confira a URL e se a API está habilitada (Settings &gt; API)</span>`;
+          n8nRenderStatus({ connected: false, url: null });
+        }
+      } catch (e) { out.innerHTML = `<span class="text-rose-400">✗ ${esc(e.message)}</span>`; }
+      finally { btn.disabled = false; btn.textContent = '🔌 Conectar'; }
+    }
+
+    async function n8nDisconnect() {
+      try { await n8nApi('/api/n8n/disconnect', {}); } catch { /* ok */ }
+      document.getElementById('n8n-key').value = '';
+      n8nRenderStatus({ connected: false, url: null });
+      document.getElementById('n8n-conn-out').textContent = 'conexão limpa (a chave também foi descartada da memória).';
+    }
+
+    function n8nChk(pid, i, v) { (n8nState.checks[pid] = n8nState.checks[pid] || {})[i] = v; }
+    function n8nSave(id, val) { n8nState.answers[id] = val; }
+
+    function n8nRenderPhase() {
+      const p = N8N_PHASES[n8nState.phase];
+      document.getElementById('n8n-stepper').innerHTML = N8N_PHASES.map((ph, i) => `
+        <div class="flex items-center">
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-mono border ${i === n8nState.phase ? 'border-teal-500 text-teal-300 bg-teal-500/10' : i < n8nState.phase ? 'border-emerald-700 text-emerald-400 bg-emerald-500/5' : 'border-gray-700 text-gray-500'}">${i < n8nState.phase ? '✓' : ph.icon} ${esc(ph.title.split('—')[1]?.trim() || ph.title)}</span>
+          ${i < N8N_PHASES.length - 1 ? '<span class="text-gray-700 mx-1">→</span>' : ''}
+        </div>`).join('');
+
+      const qs = p.questions.map(q => {
+        const v = esc(n8nState.answers[q.id] ?? '');
+        const why = q.why ? `<div class="text-[10px] text-gray-600 mt-0.5">${esc(q.why)}</div>` : '';
+        const lbl = `<label class="block text-[11px] font-mono text-gray-400 mb-1">${q.required ? '* ' : ''}${esc(q.label)}</label>`;
+        if (q.type === 'select') {
+          return `<div>${lbl}<select onchange="n8nSave('${q.id}', this.value)" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-gray-200 focus:outline-none focus:border-teal-500">
+            <option value="">— selecione —</option>
+            ${q.options.map(o => `<option value="${esc(o)}" ${n8nState.answers[q.id] === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+          </select>${why}</div>`;
+        }
+        if (q.type === 'textarea') {
+          return `<div>${lbl}<textarea rows="2" oninput="n8nSave('${q.id}', this.value)" placeholder="${esc(q.placeholder || '')}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-gray-300 focus:outline-none focus:border-teal-500">${v}</textarea>${why}</div>`;
+        }
+        return `<div>${lbl}<input type="text" value="${v}" oninput="n8nSave('${q.id}', this.value)" placeholder="${esc(q.placeholder || '')}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-2 text-xs text-gray-200 focus:outline-none focus:border-teal-500" />${why}</div>`;
+      }).join('');
+
+      const checks = p.checklist.map((c, i) => `
+        <label class="flex items-start space-x-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300">
+          <input type="checkbox" class="mt-0.5 accent-teal-500" ${n8nState.checks[p.id]?.[i] ? 'checked' : ''} onchange="n8nChk('${p.id}', ${i}, this.checked)" />
+          <span>${esc(c)}</span>
+        </label>`).join('');
+
+      let extra = '';
+      if (p.id === 'design') {
+        extra = `<div class="border border-teal-800/40 bg-teal-950/20 rounded-lg p-3 text-xs text-teal-200/90 leading-relaxed">
+          Clique em <b>Gerar design</b> para o arquiteto produzir: diagrama textual + <span class="font-mono">workflow.json</span> importável + credenciais (só NOMES) + docs oficiais + riscos.
+          Parâmetro de node incerto sai como <span class="font-mono">[VERIFICAR_DOCS]</span> — nunca inventado.</div>`;
+      }
+      if (p.id === 'geracao') {
+        extra = `<div class="border border-gray-800 rounded-lg p-3 text-xs text-gray-400 leading-relaxed">
+          ${n8nState.design?.workflow
+            ? `✅ Design pronto (${n8nState.design.workflow.nodes.length} nodes) — use <b>🚀 Criar na instância</b> no card acima (conferência → confirmação).`
+            : '⚠️ Gere o design antes (Fase 2) para criar via API — ou use 📋 Copiar JSON e importe manualmente (⋯ → Import).'}
+          <br/>Credenciais: crie em <span class="font-mono">Settings &gt; Credentials</span> no n8n — aqui só listamos os NOMES.
+          <br/>Teste manualmente (Executar workflow) antes de ativar.</div>`;
+      }
+      if (p.id === 'monitoramento') {
+        extra = `<div class="space-y-2">
+          <div class="flex flex-wrap gap-2">
+            <button onclick="n8nLoadExecs()" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-xs font-mono hover:border-emerald-600">📥 Ver execuções da instância</button>
+            <a href="https://docs.n8n.io/hosting/configuration/environment-variables/" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-400 text-xs font-mono hover:border-teal-600">📚 Docs: variáveis de ambiente</a>
+            <a href="https://docs.n8n.io/flows/white-ballroom/" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-400 text-xs font-mono hover:border-teal-600">📚 Docs: error workflows</a>
+          </div>
+          <div id="n8n-execs" class="text-xs font-mono text-gray-400"></div></div>`;
+      }
+
+      document.getElementById('n8n-phase-body').innerHTML =
+        (qs ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${qs}</div>` : '') + extra +
+        `<div><div class="text-[10px] font-mono text-gray-500 uppercase mb-1.5">Checklist da fase ${p.icon} ${esc(p.title)}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-1">${checks}</div></div>`;
+
+      const prev = document.getElementById('n8n-btn-prev');
+      prev.disabled = n8nState.phase === 0;
+      prev.classList.toggle('opacity-40', n8nState.phase === 0);
+      const next = document.getElementById('n8n-btn-next');
+      next.textContent = p.id === 'design' && !n8nState.design ? '🗺️ Gerar design'
+        : n8nState.phase === 3 ? '✅ Concluir wizard' : 'Avançar ▶';
+      document.getElementById('n8n-wiz-badge').textContent = `fase ${n8nState.phase + 1}/4 · ${p.title}`;
+    }
+
+    function n8nPhasePrev() {
+      if (n8nState.phase === 0) return;
+      n8nState.phase--;
+      document.getElementById('n8n-guide-out').classList.add('hidden');
+      n8nRenderPhase();
+    }
+
+    async function n8nPhaseNext() {
+      const p = N8N_PHASES[n8nState.phase];
+      if (p.id === 'levantamento') {
+        for (const q of p.questions.filter((q) => q.required)) {
+          if (!String(n8nState.answers[q.id] ?? '').trim()) {
+            alert('Preencha o campo obrigatório: ' + q.label);
+            return;
+          }
+        }
+      }
+      if (p.id === 'design' && !n8nState.design) { await n8nDesign(); return; }
+      if (n8nState.phase === 3) {
+        const undone = p.checklist.filter((c, i) => !n8nState.checks[p.id]?.[i]).length;
+        const out = document.getElementById('n8n-guide-out');
+        out.classList.remove('hidden');
+        out.textContent = undone === 0
+          ? '✅ Automação finalizada! Workflow no ar com Error Workflow, heartbeat e logs externos. Mantenha o workflow.json no Git e acompanhe as execuções por aqui.'
+          : ` quase lá — faltam ${undone} item(ns) do checklist de monitoramento. Complete-os (e clique ✨ Passo a passo com IA se precisar) para concluir com segurança.`;
+        return;
+      }
+      n8nState.phase = Math.min(3, n8nState.phase + 1);
+      document.getElementById('n8n-guide-out').classList.add('hidden');
+      n8nRenderPhase();
+    }
+
+    async function n8nPhaseAi() {
+      const out = document.getElementById('n8n-guide-out');
+      out.classList.remove('hidden');
+      out.textContent = '⏳ personalizando o passo desta fase com base nas suas respostas…';
+      try {
+        const p = N8N_PHASES[n8nState.phase];
+        const r = await n8nApi('/api/n8n/guide', { phase: p.id, answers: n8nState.answers });
+        out.textContent = `${r.title}\n\n${r.guidance}` + (r.docRefs?.length ? '\n\n📚 ' + r.docRefs.join('\n📚 ') : '');
+      } catch (e) { out.textContent = '✗ ' + e.message; }
+    }
+
+    async function n8nDesign() {
+      const btn = document.getElementById('n8n-btn-next');
+      btn.disabled = true; btn.textContent = '⏳ Gerando design…';
+      try {
+        const d = await n8nApi('/api/n8n/design', {
+          answers: n8nState.answers,
+          template: n8nState.answers.template || undefined,
+        });
+        n8nState.design = d;
+        n8nRenderDesign(d);
+      } catch (e) { alert('Falha ao gerar o design: ' + e.message); }
+      finally { btn.disabled = false; n8nRenderPhase(); }
+    }
+
+    function n8nRenderDesign(d) {
+      document.getElementById('n8n-design-card').classList.remove('hidden');
+      document.getElementById('n8n-design-model').textContent = d.model ? `· ${d.model}` : '';
+      document.getElementById('n8n-design-name').textContent =
+        `${d.workflowName}${d.workflow ? ` · ${d.workflow.nodes.length} nodes` : ' · sem JSON (veja a nota)'}`;
+      document.getElementById('n8n-design-diagram').textContent = d.diagram;
+      document.getElementById('n8n-design-steps').innerHTML = d.steps.map((s, i) => `
+        <div class="flex items-start space-x-2"><span class="text-teal-400 font-mono shrink-0">${i + 1}.</span>
+          <span><b class="text-gray-300">${esc(s.title)}</b> — ${esc(s.why)}
+          ${s.commands?.length ? `<div class="font-mono text-[11px] text-gray-500 mt-0.5">${s.commands.map((c) => '$ ' + esc(c)).join('<br/>')}</div>` : ''}</span></div>`).join('');
+      document.getElementById('n8n-design-creds').innerHTML = d.credentials?.length
+        ? d.credentials.map((c) => `<span class="px-1.5 py-0.5 rounded bg-gray-900 border border-amber-700/50 text-amber-300 text-[10px] font-mono">${esc(c)}</span>`).join('')
+        : '<span class="text-gray-600 text-[11px]">nenhuma credencial identificada</span>';
+      document.getElementById('n8n-design-docs').innerHTML = (d.docs?.length ? d.docs : ['https://docs.n8n.io/integrations/'])
+        .map((u) => `<div><a href="${esc(u)}" target="_blank" rel="noopener" class="text-teal-400 hover:text-teal-300 underline decoration-dotted break-all">${esc(u)}</a></div>`).join('');
+      document.getElementById('n8n-design-json').textContent = d.workflow
+        ? JSON.stringify(d.workflow, null, 2)
+        : (d.note || 'sem JSON — monte os nodes com apoio de [VERIFICAR_DOCS]');
+      document.getElementById('n8n-design-risks').innerHTML =
+        (d.risks || []).map((r) => `<div>⚠️ ${esc(r)}</div>`).join('') +
+        (d.note ? `<div>ℹ️ ${esc(d.note)}</div>` : '');
+      document.getElementById('n8n-create-out').textContent = '';
+      document.getElementById('n8n-btn-create').disabled = !d.workflow;
+      document.getElementById('n8n-design-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function n8nCopyJson() {
+      const d = n8nState.design;
+      if (!d?.workflow) { alert('Sem JSON para copiar — gere o design primeiro.'); return; }
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(d.workflow, null, 2));
+        const b = document.getElementById('n8n-create-out');
+        b.innerHTML = '<span class="text-teal-400">📋 workflow.json copiado — no n8n: ⋯ → Import from Clipboard</span>';
+      } catch (e) { alert('Não foi possível copiar: ' + e.message); }
+    }
+
+    async function n8nCreate() {
+      const d = n8nState.design;
+      if (!d?.workflow) { alert('Gere o design primeiro (Fase 2).'); return; }
+      if (!n8nState.status?.connected) {
+        alert('Conecte a instância no topo da aba (URL + N8N_API_KEY) para criar via API.\nAlternativa: 📋 Copiar workflow.json e importar manualmente no n8n.');
+        return;
+      }
+      const out = document.getElementById('n8n-create-out');
+      try {
+        const first = await n8nApi('/api/n8n/create', { workflow: d.workflow });
+        if (first.needsConfirmation) {
+          if (!confirm(`Criar workflow "${first.name}" (${first.nodes} nodes) na instância ${n8nState.status.url}?`)) {
+            out.textContent = 'criação cancelada — nada foi enviado.';
+            return;
+          }
+          const r = await n8nApi('/api/n8n/create', { workflow: d.workflow, confirm: true });
+          out.innerHTML = `<span class="text-emerald-400">✅ Workflow criado (id ${r.id})</span>` +
+            (r.url ? ` · <a class="text-teal-400 underline" href="${esc(r.url)}" target="_blank" rel="noopener">abrir no n8n</a>` : '') +
+            `<br/><span class="text-gray-500">Teste manualmente (Executar) e só depois ative na UI — ativação fica com você.</span>`;
+          if (!n8nState.checks.geracao) n8nState.checks.geracao = {};
+          n8nState.checks.geracao[0] = true;
+          n8nRenderPhase();
+        }
+      } catch (e) { out.innerHTML = `<span class="text-rose-400">✗ ${esc(e.message)}</span>`; }
+    }
+
+    // ── Templates oficiais ────────────────────────────────────────────────────
+    async function n8nLoadTemplates(search) {
+      const grid = document.getElementById('n8n-tpl-grid');
+      grid.innerHTML = '<div class="text-[11px] text-gray-500 font-mono">carregando templates oficiais…</div>';
+      try {
+        const qs = '?limit=12' + (search ? `&search=${encodeURIComponent(search)}` : '');
+        const r = await n8nApi('/api/n8n/templates' + qs);
+        n8nState.templates = r.templates || [];
+        document.getElementById('n8n-tpl-src').textContent = r.source === 'api-oficial'
+          ? `api oficial · ${r.total ? r.total.toLocaleString('pt-BR') + ' templates' : 'ok'}`
+          : 'fallback curado (API oficial fora do ar)';
+        grid.innerHTML = n8nState.templates.map((t, i) => `
+          <button onclick="n8nUseTemplate(${i})" class="text-left bg-gray-900/70 border border-gray-800 rounded-lg p-2 hover:border-teal-600 transition">
+            <div class="text-xs text-gray-200 font-semibold leading-snug">${esc(t.name)}</div>
+            <div class="text-[10px] text-gray-500 mt-1">${esc(t.description)}</div>
+            <div class="flex flex-wrap gap-1 mt-1 items-center">${(t.nodes || []).slice(0, 4).map((n) => `<span class="text-[9px] font-mono text-teal-400/80">${esc(n)}</span>`).join('')}${t.views ? `<span class="text-[9px] text-gray-600 ml-auto">👁 ${t.views.toLocaleString('pt-BR')}</span>` : ''}</div>
+          </button>`).join('') || '<div class="text-xs text-gray-500">nenhum resultado — tente outra busca.</div>';
+      } catch (e) { grid.innerHTML = `<div class="text-xs text-rose-400">✗ ${esc(e.message)}</div>`; }
+    }
+
+    function n8nTplSearch() { n8nLoadTemplates(document.getElementById('n8n-tpl-q').value.trim()); }
+
+    function n8nUseTemplate(i) {
+      const t = n8nState.templates[i];
+      if (!t) return;
+      n8nState.answers.template = `${t.name} — ${t.url}`;
+      if (!n8nState.answers.objetivo) {
+        n8nState.answers.objetivo = `Reproduzir/adaptar o template oficial "${t.name}" ao meu caso`;
+        n8nRenderPhase();
+      }
+      const out = document.getElementById('n8n-guide-out');
+      out.classList.remove('hidden');
+      out.textContent = `🧩 Template selecionado como base: ${t.name}\n${t.description}\n${t.url}\n` +
+        (t.nodes?.length ? `Nodes: ${t.nodes.join(', ')}\n` : '') +
+        '→ Ajuste objetivo/integrações na Fase 1 e avance para gerar o design sob essa base.';
+      out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ── Score de saúde ────────────────────────────────────────────────────────
+    async function n8nScore() {
+      const raw = document.getElementById('n8n-score-json').value.trim();
+      if (!raw) { alert('Cole o JSON do workflow ou use "carregar da instância".'); return; }
+      let wf;
+      try { wf = JSON.parse(raw); } catch { alert('JSON inválido — exporte novamente (⋯ → Export → Copiar).'); return; }
+      const btn = document.getElementById('n8n-btn-score');
+      btn.disabled = true; btn.textContent = '⏳ analisando…';
+      try { n8nRenderScore(await n8nApi('/api/n8n/score', { workflow: wf })); }
+      catch (e) { document.getElementById('n8n-score-out').innerHTML = `<div class="text-rose-400 text-xs">✗ ${esc(e.message)}</div>`; }
+      finally { btn.disabled = false; btn.textContent = '🧮 Calcular score'; }
+    }
+
+    async function n8nLoadWfForScore() {
+      if (!n8nState.status?.connected) { alert('Conecte a instância primeiro (topo da aba).'); return; }
+      const out = document.getElementById('n8n-score-out');
+      out.innerHTML = '<div class="text-[11px] text-gray-500 font-mono">carregando workflows…</div>';
+      try {
+        const r = await n8nApi('/api/n8n/workflows');
+        const list = r.workflows || [];
+        if (!list.length) { out.innerHTML = '<div class="text-xs text-gray-500">nenhum workflow na instância.</div>'; return; }
+        out.innerHTML = '<div class="text-[11px] font-mono text-gray-400 mb-1">escolha o workflow para pontuar:</div>' +
+          list.map((w) => `
+            <button onclick="n8nScoreWf(${w.id})" class="block w-full text-left px-2 py-1 rounded bg-gray-900 border border-gray-800 text-xs text-gray-300 hover:border-amber-600 mb-1">${esc(w.name)} <span class="text-gray-600">(${w.nodes ?? '?'} nodes${w.active ? ' · ativo' : ''})</span></button>`).join('');
+      } catch (e) { out.innerHTML = `<div class="text-rose-400 text-xs">✗ ${esc(e.message)}</div>`; }
+    }
+
+    async function n8nScoreWf(id) {
+      const out = document.getElementById('n8n-score-out');
+      out.innerHTML = '<div class="text-[11px] text-gray-500 font-mono">pontuando…</div>';
+      try { n8nRenderScore(await n8nApi('/api/n8n/score', { workflowId: String(id) })); }
+      catch (e) { out.innerHTML = `<div class="text-rose-400 text-xs">✗ ${esc(e.message)}</div>`; }
+    }
+
+    function n8nRenderScore(s) {
+      const areas = [['Resiliência', s.areas.resiliencia], ['Segurança', s.areas.seguranca], ['Observabilidade', s.areas.observabilidade], ['Eficiência', s.areas.eficiencia]];
+      const bar = (v) => v >= 20 ? 'bg-emerald-500' : v >= 12 ? 'bg-amber-500' : 'bg-rose-500';
+      document.getElementById('n8n-score-out').innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="text-3xl font-bold ${s.total >= 80 ? 'text-emerald-400' : s.total >= 50 ? 'text-amber-400' : 'text-rose-400'}">${s.total}<span class="text-sm text-gray-500">/100</span></div>
+          <div class="flex-1 space-y-1">${areas.map(([k, v]) => `
+            <div class="flex items-center space-x-2 text-[10px]">
+              <span class="w-28 text-gray-500 font-mono uppercase shrink-0">${k}</span>
+              <div class="flex-1 h-2 bg-gray-900 rounded overflow-hidden"><div class="h-2 rounded ${bar(v)}" style="width:${(v / 25) * 100}%"></div></div>
+              <span class="w-10 text-right text-gray-400 font-mono">${v}/25</span>
+            </div>`).join('')}</div>
+        </div>
+        ${s.name ? `<div class="text-[11px] text-gray-500 font-mono">workflow: ${esc(s.name)}</div>` : ''}
+        <div class="overflow-x-auto"><table class="w-full text-[11px]">
+          <thead><tr class="text-gray-500 font-mono uppercase text-[9px] border-b border-gray-800">
+            <th class="text-left py-1 pr-2">Achado</th><th class="text-left py-1 pr-2">Evidência</th><th class="text-left py-1 pr-2">Correção</th><th class="text-left py-1">Sev.</th>
+          </tr></thead>
+          <tbody>${s.findings.map((f) => `
+            <tr class="border-b border-gray-800/50 align-top">
+              <td class="py-1 pr-2 text-gray-300">${esc(f.criterion)}<div class="text-gray-600">${esc(f.area)} · impacto ${esc(f.impact)}</div></td>
+              <td class="py-1 pr-2 text-gray-500">${esc(f.evidence)}</td>
+              <td class="py-1 pr-2 text-gray-400">${esc(f.fix)}</td>
+              <td class="py-1 whitespace-nowrap">${esc(f.severity)}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>`;
+    }
+
+    async function n8nLoadExecs() {
+      const el = document.getElementById('n8n-execs');
+      if (!el) return;
+      if (!n8nState.status?.connected) { el.innerHTML = '<span class="text-amber-400">conecte a instância para ver execuções.</span>'; return; }
+      el.textContent = '⏳ carregando execuções…';
+      try {
+        const r = await n8nApi('/api/n8n/executions');
+        const list = r.executions || [];
+        el.innerHTML = list.length
+          ? list.map((e) => `<div class="flex space-x-2"><span>${e.status === 'success' ? '✅' : e.status === 'error' ? '❌' : e.status === 'waiting' ? '⏸' : '•'}</span><span class="text-gray-400">#${e.id}</span><span class="text-gray-500">${esc(String(e.startedAt || ''))}</span><span class="text-gray-600">workflow ${e.workflowId}</span></div>`).join('')
+          : 'nenhuma execução registrada ainda.';
+      } catch (e) { el.innerHTML = `<span class="text-rose-400">✗ ${esc(e.message)}</span>`; }
+    }
+
+    // ── Computer use ──────────────────────────────────────────────────────────
+    async function n8nCU() {
+      const goal = document.getElementById('n8n-cu-goal').value.trim();
+      if (!goal) { alert('Descreva a ação visual desejada (ex.: abrir Settings > API).'); return; }
+      const btn = document.getElementById('n8n-btn-cu');
+      const out = document.getElementById('n8n-cu-result');
+      btn.disabled = true; btn.textContent = '⏳ Vendo a tela…';
+      out.textContent = 'analisando screenshot…';
+      try {
+        const r = await n8nApi('/api/n8n/computer-use', { goal });
+        const a = r.result;
+        out.textContent = [
+          ` modelo: ${a.model}${String(a.model).includes('free') ? '' : ' (fallback pago barato)'}`,
+          ` raciocínio: ${a.modelReasoning}`,
+          ` ação: ${a.action.action}${a.action.coordinate ? ` @ [${a.action.coordinate}]` : ''}${a.action.text ? ` digita: "${a.action.text}"` : ''}${a.action.hotkeys ? ` hotkey: ${a.action.hotkeys.join('+')}` : ''}`,
+          ` sucesso: ${a.success ? '✅' : '❌'}`,
+        ].join('\n');
+        if (r.screenshotPost) n8nSetShot(r.screenshotPost);
+      } catch (e) { out.textContent = '❌ ' + e.message; }
+      finally { btn.disabled = false; btn.textContent = '▶️ Executar ação visual'; }
+    }
+
+    async function n8nShot() {
+      try {
+        const r = await n8nApi('/api/n8n/computer-use/screenshot');
+        n8nSetShot(r.base64);
+      } catch (e) { alert('Screenshot indisponível: ' + e.message); }
+    }
+
+    function n8nSetShot(b64) {
+      const img = document.getElementById('n8n-cu-shot');
+      img.src = 'data:image/png;base64,' + b64;
+      img.classList.remove('hidden');
+      img.onload = () => document.getElementById('n8n-cu-empty').classList.add('hidden');
+    }
+
+    // ── Chat com o Arquiteto N8N ──────────────────────────────────────────────
+    async function n8nChat() {
+      const inp = document.getElementById('n8n-chat-in');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      inp.value = '';
+      const chat = document.getElementById('n8n-chat');
+      chat.insertAdjacentHTML('beforeend', `<div class="text-gray-200 bg-gray-900 rounded-lg p-2"><strong class="text-teal-400">você:</strong> ${esc(msg)}</div>`);
+      n8nState.chat.push({ role: 'user', content: msg });
+      chat.insertAdjacentHTML('beforeend', '<div id="n8n-chat-wait" class="text-gray-500 font-mono text-[11px] p-1">⏳ Arquiteto N8N respondendo…</div>');
+      chat.scrollTop = chat.scrollHeight;
+      try {
+        const r = await n8nApi('/api/n8n/chat', {
+          message: msg,
+          history: n8nState.chat.slice(0, -1),
+          answers: n8nState.answers,
+        });
+        document.getElementById('n8n-chat-wait')?.remove();
+        chat.insertAdjacentHTML('beforeend', `<div class="text-gray-300 bg-gray-950 border border-gray-800 rounded-lg p-2 whitespace-pre-wrap"><strong class="text-teal-400">Arquiteto N8N:</strong> ${esc(r.reply)}</div>`);
+        n8nState.chat.push({ role: 'assistant', content: r.reply });
+        chat.scrollTop = chat.scrollHeight;
+      } catch (e) {
+        document.getElementById('n8n-chat-wait')?.remove();
+        chat.insertAdjacentHTML('beforeend', `<div class="text-rose-400 text-[11px]">✗ ${esc(e.message)}</div>`);
       }
     }
   </script>

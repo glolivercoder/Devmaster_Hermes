@@ -25,12 +25,12 @@
       "updatedAt": "2026-10-17T23:46:26.004Z"
     },
     "gemini-flash": {
-      "calls": 29,
-      "success": 28,
+      "calls": 52,
+      "success": 51,
       "failures": 1,
-      "avgLatencyMs": 9128,
+      "avgLatencyMs": 10221,
       "totalSpend": 0,
-      "updatedAt": "2026-10-17T23:53:31.155Z"
+      "updatedAt": "2026-10-18T01:25:27.549Z"
     },
     "cheaper-opus": {
       "calls": 14,

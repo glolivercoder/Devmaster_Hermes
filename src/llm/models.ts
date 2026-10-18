@@ -64,6 +64,7 @@ export const ROUTE_TARGETS: RouteTarget[] = [
   { id: 'pentest', label: 'Agente PENTEST', kind: 'agent', defaultModel: 'cheaper-code' },
   { id: 'computer_user', label: 'Agente COMPUTER_USE', kind: 'agent', defaultModel: 'openrouter-vision-free' },
   { id: 'deploy', label: 'Agente DEPLOY', kind: 'agent', defaultModel: 'gemini-flash' },
+  { id: 'n8n', label: 'Agente Automação N8N', kind: 'agent', defaultModel: 'gemini-flash' },
   // ─── Agentes SECUNDÁRIOS → OmniRoute (gratuito, auto-roteamento c/ fallback) ─
   { id: 'qa', label: 'Agente QA', kind: 'agent', defaultModel: 'omniroute-fast' },
   { id: 'integrator', label: 'Agente INTEGRATOR', kind: 'agent', defaultModel: 'omniroute-fast' },

@@ -90,3 +90,60 @@
 - `src/gateway/gateway-client.ts` - ContentPart (texto + imagem)
 - `src/llm/models.ts` - target `deploy` no smart-router
 - `src/core/event-bus.ts` - eventos deploy:command:*
+
+---
+
+## ✨ SEO Optimizer (dentro do popup do Otimizador de Prompts) — Out/2026
+**Status: FUNCIONAL (E2E + screenshot)**
+
+- **Rota `GET /api/optimizer/seo-repo`**: busca GitHub ao vivo
+  (`search/repositories?q=claude+seo+skill`, sort=stars) com **fallback curado**
+  se API fora do ar/rate-limit. E2E: `AgriciDaniel/claude-seo` **19.133★ MIT
+  (github-live)** + 4 alternativas (marketingskills, geo-seo-claude,
+  open-seo-mcp-skills, marketing-skills).
+- **Painel 🔍 SEO Optimizer** no modal (toggle mostrar/ocultar): card da melhor
+  skill/repositório com destaques (`/seo plan <type>`, 26 sub-skills, 19 agentes),
+  select de **7 categorias** (SAAS_WEBAPP, ECOMMERCE, NEGOCIO_LOCAL,
+  PUBLISHER_BLOG, AGENCIA_SERVICOS, MARKETPLACE_PORTAL, INSTITUCIONAL),
+  campos URL + **Diferenciais/propostas**, **módulo da categoria** (bullets) e
+  **checklist de 8 itens** (técnico, intenção, on-page, E-E-A-T, schema, GEO/AEO,
+  diferenciais, módulo).
+- **`🔍 Gerar prompt SEO`**: monta o prompt mestre por categoria (PAPEL +
+  metodologia do repo + CONTEXTO com URL/diferenciais + PROCESSO só com itens
+  marcados + MÓDULO + FORMATO SAÍDA com tabela comparativa
+  site-vs-concorrentes + plano 90 dias), preenche o textarea → ⚙️ Executar pipeline.
+- E2E UI: categoria E-commerce → 8 checkboxes, prompt 3.241 chars com categoria,
+  módulo, diferenciais, repo e saída "tabela comparativa" ✓ (screenshots).
+
+---
+
+## ⚡ Automação N8N (aba na sidebar) — Out/2026
+**Status: FUNCIONAL (E2E backend + UI DOM-validado)**
+
+- **Módulo `src/n8n/`**: `n8n-agent.ts` (prompt mestre N8N Automation Architect
+  & SRE v1.0 adaptado + 8 categorias + 4 fases do wizard + **score de saúde
+  determinístico 0–100** em 4 áreas de 25), `n8n-client.ts` (API REST oficial via
+  `X-N8N-API-KEY` — token **só em memória**, `redact()` em toda saída),
+  `n8n-templates.ts` (fonte real da página oficial n8n.io/workflows descoberta no
+  runtimeConfig Nuxt: **api.n8n.io/api/templates/**; cache 10min + fallback),
+  `n8n-routes.ts` (**15 rotas** `/api/n8n/*`, dispatch no servidor 4020),
+  `CONTEXT.md`.
+- **Rotas E2E**: status ✓ · templates **api-oficial 13.489** + busca ✓ ·
+  categorias (31) ✓ · score 82/100 (bom) e 5/100 (ruim, hardcode 🔴 com evidência)
+  ✓ · **design LLM gemini-flash com workflow.json completo (8 nodes, conexões,
+  3 credenciais SÓ-NOMES, 6 docs, 4 riscos)** ✓ · guide LLM (2.686 chars, não
+  fallback) ✓ · fix LLM (diagnóstico 429 + autoFix node + 4 instruções) ✓ ·
+  chat LLM (1.859 chars) ✓ · guardas: create sem conexão → 409 · connect falho →
+  `fetch failed` **sem vazar a chave** ✓ · PCJ `Connection: close`/curl OK.
+- **Robustez**: corpo lido 1× no topo (anti-poisoning de keep-alive) · query
+  string stripada do pathname · design com **8192 tokens** (4096 truncava o JSON)
+  + rodada de contingência + **fallback determinístico** (nunca 500) ·
+  guide/fix com fallback local (heurísticas 429/credencial/rede/gatilho/recurso).
+- **UI `view-n8n`**: conexão (campo some após conectar; pill status) · **wizard 4
+  fases** com stepper/checklists/validação obrigatória/✨ passo com IA · card de
+  design (diagrama+passos+json+creds+docs+riscos+criar na instância em 2 etapas) ·
+  templates (clique usa como base) · score (barras+achados) · computer use
+  (free→pago) · chat. E2E DOM: fase1→4 ✓, design pela UI ✓, score 74/100 na UI ✓,
+  template click ✓, guards ✓.
+- Target `n8n` no ROUTE_TARGETS (default gemini-flash) · eventos audit
+  `n8n:connected/created/auto_fixed/scored`.

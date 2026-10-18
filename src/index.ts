@@ -25,6 +25,7 @@ import { handleMemoryRoutes } from './memory/memory-routes.js';
 import { handleMarketRoutes } from './market/market-routes.js';
 import { handleOptimizerRoutes } from './optimizer/optimizer-routes.js';
 import { handleDeployRoutes } from './deploy/deploy-routes.js';
+import { handleN8nRoutes } from './n8n/n8n-routes.js';
 import {
   testConnection as giteaTestConnection,
   listRepos as giteaListRepos,
@@ -493,6 +494,8 @@ async function bootstrap() {
     if (req.url && req.url.startsWith('/api/optimizer/') && await handleOptimizerRoutes(req, res, req.url)) return;
     // Deploy Agent — classificação, ranking, guia, computer use e pós-deploy
     if (req.url && req.url.startsWith('/api/deploy/') && await handleDeployRoutes(req, res, req.url)) return;
+    // Automação N8N — wizard guiado, design de workflows, score, templates e chat
+    if (req.url && req.url.startsWith('/api/n8n/') && await handleN8nRoutes(req, res, req.url)) return;
     // LLM Center API (same-origin for the dashboard UI; secrets stay masked)
     if (req.url === '/api/llm/state' && req.method === 'GET') {
       try {
