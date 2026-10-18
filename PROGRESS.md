@@ -392,3 +392,52 @@ iniciada → LLM (5141 tokens) → concluída em 21,4s ✓ · UI Show Agents: 14
 feed com 5 eventos, stats, pausa/retomar ✓ · aba Histórico: card "Runs recentes"
 com OK + "sem projeto" + prompt + preview + link do mapa ✓ · **console 0
 erros** ✓ · `tsc --noEmit` EXIT=0 ✓.
+
+## 🎬🎬 Escritório Virtual PIXEL-ART (estilo Agent-Pixels) - Out/2026
+
+Referência oficial: **https://github.com/gcampton/Agent-Pixels** (plugin do
+Paperclip que transforma os agentes num escritório pixel-art com câmeras —
+herdeiro do "Pixel-Agents" do VSCode). O Show Agents do Hermes foi REESCRITO
+nesse estilo: os cards viraram **personagens que andam de verdade**.
+
+**O motor (canvas 2D puro, sem dependências) — `src/ui/index.html`:**
+- **Mapa de tiles 16px (44x26)** com salas: **Desks** (2 bancadas de 5 mesas
+  com monitor), **Boardroom** (mesa grande + 6 cadeiras), **Cozinha**
+  (bancada, pia, café ☕, mesa redonda) e **Lounge/Arcade** (2 sofás,
+  fliperama com tela animada, TV, plantas). Piso em xadrez com variação de
+  cor por sala; paredes com topo iluminado. BG estático **pré-renderizado
+  1x em offscreen** (só 1 drawImage por frame).
+- **Personagens pixel-art 12x22** procedurais (cabeça/cabelo/corpo/braços/
+  pernas) com **paleta determinística por id** do agente (skin/hair/shirt/
+  pants) — cada agente tem aparência consistente entre sessões.
+- **Máquina de estados idêntica à do Agent-Pixels**: `walk` (4 frames de
+  passo a 3 tiles/s), `type` (2 frames de digitação + **laptop brilhando na
+  mesa** piscando), `idle`. Direções DOWN/UP/LEFT/RIGHT com olhos/cabelo
+  corretos (vista de costas = cabelo cheio).
+- **Pathfinding BFS 4-direções** no grid (paredes/mobília bloqueiam).
+- **WORKING → caminha até a SUA cadeira e senta** (16 cadeiras alocadas
+  estável: orquestrador primeiro, resto por ordem); ao ficar ocioso, levanta
+  e **passeia aleatoriamente** pelo escritório (wander com timers 3-15s);
+  se virar WORKING no meio do caminho, **recalcula a rota para a mesa**.
+- **Envelopes ✉** das interações reais (de→para do event bus) voam em arco
+  até o destino — **acompanhando o alvo em movimento** — e ao chegar viram
+  **balão de fala** (speech bubble com cauda) no agente por ~2,8s.
+- **Efeito Matrix de spawn** (chuva verde com cabeça brilhante, 0,9s) quando
+  um agente novo aparece.
+- **3 câmeras** 🏢 Geral (encaixa o mapa todo) / 💼 Escritórios (2x nos desks)
+  / 🏮 Lounge (2x na área de baixo), com **câmera suave** (lerp) — botões no
+  canto superior direito do canvas.
+- **Clique num personagem** → balão com nome + tarefa atual. Etiquetas com
+  nome+emoji aparecem sobre quem está WORKING (ou em hover).
+- **Performance**: rAF só enquanto o painel está aberto; DPR correto.
+
+**E2E real**: mapa 44x26 com 16 cadeiras montado ✓ · 14 personagens nascem
+no ponto de spawn com efeito Matrix e recebem cadeira ✓ · simulação de 4s →
+10 personagens **andando** (wander) ✓ · força WORKING no CEO+LLM → ambos
+**caminharam até a cadeira certa e sentaram** (naCadeira=true, state=type,
+dir=facing da mesa) ✓ · envelope ✉ CEO→LLM viajou e o **balão de fala
+apareceu no destino** ✓ · câmeras Geral 0,91x / Escritórios 2x / Lounge 2x ✓ ·
+**241k pixels (82% do canvas)** ✓ · console **0 erros** ✓.
+Obs.: o rAF do browser fica suspenso com a aba em segundo plano (comportamento
+padrão); na UI real (aba visível) a animação roda a 60fps. No E2E os frames
+foram simulados manualmente p/ validar a lógica.

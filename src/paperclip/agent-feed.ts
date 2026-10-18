@@ -43,6 +43,9 @@ export interface FeedItem {
   event: string;
   detail: string;
   level: 'info' | 'ok' | 'warn' | 'error';
+  /** Agente de origem/destino da interação (p/ a animação do escritório virtual). */
+  from?: string;
+  to?: string;
 }
 
 /** Catálogo de agentes conhecidos (nome/emoji/papel) — atividade vem dos eventos. */
@@ -70,6 +73,8 @@ class AgentFeed {
   private readonly agents = new Map<string, LiveAgent>();
   private feed: FeedItem[] = [];
   private pendingLlm = 0;
+  /** Último agente que começou uma tarefa (p/ atribuir chamadas de LLM na animação). */
+  private lastWorker = 'hermes-orchestrator';
   private readonly startedAt = Date.now();
   private counters = { events: 0, tokens: 0, costUsd: 0, runs: 0 };
 
@@ -87,29 +92,39 @@ class AgentFeed {
       const a = this.ensure(p.agentId);
       a.status = 'WORKING';
       a.currentTask = p.description;
+      if (p.agentId !== 'hermes-llm') this.lastWorker = p.agentId;
       this.counters.runs++;
-      this.push(a, `▶ tarefa iniciada (${p.taskId}) — ${p.description}`, 'info');
+      // CEO delega (ou o próprio agente inicia sem passar pelo CEO).
+      this.push(a, `▶ tarefa iniciada (${p.taskId}) — ${p.description}`, 'info',
+        { from: p.agentId === 'hermes-orchestrator' ? undefined : 'hermes-orchestrator', to: p.agentId });
     });
 
     eventBus.subscribe('agent:task:completed', (p) => {
       const a = this.ensure(p.agentId);
       a.status = 'IDLE';
       a.currentTask = undefined;
-      this.push(a, `✔ concluída em ${(p.durationMs / 1000).toFixed(1)}s (${p.taskId})`, 'ok');
+      if (this.lastWorker === p.agentId) this.lastWorker = 'hermes-orchestrator';
+      // Reporte de volta ao CEO (sem auto-loop quando o CEO é o executor).
+      this.push(a, `✔ concluída em ${(p.durationMs / 1000).toFixed(1)}s (${p.taskId})`, 'ok',
+        { from: p.agentId, to: p.agentId === 'hermes-orchestrator' ? undefined : 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('agent:task:failed', (p) => {
       const a = this.ensure(p.agentId);
       a.status = 'IDLE';
       a.currentTask = undefined;
-      this.push(a, `✖ FALHOU (${p.taskId}): ${p.error}`, 'error');
+      if (this.lastWorker === p.agentId) this.lastWorker = 'hermes-orchestrator';
+      this.push(a, `✖ FALHOU (${p.taskId}): ${p.error}`, 'error',
+        { from: p.agentId, to: p.agentId === 'hermes-orchestrator' ? undefined : 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('llm:request', (p) => {
       const a = this.ensure('hermes-llm');
       a.status = 'WORKING';
       this.pendingLlm++;
-      this.push(a, `→ ${p.model} · ~${Math.round(p.estimatedTokens)} tokens estimados`, 'info');
+      // Interação: quem pediu → LLM Gateway.
+      this.push(a, `→ ${p.model} · ~${Math.round(p.estimatedTokens)} tokens estimados`, 'info',
+        { from: this.lastWorker, to: 'hermes-llm' });
     });
 
     eventBus.subscribe('llm:response', (p) => {
@@ -120,73 +135,88 @@ class AgentFeed {
       a.costUsd += p.costUsd || 0;
       this.counters.tokens += p.tokensUsed || 0;
       this.counters.costUsd += p.costUsd || 0;
-      this.push(a, `← ${p.model} · ${p.tokensUsed} tokens${p.costUsd ? ` · $${p.costUsd.toFixed(4)}` : ''}`, 'ok');
+      // Resposta volta p/ o agente que fez a chamada.
+      this.push(a, `← ${p.model} · ${p.tokensUsed} tokens${p.costUsd ? ` · $${p.costUsd.toFixed(4)}` : ''}`, 'ok',
+        { from: 'hermes-llm', to: this.lastWorker });
     });
 
     eventBus.subscribe('research:started', (p) => {
       const a = this.ensure('hermes-researcher');
       a.status = 'WORKING';
       a.currentTask = p.query;
-      this.push(a, `🔎 pesquisando: ${p.query}`, 'info');
+      this.push(a, `🔎 pesquisando: ${p.query}`, 'info',
+        { from: 'hermes-orchestrator', to: 'hermes-researcher' });
     });
 
     eventBus.subscribe('research:completed', (p) => {
       const a = this.ensure('hermes-researcher');
       a.status = 'IDLE';
       a.currentTask = undefined;
-      this.push(a, `🔎 pesquisa concluída via ${p.model}: ${p.query}`, 'ok');
+      this.push(a, `🔎 pesquisa concluída via ${p.model}: ${p.query}`, 'ok',
+        { from: 'hermes-researcher', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('telegram:message:in', (p) => {
-      this.push(this.ensure('hermes-telegram'), `📩 mensagem recebida (chat ${p.chatId}): ${p.text.slice(0, 80)}`, 'info');
+      this.push(this.ensure('hermes-telegram'), `📩 mensagem recebida (chat ${p.chatId}): ${p.text.slice(0, 80)}`, 'info',
+        { from: 'hermes-telegram', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('telegram:queue:enqueue', (p) => {
       const a = this.ensure('hermes-telegram');
       a.status = 'WORKING';
-      this.push(a, `📥 prompt enfileirado (${p.promptId}): ${p.text.slice(0, 80)}`, 'info');
+      this.push(a, `📥 prompt enfileirado (${p.promptId}): ${p.text.slice(0, 80)}`, 'info',
+        { from: 'hermes-telegram', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('telegram:queue:dequeue', (p) => {
-      this.push(this.ensure('hermes-telegram'), `📤 prompt em processamento (${p.promptId})`, 'ok');
+      this.push(this.ensure('hermes-telegram'), `📤 prompt em processamento (${p.promptId})`, 'ok',
+        { from: 'hermes-telegram', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('security:scan:started', (p) => {
       const a = this.ensure('hermes-security');
       a.status = 'WORKING';
       a.currentTask = `${p.module} (${p.tool})`;
-      this.push(a, `🛡 scan iniciado em ${p.module} via ${p.tool}`, 'info');
+      this.push(a, `🛡 scan iniciado em ${p.module} via ${p.tool}`, 'info',
+        { from: 'hermes-orchestrator', to: 'hermes-security' });
     });
 
     eventBus.subscribe('security:scan:completed', (p) => {
       const a = this.ensure('hermes-security');
       a.status = 'IDLE';
       a.currentTask = undefined;
-      this.push(a, `🛡 scan concluído em ${p.module}: ${p.findings} achado(s)`, p.findings ? 'warn' : 'ok');
+      this.push(a, `🛡 scan concluído em ${p.module}: ${p.findings} achado(s)`, p.findings ? 'warn' : 'ok',
+        { from: 'hermes-security', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('security:secret:found', (p) => {
-      this.push(this.ensure('hermes-security'), `🚨 segredo exposto: ${p.secretType} em ${p.file}:${p.line}`, 'error');
+      this.push(this.ensure('hermes-security'), `🚨 segredo exposto: ${p.secretType} em ${p.file}:${p.line}`, 'error',
+        { from: 'hermes-security', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('deploy:command:executed', (p) => {
-      this.push(this.ensure('hermes-deploy'), `🚀 ${p.command} [${p.tier}] → exit ${p.exitCode}`, p.exitCode ? 'warn' : 'ok');
+      this.push(this.ensure('hermes-deploy'), `🚀 ${p.command} [${p.tier}] → exit ${p.exitCode}`, p.exitCode ? 'warn' : 'ok',
+        { from: 'hermes-orchestrator', to: 'hermes-deploy' });
     });
 
     eventBus.subscribe('deploy:command:denied', (p) => {
-      this.push(this.ensure('hermes-deploy'), `⛔ deploy negado: ${p.command} — ${p.reason}`, 'warn');
+      this.push(this.ensure('hermes-deploy'), `⛔ deploy negado: ${p.command} — ${p.reason}`, 'warn',
+        { from: 'hermes-deploy', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('mcp:started', (p) => {
-      this.push(this.ensure('hermes-process-agent'), `🔌 MCP ${p.id} iniciado (pid ${p.pid}${p.port ? `, porta ${p.port}` : ''})`, 'ok');
+      this.push(this.ensure('hermes-process-agent'), `🔌 MCP ${p.id} iniciado (pid ${p.pid}${p.port ? `, porta ${p.port}` : ''})`, 'ok',
+        { from: 'hermes-process-agent', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('mcp:stopped', (p) => {
-      this.push(this.ensure('hermes-process-agent'), `🔌 MCP ${p.id} parado — ${p.reason}`, 'warn');
+      this.push(this.ensure('hermes-process-agent'), `🔌 MCP ${p.id} parado — ${p.reason}`, 'warn',
+        { from: 'hermes-process-agent', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('mcp:conflict', (p) => {
-      this.push(this.ensure('hermes-guardian'), `⚠️ conflito de porta ${p.port}: ${p.id} vs pid ${p.existingPid} (${p.level})`, 'warn');
+      this.push(this.ensure('hermes-guardian'), `⚠️ conflito de porta ${p.port}: ${p.id} vs pid ${p.existingPid} (${p.level})`, 'warn',
+        { from: 'hermes-guardian', to: 'hermes-orchestrator' });
     });
 
     eventBus.subscribe('system:ready', () => {
@@ -217,12 +247,15 @@ class AgentFeed {
     return a;
   }
 
-  private push(a: LiveAgent, detail: string, level: FeedItem['level']): void {
+  private push(a: LiveAgent, detail: string, level: FeedItem['level'], link?: { from?: string; to?: string }): void {
     const ts = new Date().toISOString();
     a.events++;
     a.lastEventAt = ts;
     this.counters.events++;
-    this.feed.push({ ts, agentId: a.id, agentName: `${a.emoji} ${a.name}`, event: level, detail, level });
+    this.feed.push({
+      ts, agentId: a.id, agentName: `${a.emoji} ${a.name}`, event: level, detail, level,
+      from: link?.from, to: link?.to ?? a.id,
+    });
     if (this.feed.length > FEED_MAX) this.feed.splice(0, this.feed.length - FEED_MAX);
   }
 

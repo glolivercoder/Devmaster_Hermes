@@ -1,4 +1,14 @@
 
+## 🎬 Escritório Virtual PIXEL-ART (estilo Agent-Pixels) — Out/2026 ✅
+- [x] Referência: github.com/gcampton/Agent-Pixels (plugin Paperclip → pixel-art office)
+- [x] Mapa de tiles 16px (44x26): desks (10 mesas c/ monitor), boardroom, cozinha, lounge/arcade
+- [x] Personagens pixel-art procedurais 12x22 + paleta determinística por id do agente
+- [x] Máquina de estados walk(4f)/type(2f+laptop)/idle + BFS + wander + reroute ao virar WORKING
+- [x] WORKING → caminha até a cadeira e senta (16 cadeiras, CEO primeiro); ocioso → passeia
+- [x] Envelopes ✉ das interações reais (de→para) + balão de fala no destino + efeito Matrix no spawn
+- [x] 3 câmeras (Geral/Escritórios/Lounge) com lerp + clique no personagem (nome+tarefa)
+- [x] E2E: 14 chars andando, CEO+LLM sentaram nas cadeiras, envelope+balão, câmeras, 82% pixels, console 0 erros
+
 ## ⚡ Automação N8N — Out/2026 ✅ (ver src/n8n/CONTEXT.md)
 - [x] Agente N8N (prompt mestre adaptado) + wizard 4 fases + score determinístico
 - [x] API client oficial (token em memória, redact) + templates da fonte da página oficial
