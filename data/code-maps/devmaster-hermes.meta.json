@@ -1,0 +1,12 @@
+{
+  "slug": "devmaster-hermes",
+  "title": "Hermes Control Center — Arquitetura em Runtime",
+  "file": "devmaster-hermes.html",
+  "target": "F:\\Projetos2026\\DevMaster_Hermes",
+  "generatedAt": "2026-10-18T16:42:56.263Z",
+  "model": "cheaper-opus",
+  "components": 12,
+  "connections": 11,
+  "boundaries": 2,
+  "digest": "MAPA DE ARQUITETURA DO PROJETO (Archify — \"Hermes Control Center — Arquitetura em Runtime\", gerado 2026-10-18):\nComponentes (12): Operador (Dashboard src/ui) · Telegram (Bot API) · HTTP Server (:4010 / :4020) · Gitea (gitea:3011) · Composio (@composio/core) · Orchestrator (agentes + rotas) · LLM Center (smart-router) · LiteLLM (gateway :4000) · Provedores LLM (Anthropic/Gemini) · Process Guardian (docker.sock :ro) · Project Memory (PostgreSQL (pg)) · Event Bus (eventos + audit)\nConexões (11): Operador → HTTP Server [HTTP]; Telegram → HTTP Server [Bot API]; HTTP Server → Orchestrator [rotas]; Orchestrator → LLM Center [resolve]; LLM Center → LiteLLM [API]; LiteLLM → Provedores LLM [chaves]; Orchestrator → Gitea [REST]; Orchestrator → Composio [tools]; Orchestrator → Project Memory [SQL]; HTTP Server → Process Guardian [processos]; Process Guardian → Event Bus [eventos]\nFronteiras: region: Hermes runtime (hermes-core) · security-group: acesso Docker :ro\nNotas: Entradas: Dashboard web servido pelo hermes-core em :4020, Process Guardian API em :4010, Telegram bridge restrito a TELEGRAM_ALLOWED_CHAT_ID | Módulos de rota: research, market, optimizer, deploy, n8n, opencode, preview, code-map e version-agent registrados em src/index.ts, Memória de projeto com embeddings e api-catalog | LLM: routing-store + smart-router escolhem o modelo, LiteLLM (litellm-config.yaml) centraliza chaves e fallback, Múltiplas chaves Gemini/OpenRouter para rotação | Confiança: docker.sock montado read-only para gerenciar MCP, Segredos via .env e env-db-store, Audit logger registra ações via audit-api\nUse este mapa como memória de contexto da arquitetura antes de propor mudanças neste projeto."
+}

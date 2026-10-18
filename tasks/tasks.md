@@ -30,3 +30,15 @@
 - [x] MCPs categorizados (Hermes x OpenCode x ativos) + /api/mcps/categories
 - [x] UI: categorias no header, cards com favicons de acao + display CPU/RAM, auto-refresh 12s
 - [x] E2E: pausar/susp/retomar/reiniciar/fechar + protegido recusado + run real do orquestrador fechando PID via diretivo
+
+## 🗺 Mapa de Código (Archify) + credencial opcional no chat - Out/2026
+- [x] Skill archify v3.2.0 em .opencode/skills/archify (versionada; doctor 100% ok)
+- [x] code-map.ts: coleta do repo -> LLM com contrato da SKILL -> CLI finalize c/ ate 2 reparos -> data/code-maps/<slug>.html + digest
+- [x] Robustez: extractJson normalizado + dump raw + 3 tentativas (truncamento do modelo) + candidate antes do finalize + slug sem ponto final
+- [x] Rotas /api/code-map/{status,list,generate,<arquivo>.html} c/ anti-traversal
+- [x] Switch mapaCodigo (default ON) + injecao do bloco no runOrchestrator + codeMap no resultado
+- [x] UI: checkbox 🗺 Capacidades, botao "🗺 Mapa do Código", card de link "abrir ↗" na resposta
+- [x] Chat: run SEMPRE dispara (credencial nunca bloqueia) + card ⏭ Pular / ⏭⏭ Pular tudo nesta seção
+- [x] Badge "⏭ credenciais puladas · reativar" + localStorage hermes-cred-skip-orquestrador
+- [x] Modal: selo opcional, nota ℹ️, ⏭ Pular credencial, ⏭⏭ skip-all, Esc + backdrop
+- [x] E2E: generate 43s (12 comp/11 conex), HTML 836KB servido, traversal 404, run c/ digest + card na UI, DOM de todos os skips, console 0 erros, tsc EXIT=0

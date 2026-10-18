@@ -21,6 +21,7 @@ import { handleOpencode } from './opencode/opencode-routes.js';
 import { handlePreview } from './preview/preview-routes.js';
 import { handleResearchRoutes } from './research/research-routes.js';
 import { handleOrchestratorRoutes } from './orchestrator/orchestrator-routes.js';
+import { handleCodeMapRoutes } from './orchestrator/code-map-routes.js';
 import { handleMemoryRoutes } from './memory/memory-routes.js';
 import { handleMarketRoutes } from './market/market-routes.js';
 import { handleOptimizerRoutes } from './optimizer/optimizer-routes.js';
@@ -545,6 +546,8 @@ async function bootstrap() {
     if (req.url && req.url.startsWith('/api/researcher/') && await handleResearchRoutes(req, res, req.url)) return;
     // Orquestrador real — switches de capacidade (pesquisa/CRM/site profissional)
     if (req.url && req.url.startsWith('/api/orchestrator/') && await handleOrchestratorRoutes(req, res, req.url)) return;
+    // Mapas de código (Archify) — memória de contexto arquitetura→código
+    if (req.url && req.url.startsWith('/api/code-map/') && await handleCodeMapRoutes(req, res, req.url)) return;
     // Memória de contexto por projeto (pgvector) — continuidade entre sessões/LLMs
     if (req.url && req.url.startsWith('/api/memory/') && await handleMemoryRoutes(req, res, req.url)) return;
     // Análise de mercado — pipeline web+notícias+Reddit → dashboard HTML interativo

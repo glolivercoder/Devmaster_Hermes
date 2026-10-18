@@ -281,3 +281,65 @@
   4599 em 30s, reply anotada** V UI DOM (50 cards, favicons, badges, 3
   categorias, checkbox) V audit `process:*` + `orchestrator:process_action` V
   `tsc --noEmit` EXIT=0.
+
+## 🗺 Archify — Mapa de Código como memória do Orquestrador + Credencial OPCIONAL no chat - Out/2026
+
+**1) Archify (arquitetura → código):**
+
+**`.opencode/skills/archify/`** (novo, versionado): skill oficial
+`tt-a1i/archify` v3.2.0 copiada do repo (17 MB) e registrada no projeto;
+`node bin/archify.mjs doctor` → 100% ok (10 renderers, schemas, browser-check).
+
+**`src/orchestrator/code-map.ts`** (novo):
+- **Pipeline**: coleta a árvore do alvo (320 entradas, ignora
+  node_modules/.git/dist/data/...) + até 6 arquivos-chave (package.json,
+  README, docker-compose, entrypoints) → **LLM do gateway** gera o *candidate*
+  JSON IR do Archify com o **contrato embutido no prompt** (schema 5,9 KB +
+  exemplo 3,1 KB + authoring-defaults 12,6 KB lidos da skill) → **CLI Archify**
+  `finalize architecture ... --quality showcase --json` (**até 2 rodadas de
+  reparo** alimentadas pelos `diagnostics` do gate) → HTML autocontido em
+  `data/code-maps/<slug>.html` + `<slug>.meta.json` com o **digest** (título,
+  componentes, conexões, fronteiras, cards).
+- **Robustez** (bugs reais encontrados no E2E): `extractJson` normaliza
+  vírgulas finais/controles e grava o raw em workDir; **até 3 tentativas de
+  geração** (o modelo às vezes trunca o JSON no meio); `candidate.json` é
+  gravado ANTES de cada `finalize` (senão o CLI falha com ENOENT silencioso);
+  workDir usa stamp só-dígitos (ponto final no nome quebrava caminho/cwd no
+  Windows e mascarava o erro como `exit=1`); **slug/project só valem se a pasta
+  `F:\Projetos2026\DevMaster\<proj>` existir** (evita digest de projeto
+  fantasma apontando p/ outro código).
+
+**`src/orchestrator/code-map-routes.ts`** (novo) + dispatch no `src/index.ts`:
+`GET /api/code-map/status|list`, `POST /api/code-map/generate {project?,path?,hint?}`
+e `GET /api/code-map/<arquivo>.html` (anti-traversal: basename + só .html).
+
+**Orquestrador**: switch `mapaCodigo` (default LIGADO) em `data/orchestrator-config.json`;
+no `runOrchestrator()` o digest é injetado logo após a memória de continuidade
+(bloco "MAPA DE ARQUITETURA DO PROJETO (Archify ...)") e o resultado devolve
+`codeMap {title, url}`.
+
+**UI**: checkbox "🗺 Mapa de Código (Archify)" nas Capacidades; botão
+"🗺 Mapa do Código" na linha do projeto (gera e mostra link + comp/conex/reparos/tempo);
+card "🗺 Mapa de código ... abrir ↗ · digest injetado como contexto" na resposta do run.
+
+**2) Pop-up de credencial do chat — AGORA OPCIONAL (não trava o contexto):**
+- `sendPrompt()` **sempre dispara** `/api/orchestrator/run` — a detecção de
+  "integrar/conectar/composio" só APPENDA um card paralelo (antes ela
+  substituía o run por completo).
+- Card com 3 botões: **🔑 Preencher credencial (opcional)**, **⏭ Pular**
+  (fecha só este card) e **⏭⏭ Pular tudo nesta seção** (suprime em
+  `localStorage hermes-cred-skip-orquestrador`).
+- **Badge** "⏭ credenciais puladas · reativar" ao lado do campo do prompt
+  (mostra o estado e reativa num clique).
+- **Modal**: selo "opcional" no header, nota "ℹ️ credencial opcional" no corpo,
+  botões "⏭ Pular credencial" e "⏭⏭ Pular tudo nesta seção", fecha com
+  **Esc** e **clique no backdrop**.
+
+**E2E real**: Archify `generate` 43s → 12 componentes / 11 conexões / 0 reparos
+→ HTML 836.088 bytes servido (200, text/html) ✓; `/api/code-map/..%2F..%2F.env`
+→ 404 (traversal bloqueado) ✓; run do Orquestrador devolveu `codeMap` e a UI
+renderizou o card com link ✓ (resposta do LLM já citou os módulos/portas reais
+injetados pelo digest) ✓. Credencial: run SEMPRE dispara (reply 4681 chars) ✓,
+card com os 3 botões ✓, ⏭ fecha ✓, ⏭⏭ grava localStorage + badge ✓, card
+não aparece mais na seção ✓, reativar limpa ✓, modal nota/Esc/backdrop/skip ✓,
+**console 0 erros** ✓, `tsc --noEmit` EXIT=0 ✓.

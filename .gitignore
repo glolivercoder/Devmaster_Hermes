@@ -41,3 +41,6 @@ desktop.ini
 .vscode/
 .idea/
 
+
+# ── Artefatos de trabalho do gerador de mapas (Archify) ──────────────────────
+data/code-maps/work/

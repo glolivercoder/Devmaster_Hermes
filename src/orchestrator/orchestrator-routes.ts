@@ -26,6 +26,7 @@ import {
 import {
   PROJECTS_ROOT, saveRunArtifacts, listProjects, readProjectFile,
 } from './project-store.js';
+import { getCodeMapBlock } from './code-map.js';
 
 const CONFIG_PATH = join(process.cwd(), 'data', 'orchestrator-config.json');
 
@@ -35,6 +36,8 @@ export interface OrchestratorSwitches {
   siteCrm: boolean;
   siteProfissional: boolean;
   portasProcessos: boolean;
+  /** Injeta o digest do mapa de código (Archify) como memória de contexto. */
+  mapaCodigo: boolean;
 }
 
 const DEFAULT_SWITCHES: OrchestratorSwitches = {
@@ -43,6 +46,7 @@ const DEFAULT_SWITCHES: OrchestratorSwitches = {
   siteCrm: false,
   siteProfissional: false,
   portasProcessos: false,
+  mapaCodigo: true,
 };
 
 export function loadSwitches(): OrchestratorSwitches {
@@ -138,6 +142,8 @@ interface RunResult {
   saved?: { folder: string; files: string[] };
   /** Diretivos [[PROCESSO:…]] executados nesta rodada (fechar/pausar serviços). */
   processActions?: Array<{ pid: number; action: string; ok: boolean; detail: string; reason?: string }>;
+  /** Digest do mapa de código (Archify) injetado como memória de contexto. */
+  codeMap?: { title: string; url: string };
   latencyMs: number;
 }
 
@@ -162,6 +168,20 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     } catch (e) {
       blocks.push(`(memória de continuidade indisponível: ${String(e instanceof Error ? e.message : e)})`);
     }
+  }
+
+  // 0.2) Mapa de código (Archify, switch) — memória de contexto arquitetura→código:
+  //      injeta o digest do último mapa gerado p/ o orquestrador lembrar a estrutura
+  //      do projeto sem reler o repositório inteiro a cada run.
+  let codeMap: RunResult['codeMap'];
+  if (switches.mapaCodigo) {
+    try {
+      const cm = getCodeMapBlock(proj);
+      if (cm) {
+        blocks.push(cm.block);
+        codeMap = { title: cm.title, url: cm.url };
+      }
+    } catch { /* mapa indisponível — segue sem */ }
   }
 
   // 0.5) Context7 — REQUISITO PERMANENTE (roda em background, sem switch):
@@ -397,6 +417,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
       : (marketError ? { error: marketError } : undefined),
     saved,
     processActions,
+    codeMap,
     latencyMs: Date.now() - started,
   };
 }
