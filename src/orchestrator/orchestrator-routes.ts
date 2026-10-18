@@ -15,6 +15,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getGateway, getVirtualKey } from '../gateway/gateway-singleton.js';
 import { resolveModel } from '../llm/routing-store.js';
+import { eventBus } from '../core/event-bus.js';
+import { appendFileSync } from 'node:fs';
 import { researchTask, type ResearchReport } from '../research/researcher.js';
 import { resolveDocs } from '../research/context7.js';
 import { runMarketAnalysis, type MarketReport } from '../market/market-analysis.js';
@@ -29,6 +31,44 @@ import {
 import { getCodeMapBlock } from './code-map.js';
 
 const CONFIG_PATH = join(process.cwd(), 'data', 'orchestrator-config.json');
+
+// ─── Histórico global de runs (aba Histórico) ────────────────────────────────
+// Todo run é registrado AQUI, mesmo sem 📁 projeto — antes, runs sem projeto
+// simplesmente sumiam (nada era salvo) e o usuário não via rastro nenhum.
+const HISTORY_PATH = join(process.cwd(), 'data', 'orchestrator-history.jsonl');
+const HISTORY_MAX = 200; // anel: trim acima disso p/ não crescer p/ sempre
+
+export interface HistoryEntry {
+  ts: string;
+  project?: string;
+  prompt: string;      // truncado (200 chars) p/ o card da UI
+  model: string;
+  latencyMs: number;
+  ok: boolean;
+  error?: string;
+  reply: string;       // truncado (400 chars) p/ pré-visualização
+  codeMapUrl?: string;
+  savedFiles?: string[];
+}
+
+export function appendHistory(e: Omit<HistoryEntry, 'ts'> & { ts?: string }): void {
+  try {
+    appendFileSync(HISTORY_PATH, JSON.stringify({ ts: e.ts ?? new Date().toISOString(), ...e }) + '\n', 'utf8');
+  } catch (err) {
+    console.warn('[orchestrator] falha ao gravar histórico global:', String(err));
+  }
+}
+
+export function listHistory(limit = 30): HistoryEntry[] {
+  try {
+    const raw = readFileSync(HISTORY_PATH, 'utf8').split('\n').filter(Boolean);
+    return raw
+      .slice(-Math.max(1, Math.min(limit, HISTORY_MAX)))
+      .map((l) => { try { return JSON.parse(l) as HistoryEntry; } catch { return null; } })
+      .filter((x): x is HistoryEntry => !!x)
+      .reverse();
+  } catch { return []; }
+}
 
 export interface OrchestratorSwitches {
   pesquisaAvancada: boolean;
@@ -295,16 +335,42 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
   const model = await resolveModel('orchestrator');
   const virtualKey = await getVirtualKey('orchestrator');
 
-  const out = await getGateway().complete({
-    model,
-    virtualKey,
-    maxTokens: 3072,
-    temperature: 0.4,
-    messages: [
-      { role: 'system', content: systemBase },
-      { role: 'user', content: prompt },
-    ],
+  // Eventos REAIS p/ o painel "Show Agents" (aba Paperclip & Office): o CEO
+  // Hermes fica WORKING do pedido até a resposta final.
+  const runTaskId = `orch-${Date.now()}`;
+  eventBus.publish('agent:task:started', {
+    agentId: 'hermes-orchestrator',
+    taskId: runTaskId,
+    description: prompt.slice(0, 100),
   });
+
+  let out: { content: string; model: string };
+  try {
+    out = await getGateway().complete({
+      model,
+      virtualKey,
+      maxTokens: 3072,
+      temperature: 0.4,
+      messages: [
+        { role: 'system', content: systemBase },
+        { role: 'user', content: prompt },
+      ],
+    });
+  } catch (e) {
+    const errMsg = e instanceof Error ? e.message : String(e);
+    eventBus.publish('agent:task:failed', { agentId: 'hermes-orchestrator', taskId: runTaskId, error: errMsg });
+    // Registra no histórico GLOBAL p/ o usuário ver o run (e o motivo) na aba Histórico.
+    appendHistory({
+      project: proj, prompt: prompt.slice(0, 200), model, latencyMs: Date.now() - started,
+      ok: false, error: errMsg, reply: '',
+    });
+    throw e;
+  }
+  // Defesa extra: um content nulo/vazio NUNCA deve quebrar o salvamento.
+  out.content = typeof out.content === 'string' ? out.content : '';
+  if (!out.content.trim()) {
+    out.content = `⚠️ O modelo **${out.model || model}** respondeu vazio (o provedor aceitou a chamada mas não retornou conteúdo). Reenvie o prompt ou troque o modelo em LLM Center.`;
+  }
 
   auditLogger.log({
     actor: 'SUBAGENT',
@@ -404,6 +470,23 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     }
   }
 
+  // Eventos p/ o painel "Show Agents" + registro no histórico GLOBAL (aba Histórico).
+  eventBus.publish('agent:task:completed', {
+    agentId: 'hermes-orchestrator',
+    taskId: runTaskId,
+    durationMs: Date.now() - started,
+  });
+  appendHistory({
+    project: proj,
+    prompt: prompt.slice(0, 200),
+    model: out.model || model,
+    latencyMs: Date.now() - started,
+    ok: true,
+    reply: out.content.slice(0, 400),
+    codeMapUrl: codeMap?.url,
+    savedFiles: saved?.files,
+  });
+
   return {
     reply: out.content,
     model: out.model || model,
@@ -482,6 +565,13 @@ export async function handleOrchestratorRoutes(
     // 📁 Projetos em F:\Projetos2026\DevMaster\<proj> (aba Histórico).
     if (path === '/api/orchestrator/projects' && method === 'GET') {
       send(res, 200, { root: PROJECTS_ROOT, projects: listProjects() });
+      return true;
+    }
+
+    // 🕘 Histórico GLOBAL de runs (aba Histórico) — inclui runs sem projeto.
+    if (path === '/api/orchestrator/history' && method === 'GET') {
+      const limit = Number(url.searchParams.get('limit') ?? 30) || 30;
+      send(res, 200, { runs: listHistory(limit) });
       return true;
     }
 

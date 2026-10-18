@@ -42,3 +42,15 @@
 - [x] Badge "⏭ credenciais puladas · reativar" + localStorage hermes-cred-skip-orquestrador
 - [x] Modal: selo opcional, nota ℹ️, ⏭ Pular credencial, ⏭⏭ skip-all, Esc + backdrop
 - [x] E2E: generate 43s (12 comp/11 conex), HTML 836KB servido, traversal 404, run c/ digest + card na UI, DOM de todos os skips, console 0 erros, tsc EXIT=0
+
+## 🕘 Show Agents + fix do run sumido (resposta vazia) - Out/2026
+- [x] Diagnóstico: provedor devolvia HTTP 200 com content=null -> reply vazia + salvamento quebrava (null.slice/length)
+- [x] gateway-client: valida content, 1 retry automatico em resposta vazia + falha no benchmark + erro claro
+- [x] orchestrator-routes: defesa extra no salvamento + historico GLOBAL data/orchestrator-history.jsonl (inclusive falhas com motivo) + GET /api/orchestrator/history
+- [x] UI aba Historico: card "Runs recentes" (ts, OK/FALHOU, modelo, latencia, projeto/sem projeto, prompt, preview, mapa)
+- [x] agent-feed.ts: consome o event bus real (agent:task:*, llm:*, research:*, telegram:*, security:*, deploy:*, mcp:*) com 14 agentes + anel de 120 eventos
+- [x] paperclip-routes + singleton: GET /api/paperclip/agents[?since] (feed incremental) e /tickets
+- [x] index.ts: initAgentFeed() antes do system:ready + dispatch /api/paperclip/
+- [x] Eventos publicados pelo orquestrador (hermes-orchestrator) e pelo gerador de mapa (hermes-codemap)
+- [x] UI: botao "Show Agents" no canto superior esquerdo da aba Office -> painel ao vivo (cards, stats, feed, pausar/retomar, poll 2s)
+- [x] E2E: run sem projeto gravado no historico, feed com started->LLM->completed, painel 14 cards + feed, aba Historico listando runs, console 0 erros, tsc EXIT=0

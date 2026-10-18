@@ -228,16 +228,51 @@
       
       <!-- Top Office Header -->
       <div class="flex items-center justify-between border-b border-gray-800 pb-4">
-        <div>
-          <h2 class="text-base font-bold text-white flex items-center space-x-2">
-            <span>🏢</span> <span>Hermes Virtual Office & Paperclip Workflows</span>
-          </h2>
-          <p class="text-xs text-gray-400 mt-0.5 font-mono">Organograma da empresa de agentes, desks de trabalho ao vivo e quadro Kanban de tickets</p>
+        <div class="flex items-center space-x-3">
+          <!-- 👁 Show Agents (canto superior esquerda) — agentes REAIS ao vivo -->
+          <button id="show-agents-btn" onclick="officeToggleAgents()"
+                  title="Mostra os agentes do Hermes trabalhando AGORA (event bus real: orquestrador, LLM Gateway, pesquisador, Archify, security…)"
+                  class="shrink-0 flex items-center space-x-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/50 text-amber-300 font-bold px-3 py-2 rounded-lg text-xs font-mono transition">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Show Agents</span>
+          </button>
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center space-x-2">
+              <span>🏢</span> <span>Hermes Virtual Office & Paperclip Workflows</span>
+            </h2>
+            <p class="text-xs text-gray-400 mt-0.5 font-mono">Organograma da empresa de agentes, desks de trabalho ao vivo e quadro Kanban de tickets</p>
+          </div>
         </div>
         <div class="flex space-x-2">
           <button onclick="createNewTicketPrompt()" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-3 py-1.5 rounded-lg text-xs font-mono transition">
             + Novo Ticket Paperclip
           </button>
+        </div>
+      </div>
+
+      <!-- 👁 Painel Show Agents — agentes reais + feed ao vivo (poll 2s) -->
+      <div id="agents-live-panel" class="hidden p-5 bg-gray-950 rounded-2xl border border-amber-500/40 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300 font-mono flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>👁 Agents ao vivo (event bus real do Hermes)</span>
+          </h3>
+          <div class="flex items-center space-x-2 text-[10px] font-mono text-gray-500">
+            <span id="agents-stats">—</span>
+            <button onclick="officeToggleAgentsPause()" id="agents-pause-btn"
+                    class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-2 py-0.5 rounded transition">⏸ Pausar</button>
+            <button onclick="officeLoadAgents(false)" title="Atualiza agora"
+                    class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-2 py-0.5 rounded transition">↻</button>
+          </div>
+        </div>
+        <!-- Cards de agentes (status, tarefa atual, modelo, tokens/custo) -->
+        <div id="agents-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
+          <div class="text-gray-600">carregando agentes…</div>
+        </div>
+        <!-- Ticker de eventos (ordem cronológica, auto-scroll) -->
+        <div>
+          <div class="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Feed de atividade</div>
+          <div id="agents-feed" class="h-52 overflow-y-auto space-y-0.5 bg-gray-900/60 border border-gray-800 rounded-lg p-2 font-mono text-[11px]"></div>
         </div>
       </div>
 
@@ -1004,6 +1039,19 @@
           <div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono text-gray-500 text-center">Clique em "Carregar projetos" para ver as pastas criadas pelo orquestrador.</div>
         </div>
         <div id="orch-project-view" class="hidden space-y-2"></div>
+      </div>
+
+      <!-- 🕘 Runs recentes do Orquestrador (histórico GLOBAL — inclui runs sem projeto) -->
+      <div class="p-4 bg-gray-950 rounded-xl border border-gray-800 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-sm font-bold text-gray-300">🕘 Runs recentes do Orquestrador
+            <span class="text-gray-500 text-xs font-normal">(todo run fica registrado aqui, mesmo sem 📁 projeto — com falhas e o motivo)</span>
+          </h3>
+          <button onclick="loadOrchRuns()" id="orch-runs-refresh" class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono hover:bg-amber-500/25 disabled:opacity-50">⟳ Carregar runs</button>
+        </div>
+        <div id="orch-runs-list" class="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+          <div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum run registrado ainda — envie um prompt na aba Orquestrador.</div>
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -2887,6 +2935,85 @@ Responda em pt-BR.`;
       const title = prompt('Título da Tarefa / Ticket Paperclip:');
       if (!title) return;
       alert(`[PAPERCLIP] Novo ticket criado: "${title}". Atribuído ao próximo agente disponível na Virtual Agency!`);
+    }
+
+    // ── 👁 Show Agents — agentes REAIS do Hermes ao vivo (aba Paperclip) ──────
+    // Consome /api/paperclip/agents (alimentado pelo event bus) com poll de 2s.
+    let agTimer = null, agSince = 0, agPaused = false;
+
+    function officeToggleAgents() {
+      const panel = document.getElementById('agents-live-panel');
+      const btn = document.getElementById('show-agents-btn');
+      const abrir = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !abrir);
+      if (abrir) {
+        agSince = 0;               // 1ª carga traz o feed inteiro (anel de 120)
+        officeLoadAgents(false);
+        agTimer = setInterval(() => { if (!agPaused) officeLoadAgents(true); }, 2000);
+        btn.classList.add('bg-amber-500/30');
+      } else {
+        clearInterval(agTimer); agTimer = null;
+        btn.classList.remove('bg-amber-500/30');
+      }
+    }
+
+    function officeToggleAgentsPause() {
+      agPaused = !agPaused;
+      const b = document.getElementById('agents-pause-btn');
+      if (b) { b.textContent = agPaused ? '▶ Retomar' : '⏸ Pausar'; b.classList.toggle('text-amber-300', agPaused); }
+    }
+
+    function agStatusChip(s) {
+      return s === 'WORKING'
+        ? '<span class="px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-700/50 animate-pulse">TRABALHANDO</span>'
+        : '<span class="px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 border border-gray-700">ocioso</span>';
+    }
+
+    async function officeLoadAgents(poll) {
+      const grid = document.getElementById('agents-grid');
+      const feedEl = document.getElementById('agents-feed');
+      if (!grid) return;
+      try {
+        const url = agSince ? `/api/paperclip/agents?since=${agSince}` : '/api/paperclip/agents';
+        const d = await (await fetch(url)).json();
+        if (d.error) throw new Error(d.error);
+        agSince = Date.parse(d.serverTime) || Date.now();
+
+        // Cards de agentes
+        grid.innerHTML = (d.agents || []).map(a => `
+          <div class="p-2.5 rounded-xl border ${a.status === 'WORKING' ? 'bg-emerald-950/20 border-emerald-700/40' : 'bg-gray-900/60 border-gray-800'} space-y-1">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-gray-200 font-bold truncate" title="${esc(a.name)}">${a.emoji} ${esc(a.name)}</span>
+              ${agStatusChip(a.status)}
+            </div>
+            <div class="text-gray-500 text-[10px] leading-snug h-7 overflow-hidden" title="${esc(a.currentTask || a.role)}">${esc(a.currentTask || a.role)}</div>
+            <div class="flex justify-between text-[10px] text-gray-600">
+              <span>${a.events || 0} ev · ${(a.tokensUsed || 0).toLocaleString()} tok</span>
+              <span class="${a.costUsd ? 'text-emerald-400' : ''}">$${(a.costUsd || 0).toFixed(3)}</span>
+            </div>
+          </div>`).join('') || '<div class="text-gray-600">sem agentes</div>';
+
+        // Stats
+        const s = d.stats || {};
+        document.getElementById('agents-stats').textContent =
+          `${s.working || 0}/${s.total || 0} trabalhando · ${s.events || 0} eventos · ${s.runs || 0} runs · ${(s.tokens || 0).toLocaleString()} tokens · $${(s.costUsd || 0).toFixed(3)} · up ${Math.floor((s.uptimeSec || 0) / 60)}min`;
+
+        // Feed (incremental com ?since=; sem scroll se pausado)
+        const novos = d.feed || [];
+        if (novos.length) {
+          const cores = { info: 'text-gray-400', ok: 'text-emerald-400', warn: 'text-amber-400', error: 'text-red-400' };
+          feedEl.insertAdjacentHTML('beforeend', novos.map(f => `
+            <div class="${cores[f.level] || 'text-gray-400'}">
+              <span class="text-gray-600">${new Date(f.ts).toLocaleTimeString('pt-BR')}</span>
+              <span class="text-gray-500">·</span> ${esc(f.agentName)}
+              <span class="text-gray-600">·</span> ${esc(f.detail)}
+            </div>`).join(''));
+          while (feedEl.children.length > 120) feedEl.removeChild(feedEl.firstChild);
+          if (!agPaused) feedEl.scrollTop = feedEl.scrollHeight;
+        }
+      } catch (e) {
+        if (!poll) grid.innerHTML = `<div class="text-red-400">✗ ${esc(String(e.message || e))}</div>`;
+      }
     }
 
     // ── DEPLOY Agent (DeployBot) ─────────────────────────────────────────────

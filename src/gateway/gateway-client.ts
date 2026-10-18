@@ -55,61 +55,80 @@ export class GatewayClient {
         acc + (typeof m.content === 'string' ? m.content.length / 4 : 800), 0), // imagem ≈ 800 tok
     });
 
-    const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${req.virtualKey}`,
-      },
-      body: JSON.stringify({
-        model: req.model,
-        messages: req.messages,
-        max_tokens: req.maxTokens ?? 4096,
-        temperature: req.temperature ?? 0.2,
-      }),
-    });
+    // Resposta VAZIA com HTTP 200 já aconteceu (provedor devolve content: null):
+    // virava reply em branco na UI e quebrava o salvamento do run (null.slice).
+    // Agora: 1 retry automático e, se persistir, erro CLARO p/ o chamador.
+    const MAX_TRIES = 2;
+    let lastShape = '';
+    for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+      const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${req.virtualKey}`,
+        },
+        body: JSON.stringify({
+          model: req.model,
+          messages: req.messages,
+          max_tokens: req.maxTokens ?? 4096,
+          temperature: req.temperature ?? 0.2,
+        }),
+      });
 
-    if (!res.ok) {
-      const err = await res.text();
-      // Alimenta o benchmark local com a falha para o smart-router aprender.
+      if (!res.ok) {
+        const err = await res.text();
+        // Alimenta o benchmark local com a falha para o smart-router aprender.
+        void recordBenchmark(req.model, {
+          success: false,
+          latencyMs: Date.now() - started,
+        }).catch(() => {});
+        throw new Error(`LiteLLM [${res.status}]: ${err}`);
+      }
+
+      const data = await res.json() as {
+        choices?: { message?: { content?: string | null } }[];
+        model?: string;
+        usage?: { total_tokens: number };
+        _hidden_params?: { response_cost?: number };
+      };
+
+      const content = data.choices?.[0]?.message?.content;
+      if (typeof content === 'string' && content.trim().length > 0) {
+        const tokensUsed = data.usage?.total_tokens ?? 0;
+        const costUsd    = data._hidden_params?.response_cost ?? 0;
+        const model      = data.model || req.model;
+
+        // Registra sucesso no benchmark: aprende latência e custo reais por modelo,
+        // permitindo que o smart-router reavalie custo/benefício continuamente.
+        void recordBenchmark(req.model, {
+          success: true,
+          latencyMs: Date.now() - started,
+          costUsd,
+        }).catch(() => {});
+
+        eventBus.publish('llm:response', {
+          model,
+          virtualKey: req.virtualKey,
+          tokensUsed,
+          costUsd,
+        });
+
+        return { content, model, tokensUsed, costUsd };
+      }
+
+      // Vazio: conta como falha no benchmark e re-tenta 1x antes de desistir.
+      lastShape = `choices=${data.choices?.length ?? 0}`;
       void recordBenchmark(req.model, {
         success: false,
         latencyMs: Date.now() - started,
       }).catch(() => {});
-      throw new Error(`LiteLLM [${res.status}]: ${err}`);
+      console.warn(`[gateway] resposta VAZIA do modelo ${req.model} (tentativa ${attempt}/${MAX_TRIES}, ${lastShape}) — re-tentando`);
     }
 
-    const data = await res.json() as {
-      choices: { message: { content: string } }[];
-      model: string;
-      usage: { total_tokens: number };
-      _hidden_params?: { response_cost?: number };
-    };
-
-    const tokensUsed = data.usage.total_tokens;
-    const costUsd    = data._hidden_params?.response_cost ?? 0;
-
-    // Registra sucesso no benchmark: aprende latência e custo reais por modelo,
-    // permitindo que o smart-router reavalie custo/benefício continuamente.
-    void recordBenchmark(req.model, {
-      success: true,
-      latencyMs: Date.now() - started,
-      costUsd,
-    }).catch(() => {});
-
-    eventBus.publish('llm:response', {
-      model: data.model,
-      virtualKey: req.virtualKey,
-      tokensUsed,
-      costUsd,
-    });
-
-    return {
-      content:    data.choices[0].message.content,
-      model:      data.model,
-      tokensUsed,
-      costUsd,
-    };
+    throw new Error(
+      `LiteLLM devolveu RESPOSTA VAZIA após ${MAX_TRIES} tentativas (model=${req.model}, ${lastShape}) — ` +
+      'o provedor aceitou a chamada mas não retornou conteúdo.'
+    );
   }
 
   /** Create a virtual key scoped to a module or agent. */

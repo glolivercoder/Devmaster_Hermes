@@ -343,3 +343,52 @@ injetados pelo digest) ✓. Credencial: run SEMPRE dispara (reply 4681 chars) �
 card com os 3 botões ✓, ⏭ fecha ✓, ⏭⏭ grava localStorage + badge ✓, card
 não aparece mais na seção ✓, reativar limpa ✓, modal nota/Esc/backdrop/skip ✓,
 **console 0 erros** ✓, `tsc --noEmit` EXIT=0 ✓.
+
+## 🕘 Show Agents + fix do run "sumido" (resposta vazia) - Out/2026
+
+**Diagnóstico do problema do usuário** ("enviei prompt no orquestrador e não
+criou projeto nem foi pro histórico"): **não era OmniRoute nem fallback** — o
+provedor devolveu HTTP 200 com `content: null`. O `GatewayClient.complete()`
+aceitava isso sem validar, então: resposta vazia na UI (parecia "que não
+funcionou") e o salvamento quebrava com `null.slice`/`null.length` (nada ia
+pra pasta do projeto nem pra memória). Agravante: runs **sem** o campo 📁
+Projeto não deixavam rastro nenhum em lugar algum.
+
+**Correções:**
+- **`src/gateway/gateway-client.ts`**: valida `choices[0].message.content` —
+  resposta vazia vira **1 retry automático** (e falha no benchmark p/ o
+  smart-router aprender) e, se persistir, **erro claro** ("LiteLLM devolveu
+  RESPOSTA VAZIA após 2 tentativas (model=...)") em vez de reply em branco.
+- **`orchestrator-routes.ts`**: defesa extra (`content` nunca nulo no
+  salvamento) + **histórico GLOBAL** `data/orchestrator-history.jsonl` (anel de
+  200) gravado em TODO run — inclusive os que falharam, com o motivo.
+  Rota `GET /api/orchestrator/history`.
+- **UI (aba Histórico)**: card **"🕘 Runs recentes do Orquestrador"** — ts,
+  badge OK/FALHOU, modelo, latência, projeto (ou "sem projeto"), prompt,
+  pré-visualização da resposta, link do 🗺 mapa e motivos de falha.
+
+**Show Agents (aba 🏢 Paperclip & Office):**
+- **`src/paperclip/agent-feed.ts`** (novo): consome o **event bus real** e
+  expõe os agentes em ação — `agent:task:started|completed|failed` (CEO Hermes,
+  Archify, Composio, agentes dinâmicos), `llm:request|response` (LLM Gateway com
+  pendências/tokens/custo), `research:*`, `telegram:*`, `security:*`, `deploy:*`,
+  `mcp:*`, `system:ready`. Catálogo de 14 agentes + anel de 120 eventos.
+- **`paperclip-routes.ts`** + `paperclip-singleton.ts`: `GET /api/paperclip/agents[?since=]`
+  (feed incremental p/ poll de 2s) e `GET /api/paperclip/tickets`.
+- **`index.ts`**: `initAgentFeed()` ANTES do `system:ready` (registra o boot) +
+  dispatch `/api/paperclip/`.
+- **Eventos novos publicados**: `runOrchestrator()` publica
+  started/completed/failed do `hermes-orchestrator`; `generateCodeMap()` publica
+  os do `hermes-codemap`.
+- **UI**: botão **"👁 Show Agents"** no canto SUPERIOR ESQUERDO do header da aba
+  → painel ao vivo com cards (status TRABALHANDO/ocioso pulsante, tarefa atual,
+  eventos, tokens, custo), chips de stats (X/Y trabalhando · eventos · runs ·
+  tokens · $ · uptime), **feed de atividade** cronológico com cores por nível,
+  ⏸ Pausar/▶ Retomar e ↻ atualizar; poll 2s enquanto aberto.
+
+**E2E real**: run SEM projeto → reply 1186 chars (sem vazio) + entrada no
+histórico global com ts/modelo/latência ✓ · feed registrou
+iniciada → LLM (5141 tokens) → concluída em 21,4s ✓ · UI Show Agents: 14 cards,
+feed com 5 eventos, stats, pausa/retomar ✓ · aba Histórico: card "Runs recentes"
+com OK + "sem projeto" + prompt + preview + link do mapa ✓ · **console 0
+erros** ✓ · `tsc --noEmit` EXIT=0 ✓.

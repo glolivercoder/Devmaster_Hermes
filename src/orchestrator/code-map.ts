@@ -23,6 +23,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { getGateway, getVirtualKey } from '../gateway/gateway-singleton.js';
 import { resolveModel } from '../llm/routing-store.js';
+import { eventBus } from '../core/event-bus.js';
 import { PROJECTS_ROOT } from './project-store.js';
 
 const execFileP = promisify(execFile);
@@ -295,7 +296,37 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'mapa';
 }
 
+/**
+ * Gera o mapa de código do alvo e publica eventos p/ o painel "Show Agents"
+ * (aba 🏢 Paperclip & Office) — o agente Archify fica WORKING durante o run.
+ */
 export async function generateCodeMap(opts: {
+  project?: string;
+  targetPath?: string;
+  hint?: string;
+}): Promise<CodeMapResult> {
+  const taskId = `codemap-${Date.now()}`;
+  const t0 = Date.now();
+  eventBus.publish('agent:task:started', {
+    agentId: 'hermes-codemap',
+    taskId,
+    description: `mapa de código: ${opts.project || opts.targetPath || 'Hermes (repo atual)'}`,
+  });
+  try {
+    const result = await generateCodeMapInternal(opts);
+    eventBus.publish('agent:task:completed', { agentId: 'hermes-codemap', taskId, durationMs: Date.now() - t0 });
+    return result;
+  } catch (e) {
+    eventBus.publish('agent:task:failed', {
+      agentId: 'hermes-codemap',
+      taskId,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    throw e;
+  }
+}
+
+async function generateCodeMapInternal(opts: {
   project?: string;
   targetPath?: string;
   hint?: string;

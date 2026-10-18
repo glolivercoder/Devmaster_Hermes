@@ -22,6 +22,8 @@ async function loadHistorico() {
     renderHistorico();
     // 📁 Projetos do orquestrador (pasta F:\Projetos2026\DevMaster) junto do load.
     loadOrchProjects();
+    // 🕘 Runs recentes (histórico GLOBAL — inclui runs sem projeto).
+    loadOrchRuns();
   } catch (e) {
     el.innerHTML = '<div class="p-4 bg-red-950/20 rounded-xl border border-red-900/50 text-xs font-mono text-red-400 text-center">Erro ao carregar historico: ' + (e.message || 'desconhecido') + '</div>';
   }
@@ -124,6 +126,69 @@ async function loadOrchProjects() {
     el.innerHTML = '<div class="p-3 bg-red-950/20 rounded-lg border border-red-900/50 text-xs font-mono text-red-400 text-center">Erro ao carregar projetos: ' + orchEsc(e.message || e) + '</div>';
   }
   if (btn) { btn.disabled = false; btn.innerText = '⟳ Carregar projetos'; }
+}
+
+// ── 🕘 Runs recentes do Orquestrador (histórico GLOBAL) ──
+// Todo run é registrado em data/orchestrator-history.jsonl — inclusive os que
+// falharam (mostra o motivo) e os sem 📁 projeto, que antes não deixavam rastro.
+let orchRunsData = [];
+
+async function loadOrchRuns() {
+  const btn = document.getElementById('orch-runs-refresh');
+  const el = document.getElementById('orch-runs-list');
+  if (!el) return;
+  if (btn) { btn.disabled = true; btn.innerText = 'Carregando...'; }
+  try {
+    const urls = apiUrls('/api/orchestrator/history');
+    let result = null, lastErr = null;
+    for (const u of urls) {
+      try {
+        const r = await fetch(u);
+        if (!r.ok) { lastErr = 'HTTP ' + r.status; continue; }
+        result = await r.json();
+        break;
+      } catch (e) { lastErr = e.message; }
+    }
+    if (!result) throw new Error(lastErr || 'indisponivel');
+    orchRunsData = result.runs || [];
+    renderOrchRuns();
+  } catch (e) {
+    el.innerHTML = '<div class="p-3 bg-red-950/20 rounded-lg border border-red-900/50 text-xs font-mono text-red-400 text-center">Erro ao carregar runs: ' + orchEsc(e.message || e) + '</div>';
+  }
+  if (btn) { btn.disabled = false; btn.innerText = '⟳ Carregar runs'; }
+}
+
+function renderOrchRuns() {
+  const el = document.getElementById('orch-runs-list');
+  if (!el) return;
+  if (!orchRunsData.length) {
+    el.innerHTML = '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum run registrado ainda — envie um prompt na aba <strong>Orquestrador</strong>.</div>';
+    return;
+  }
+  el.innerHTML = orchRunsData.map(r => {
+    const ok = r.ok !== false;
+    const badge = ok
+      ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-900/60">OK</span>'
+      : '<span class="px-1.5 py-0.5 rounded text-[10px] bg-red-950 text-red-400 border border-red-900/60">FALHOU</span>';
+    return '<div class="p-2.5 bg-gray-900/40 rounded-lg border ' + (ok ? 'border-gray-800' : 'border-red-900/60 bg-red-950/10') + ' space-y-1">' +
+      '<div class="flex items-center flex-wrap gap-2">' +
+        '<span class="text-[10px] font-mono text-gray-600">' + (r.ts ? new Date(r.ts).toLocaleString('pt-BR') : '--') + '</span>' +
+        badge +
+        '<span class="text-[10px] font-mono text-gray-500">' + orchEsc(r.model || '?') + ' · ' + ((r.latencyMs || 0) / 1000).toFixed(1) + 's</span>' +
+        (r.project
+          ? '<span class="text-[10px] font-mono text-cyan-400">📁 ' + orchEsc(r.project) + '</span>'
+          : '<span class="text-[10px] font-mono text-gray-600" title="run sem projeto — salvo só no histórico global">sem projeto</span>') +
+        (r.codeMapUrl ? '<a href="' + orchEsc(r.codeMapUrl) + '" target="_blank" rel="noopener" class="text-[10px] font-mono text-cyan-400 hover:underline">🗺 mapa ↗</a>' : '') +
+      '</div>' +
+      '<div class="text-[11px] text-gray-300 font-mono truncate" title="' + orchEsc(r.prompt) + '">💬 ' + orchEsc(r.prompt) + '</div>' +
+      (ok
+        ? '<div class="text-[10px] text-gray-500 font-mono">' + orchEsc((r.reply || '').slice(0, 240)) + (r.reply && r.reply.length >= 240 ? '…' : '') + '</div>'
+        : '<div class="text-[10px] text-red-400 font-mono">⚠️ ' + orchEsc(r.error || 'erro desconhecido') + '</div>') +
+      (r.savedFiles && r.savedFiles.length
+        ? '<div class="text-[10px] text-gray-600 font-mono">📁 salvos: ' + r.savedFiles.map(f => orchEsc(f)).join(' · ') + '</div>'
+        : '') +
+      '</div>';
+  }).join('');
 }
 
 function renderOrchProjects(root) {

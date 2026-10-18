@@ -44,3 +44,6 @@ desktop.ini
 
 # ── Artefatos de trabalho do gerador de mapas (Archify) ──────────────────────
 data/code-maps/work/
+
+# ── Historico global de runs do orquestrador (prompts do usuário) ────────────
+data/orchestrator-history.jsonl
