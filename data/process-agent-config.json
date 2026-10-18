@@ -1,0 +1,6 @@
+{
+  "monitorEnabled": true,
+  "intervalSec": 20,
+  "highCpu": 80,
+  "highRamMB": 1024
+}

@@ -2,5 +2,6 @@
   "pesquisaAvancada": false,
   "analiseMercado": false,
   "siteCrm": false,
-  "siteProfissional": false
+  "siteProfissional": false,
+  "portasProcessos": true
 }

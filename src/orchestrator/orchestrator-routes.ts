@@ -21,6 +21,9 @@ import { runMarketAnalysis, type MarketReport } from '../market/market-analysis.
 import { continuityBlock, remember, saveState, normProject, recall } from '../memory/project-memory.js';
 import { auditLogger } from '../core/audit-logger.js';
 import {
+  getPortMapText, executeProcessAction, parseProcessDirectives, buildPortManagementBlock,
+} from '../guardian/process-agent.js';
+import {
   PROJECTS_ROOT, saveRunArtifacts, listProjects, readProjectFile,
 } from './project-store.js';
 
@@ -31,6 +34,7 @@ export interface OrchestratorSwitches {
   analiseMercado: boolean;
   siteCrm: boolean;
   siteProfissional: boolean;
+  portasProcessos: boolean;
 }
 
 const DEFAULT_SWITCHES: OrchestratorSwitches = {
@@ -38,6 +42,7 @@ const DEFAULT_SWITCHES: OrchestratorSwitches = {
   analiseMercado: false,
   siteCrm: false,
   siteProfissional: false,
+  portasProcessos: false,
 };
 
 export function loadSwitches(): OrchestratorSwitches {
@@ -131,6 +136,8 @@ interface RunResult {
   market?: { dashboardPath?: string; competitors?: number; verdict?: string; error?: string };
   /** Pasta F:\Projetos2026\DevMaster\<proj> gravada nesta rodada (prompt + respostas). */
   saved?: { folder: string; files: string[] };
+  /** Diretivos [[PROCESSO:…]] executados nesta rodada (fechar/pausar serviços). */
+  processActions?: Array<{ pid: number; action: string; ok: boolean; detail: string; reason?: string }>;
   latencyMs: number;
 }
 
@@ -247,6 +254,17 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     }
   }
 
+  // 3.5) Portas & Processos (switch) — injeta o mapa ao vivo das portas: o
+  //      orquestrador NÃO pode reutilizar portas em uso e PODE emitir o
+  //      diretivo [[PROCESSO:…]] para fechar/pausar serviços desnecessários.
+  if (switches.portasProcessos) {
+    try {
+      blocks.push(buildPortManagementBlock(await getPortMapText()));
+    } catch (e) {
+      blocks.push(`(mapa de portas indisponível: ${String(e instanceof Error ? e.message : e)})`);
+    }
+  }
+
   const systemBase = [
     'Você é o HERMES ORCHESTRATOR — orquestrador técnico sênior, anti-cicofantia.',
     'Devil\'s Advocate: aponte riscos e trade-offs antes de recomendar. Seja direto, prático e acionável.',
@@ -273,6 +291,29 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     event: 'orchestrator:run',
     payload: { model, switches, promptChars: prompt.length, project: proj },
   });
+
+  // 3.6) Gestão de processos — parseia diretivos [[PROCESSO:…]] emitidos pelo
+  //      modelo e EXECUTA (fechar/pausar) com validação de PID no snapshot +
+  //      proteção do núcleo. O resultado é anotado na própria resposta.
+  let processActions: RunResult['processActions'];
+  if (switches.portasProcessos) {
+    const directives = parseProcessDirectives(out.content);
+    if (directives.length) {
+      processActions = [];
+      const lines: string[] = [];
+      for (const d of directives) {
+        const r = await executeProcessAction(d.pid, d.action, 'orchestrator');
+        processActions.push({ pid: d.pid, action: d.action, ok: r.ok, detail: r.detail, reason: d.reason });
+        lines.push(`- ${r.ok ? '✅' : '⛔'} PID ${d.pid} (${d.action}) — ${r.detail}${d.reason ? ` · motivo: ${d.reason}` : ''}`);
+        auditLogger.log({
+          actor: 'SUBAGENT',
+          event: 'orchestrator:process_action',
+          payload: { pid: d.pid, action: d.action, ok: r.ok },
+        });
+      }
+      out.content += `\n\n---\n\n### ⚡ Gestão de processos (executada pelo Hermes)\n${lines.join('\n')}\n`;
+    }
+  }
 
   // 2) Persiste a memória do projeto: checkpoint do prompt + resposta curta.
   //    Garante que a PRÓXIMA sessão (com qualquer LLM) saiba o que aconteceu.
@@ -355,6 +396,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
       ? { dashboardPath: market.dashboardPath, competitors: market.competitors.length, verdict: market.verdict }
       : (marketError ? { error: marketError } : undefined),
     saved,
+    processActions,
     latencyMs: Date.now() - started,
   };
 }

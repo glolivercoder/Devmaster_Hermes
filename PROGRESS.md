@@ -241,3 +241,43 @@
   UI DOM: badges/cards/log/botões + Save point clicado ✓ · repos criados:
   `glolivercoder/{loja-artesanato-teste,ui-demo-projeto}` (privados) +
   `hermes-admin/{...}` no Gitea ✓ · `tsc --noEmit` EXIT=0.
+
+## ??? ProcessAgent - MCPs categorizados + monitor de processos/CPU/RAM - Out/2026
+
+**`src/guardian/process-agent.ts`** (novo):
+- **Snapshot rico de processos** (WMI + netstat em PowerShell unico): PID, nome,
+  CommandLine, portas em escuta (dedup v4/v6), **CPU%% e RAM MB**
+  (Win32_PerfFormattedData), estado **suspenso** (todas as threads
+  Wait/Suspended) e flag protegido. Filtro: node/python/tsx/npx/uvicorn...,
+  donos de porta "server-like" (docker/gitea/redis/opencode...), ruido
+  descartado (svchost/Code/wslrelay + zumbis 0MB sem porta).
+- **Acoes**: pausar/retomar (NtSuspend/NtResumeProcess via P/Invoke ntdll - sem
+  SIGSTOP no Windows), fechar (taskkill /F /T da arvore), reiniciar (re-spawna a
+  CommandLine original detached). **PID do nucleo protegido** (Hermes + cadeia de
+  pais) - E2E confirmou recusa no proprio PID do servidor.
+- **Monitor em background** (default LIGADO, 20s; `data/process-agent-config.json`):
+  eventos porta ABERTA/FECHADA + alertas CPU>80%%/RAM>1GB (cooldown 10min) em
+  anel de 40 para a UI.
+- **Mapa de portas ao Orquestrador**: switch "Portas & Processos" injeta bloco
+  com o mapa vivo ("NUNCA reutilize estas portas") + autoriza o diretivo
+  `[[PROCESSO:pid=N acao=fechar|pausar motivo="..."]]` (max 5; parser descarta
+  acao invalida). O executor valida o PID no snapshot, recusa protegidos, anota
+  " Gestao de processos" na resposta e devolve `processActions` no JSON.
+- **MCPs por categoria**: Hermes (mcp-registry.json, 6) x OpenCode
+  (opencode.json: context7/sequential-thinking/memory/filesystem, 4) x ativos no
+  sistema (porta escutando ou stdio sob demanda).
+- **5 rotas novas**: `GET /api/processes/detail`, `POST /api/processes/action`
+  (fechar|pausar|retomar|reiniciar), `GET /api/mcps/categories`,
+  `GET /api/process-agent/status`, `POST /api/process-agent/config`.
+- **UI (aba MCPs & Portas reescrita)**: chips de categoria no header, cards de
+  processo com **favicons de acao no canto superior esquerdo** (pausar/retomar/
+  reiniciar/fechar) + **display CPU%%/RAM MB** (cores por limiar), badges
+  PID/kind/portas/suspenso/protegido, auto-refresh de 12s, status do monitor.
+- **E2E real**: snapshot ~50 processos/91 portas (~1,4s) V pausar -> susp=True
+  no snapshot -> retomar -> False V reiniciar (novo PID assumiu a 4599) V
+  fechar (arvore morta) V protegido recusado V monitor detectou restart do
+  Hermes (porta 4020/4010 ABERTA) V config gravada V **run real do Orquestrador
+  com switch ON: LLM emitiu o diretivo, executor fechou o PID 50544 da porta
+  4599 em 30s, reply anotada** V UI DOM (50 cards, favicons, badges, 3
+  categorias, checkbox) V audit `process:*` + `orchestrator:process_action` V
+  `tsc --noEmit` EXIT=0.

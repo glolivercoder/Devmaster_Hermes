@@ -22,3 +22,11 @@
 - [x] 5 rotas /api/version/* (status/config/run/github-repo/log) + audit + redact
 - [x] UI card na aba Versionamento & Backup (toggle, badges, save point por projeto, log)
 - [x] E2E: gate sk- bloqueado, .env no full do Gitea, monitor 15s, repos criados no GitHub (privado) e Gitea
+
+## ??? ProcessAgent - MCPs categorizados + processos/CPU/RAM - Out/2026
+- [x] process-agent.ts: snapshot (WMI+netstat, CPU/RAM, suspenso, protegido) + acoes fechar/pausar/retomar/reiniciar
+- [x] Monitor de fundo (20s, eventos porta/CPU/RAM) + /api/process-agent/status|config
+- [x] Mapa de portas no contexto do Orquestrador (switch) + diretivo [[PROCESSO:...]] executado com validacao de PID
+- [x] MCPs categorizados (Hermes x OpenCode x ativos) + /api/mcps/categories
+- [x] UI: categorias no header, cards com favicons de acao + display CPU/RAM, auto-refresh 12s
+- [x] E2E: pausar/susp/retomar/reiniciar/fechar + protegido recusado + run real do orquestrador fechando PID via diretivo

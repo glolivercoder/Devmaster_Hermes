@@ -38,6 +38,10 @@ import { getEnvSettings, setEnvSetting, deleteEnvSetting } from './llm/env-db-st
 import { readAuditLog } from './core/audit-api.js';
 import { GiteaOpsAgent } from './gitea/gitea-ops-agent.js';
 import { handleVersionAgent, initVersionAgent } from './gitea/version-agent-routes.js';
+import {
+  getProcessSnapshot, executeProcessAction, getMcpCategories,
+  initProcessAgent, paStatus, savePaConfig, type ProcAction,
+} from './guardian/process-agent.js';
 import { scanPorts } from './guardian/port-inventory.js';
 import { portOwner, type McpRegistry } from './core/registry.js';
 
@@ -224,6 +228,50 @@ async function handlePorts(
     } catch (err) { json(500, { error: String(err) }); return true; }
   }
 
+  // ── ProcessAgent: snapshot rico (PID · portas · CPU% · RAM · suspenso) ──
+  if (url === '/api/processes/detail' && method === 'GET') {
+    try { json(200, { snapshot: await getProcessSnapshot() }); } catch (e) { json(500, { error: String(e) }); }
+    return true;
+  }
+
+  // POST /api/processes/action — fechar | pausar | retomar | reiniciar (com PIDs protegidos)
+  if (url === '/api/processes/action' && method === 'POST') {
+    try {
+      const body = await readBody(req) as { pid?: number | string; action?: string; actor?: string };
+      const allowed = ['fechar', 'pausar', 'retomar', 'reiniciar'];
+      if (!body.pid || !body.action || !allowed.includes(body.action)) {
+        json(400, { error: 'pid + action (fechar|pausar|retomar|reiniciar) obrigatórios' });
+        return true;
+      }
+      const r = await executeProcessAction(body.pid, body.action as ProcAction, body.actor ?? 'user-ui');
+      json(200, r);
+    } catch (e) { json(500, { error: String(e) }); }
+    return true;
+  }
+
+  // GET /api/mcps/categories — MCPs do Hermes × do OpenCode × ativos no sistema
+  if (url === '/api/mcps/categories' && method === 'GET') {
+    try { json(200, await getMcpCategories()); } catch (e) { json(500, { error: String(e) }); }
+    return true;
+  }
+
+  // GET /api/process-agent/status — monitor + eventos + config
+  if (url === '/api/process-agent/status' && method === 'GET') {
+    json(200, paStatus());
+    return true;
+  }
+
+  // POST /api/process-agent/config — liga/desliga o monitor e ajusta intervalos/limites
+  if (url === '/api/process-agent/config' && method === 'POST') {
+    try {
+      const body = await readBody(req) as Partial<{ monitorEnabled: boolean; intervalSec: number; highCpu: number; highRamMB: number }>;
+      const saved = savePaConfig(body);
+      auditLogger.log({ actor: 'USER', event: 'process-agent:config', payload: { monitorEnabled: saved.monitorEnabled, intervalSec: saved.intervalSec } });
+      json(200, { ok: true, config: saved });
+    } catch (e) { json(500, { error: String(e) }); }
+    return true;
+  }
+
   return false;
 }
 async function bootstrap() {
@@ -248,6 +296,9 @@ async function bootstrap() {
   // Monitor de versionamento de pastas de projeto (se habilitado na config).
   initVersionAgent();
 
+  // ProcessAgent — monitor de processos/portas em background + mapa p/ orquestrador.
+  initProcessAgent();
+
   // ── Process Guardian API (4010) — health, status & LLM Center ──
   const apiServer = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -260,7 +311,7 @@ async function bootstrap() {
     // Agente de Versionamento de Projetos (Gitea local + GitHub remoto)
     if (req.url && req.url.startsWith('/api/version/') && await handleVersionAgent(req, res, req.url, req.method ?? 'GET')) return;
     // Port & Process Guardian / MCPs — inventário e ações
-    if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
+    if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes') || req.url.startsWith('/api/process-agent')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
     if (req.url === '/health') {
       res.writeHead(200);
       res.end(JSON.stringify({ status: 'ok', uptime_s: Math.round(process.uptime()) }));
@@ -485,7 +536,7 @@ async function bootstrap() {
     // Agente de Versionamento de Projetos (Gitea local + GitHub remoto)
     if (req.url && req.url.startsWith('/api/version/') && await handleVersionAgent(req, res, req.url, req.method ?? 'GET')) return;
     // Port & Process Guardian / MCPs — inventário e ações
-    if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
+    if (req.url && (req.url.startsWith('/api/ports') || req.url.startsWith('/api/mcps') || req.url.startsWith('/api/processes') || req.url.startsWith('/api/process-agent')) && await handlePorts(req, res, req.url, req.method ?? 'GET')) return;
     // OpenCode (IDE multi-agente) — ponte para o servidor headless local (:4196)
     if (req.url && req.url.startsWith('/api/opencode/') && await handleOpencode(req, res, req.url, req.method ?? 'GET')) return;
     // Previews — navegador de arquivos + visualizador universal (pdf/md/docx/media/html)

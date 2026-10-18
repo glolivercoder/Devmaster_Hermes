@@ -74,7 +74,7 @@ function renderHistorico() {
 }
 
 // ── Port & Process Guardian / MCPs ──
-let portsData = { ports: [], processes: [], mcps: [] };
+let portsData = { ports: [], processes: [], mcpsHermes: [], mcpsOc: [], mcpsActive: [] };
 
 // ── 📁 Projetos do Orquestrador (F:\Projetos2026\DevMaster\<nome>) ──
 // Cada run do orquestrador grava: prompt-original.md (append), historico.jsonl
@@ -190,130 +190,210 @@ function closeOrchFile() {
   if (v) { v.classList.add('hidden'); v.innerHTML = ''; }
 }
 
-async function loadPortsInventory() {
+// ─── MCPs & Portas (Port & Process Guardian) ────────────────────────────────
+
+let portsAutoTimer = null;
+let portsBusy = false;
+
+/** Auto-refresh de 12s enquanto a aba MCPs & Portas estiver visível. */
+function startPortsAuto() {
+  stopPortsAuto();
+  portsAutoTimer = setInterval(function () {
+    const v = document.getElementById('view-mcps');
+    if (v && !v.classList.contains('hidden')) loadPortsInventory(true);
+  }, 12000);
+}
+
+function stopPortsAuto() {
+  if (portsAutoTimer) { clearInterval(portsAutoTimer); portsAutoTimer = null; }
+}
+
+async function loadPortsInventory(silent) {
+  if (portsBusy) return;
+  portsBusy = true;
   const btn = document.getElementById('ports-refresh-btn');
+  if (!silent && btn) { btn.disabled = true; btn.innerText = 'Carregando...'; }
+
   const doFetch = async (path) => {
-    const urls = apiUrls(path);
-    for (const u of urls) {
+    for (const u of apiUrls(path)) {
       try {
         const r = await fetch(u);
         if (!r.ok) continue;
-        const j = await r.json();
-        if (j && (Array.isArray(j.ports) || Array.isArray(j.processes) || Array.isArray(j.servers))) return j;
-        if (Array.isArray(j)) return { ports: j };
+        return await r.json();
       } catch (e) { /* next */ }
     }
     return null;
   };
 
-  if (btn) { btn.disabled = true; btn.innerText = 'Carregando...'; }
-
-  const [portsRes, procsRes, mcpsRes] = await Promise.all([
+  const [portsRes, procDetail, cats, pa] = await Promise.all([
     doFetch('/api/ports'),
-    doFetch('/api/processes'),
-    doFetch('/api/mcps'),
+    doFetch('/api/processes/detail'),
+    doFetch('/api/mcps/categories'),
+    doFetch('/api/process-agent/status'),
   ]);
 
   portsData.ports = portsRes?.ports || [];
-  portsData.processes = procsRes?.processes || [];
-  portsData.mcps = mcpsRes?.servers || [];
+  portsData.processes = procDetail?.snapshot?.processes || [];
+  portsData.mcpsHermes = cats?.hermes || [];
+  portsData.mcpsOc = cats?.opencode || [];
+  portsData.mcpsActive = cats?.active || [];
 
-  document.getElementById('ports-total').innerText = portsData.ports.length;
-  document.getElementById('processes-total').innerText = portsData.processes.length;
-  document.getElementById('mcps-total').innerText = portsData.mcps.length;
+  const setT = (id, val) => { const e2 = document.getElementById(id); if (e2) e2.innerText = val; };
+  setT('ports-total', portsData.ports.length);
+  setT('processes-total', portsData.processes.length);
+  setT('mcps-total', portsData.mcpsHermes.length);
+  setT('mcps-oc-total', portsData.mcpsOc.length);
+  setT('mcps-active-total', portsData.mcpsActive.length);
+
+  const mon = document.getElementById('pa-monitor-status');
+  if (mon) {
+    mon.innerText = pa
+      ? '📡 monitor: ' + ((pa.monitor && pa.monitor.running) ? 'ON' : 'OFF') +
+        ' · última varredura ' + ((pa.monitor && pa.monitor.lastScanAt) ? new Date(pa.monitor.lastScanAt).toLocaleTimeString('pt-BR') : '—') +
+        ' · ' + (pa.processes || 0) + ' processos · ' + (pa.portsTotal || 0) + ' portas'
+      : '📡 monitor: indisponível';
+  }
 
   renderPortsInventory();
+  startPortsAuto();
 
-  if (btn) { btn.disabled = false; btn.innerText = 'Atualizar inventário'; }
+  if (!silent && btn) { btn.disabled = false; btn.innerText = '⟳ Atualizar inventário'; }
+  portsBusy = false;
+}
+
+function hEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderPortsInventory() {
-  const procEl = document.getElementById('processes-list');
-  const portEl = document.getElementById('ports-list');
-  const mcpEl = document.getElementById('mcps-list');
+  const el = (id) => document.getElementById(id);
 
-  // Processos
-  if (!portsData.processes.length) {
-    procEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum processo Node/Python detectado.</div>';
-  } else {
-    procEl.innerHTML = portsData.processes.map(p => {
-      const pid = p.pid;
-      const cmd = (p.command || '').slice(0, 140);
-      return '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800 flex items-center justify-between gap-3">' +
-        '<div class="min-w-0">' +
-        '<div class="text-xs font-mono text-gray-200 truncate" title="' + cmd.replace(/"/g, '&quot;') + '">' + cmd + '</div>' +
-        '<div class="text-[10px] text-gray-600 font-mono">PID ' + pid + '</div>' +
-        '</div>' +
-        '<div class="flex gap-2 shrink-0">' +
-        '<button onclick="killProcess(\'' + pid + '\', this)" class="px-2 py-1 rounded-md bg-red-500/15 border border-red-500/40 text-red-300 text-xs font-mono hover:bg-red-500/25">Interromper</button>' +
-        '<button onclick="restartProcess(\'' + pid + '\', this)" class="px-2 py-1 rounded-md bg-blue-500/15 border border-blue-500/40 text-blue-300 text-xs font-mono hover:bg-blue-500/25">Reiniciar</button>' +
-        '</div></div>';
-    }).join('');
+  // ── Processos: favicons (pausar/retomar/reiniciar/fechar) + display CPU/RAM ──
+  const procEl = el('processes-list');
+  if (procEl) {
+    if (!portsData.processes.length) {
+      procEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum processo Node/Python/servidor detectado.</div>';
+    } else {
+      procEl.innerHTML = portsData.processes.map(function (p) {
+        const cpuC = p.cpu >= 80 ? 'text-red-400 border-red-500/40' : p.cpu >= 50 ? 'text-amber-400 border-amber-500/40' : 'text-emerald-400 border-emerald-500/30';
+        const ramC = p.ramMB >= 1024 ? 'text-red-400 border-red-500/40' : p.ramMB >= 512 ? 'text-amber-400 border-amber-500/40' : 'text-emerald-400 border-emerald-500/30';
+        const portBadges = (p.ports || []).map(function (x) {
+          return '<span class="px-1 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">:' + x + '</span>';
+        }).join(' ');
+        const dis = p.protectedProc ? 'disabled style="opacity:.35;cursor:not-allowed" ' : '';
+        return '' +
+          '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800">' +
+            '<div class="flex items-center gap-1.5 flex-wrap">' +
+              '<button title="Pausar (suspende as threads)" ' + dis + 'onclick="procAction(' + p.pid + ', \'pausar\', this)" class="w-6 h-6 rounded bg-gray-800 border border-gray-700 hover:bg-amber-500/25 hover:border-amber-500/50 text-[11px]">⏸</button>' +
+              '<button title="Retomar" ' + dis + 'onclick="procAction(' + p.pid + ', \'retomar\', this)" class="w-6 h-6 rounded bg-gray-800 border border-gray-700 hover:bg-emerald-500/25 hover:border-emerald-500/50 text-[11px]">▶</button>' +
+              '<button title="Reiniciar (encerra e re-spawna)" ' + dis + 'onclick="procAction(' + p.pid + ', \'reiniciar\', this)" class="w-6 h-6 rounded bg-gray-800 border border-gray-700 hover:bg-blue-500/25 hover:border-blue-500/50 text-[11px]">🔄</button>' +
+              '<button title="Fechar (encerra a árvore)" ' + dis + 'onclick="procAction(' + p.pid + ', \'fechar\', this)" class="w-6 h-6 rounded bg-gray-800 border border-gray-700 hover:bg-red-500/25 hover:border-red-500/50 text-[11px]">✕</button>' +
+              '<span title="Uso de CPU" class="ml-1 px-1.5 py-0.5 rounded border bg-gray-900 text-[10px] font-mono ' + cpuC + '">⚡' + (p.cpu || 0) + '%</span>' +
+              '<span title="Memória RAM (working set)" class="px-1.5 py-0.5 rounded border bg-gray-900 text-[10px] font-mono ' + ramC + '">▦' + Math.round(p.ramMB || 0) + 'MB</span>' +
+              (p.suspended ? '<span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-700 text-amber-300 text-[10px] font-mono">⏸ suspenso</span>' : '') +
+              '<span class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-cyan-300 text-[10px] font-mono">PID ' + p.pid + '</span>' +
+              '<span class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-gray-400 text-[10px] font-mono">' + hEsc(p.kind || '') + '</span>' +
+              portBadges +
+              (p.protectedProc ? '<span class="px-1.5 py-0.5 rounded bg-gray-900 border border-gray-700 text-gray-500 text-[10px] font-mono" title="Núcleo do Hermes/sistema — ações bloqueadas">🛡 protegido</span>' : '') +
+            '</div>' +
+            '<div class="text-[11px] font-mono text-gray-500 truncate mt-1.5" title="' + hEsc(p.cmd) + '">' + hEsc(p.cmd || p.name) + '</div>' +
+          '</div>';
+      }).join('');
+    }
   }
 
-  // Portas
-  if (!portsData.ports.length) {
-    portEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhuma porta em escuta detectada.</div>';
-  } else {
-    portEl.innerHTML = portsData.ports.map(p => {
-      return '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800">' +
-        '<div class="text-xs text-gray-500 font-mono">PORTA ' + p.port + '</div>' +
-        '<div class="text-sm font-bold text-white mt-1 truncate">' + (p.owner || 'Processo ' + p.pid) + '</div>' +
-        '<div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">' +
-        '<span>LISTEN</span><span class="text-gray-500">PID ' + p.pid + '</span>' +
-        '</div></div>';
-    }).join('');
+  // ── Portas em escuta ──
+  const portEl = el('ports-list');
+  if (portEl) {
+    if (!portsData.ports.length) {
+      portEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhuma porta em escuta detectada.</div>';
+    } else {
+      portEl.innerHTML = portsData.ports.map(function (p) {
+        return '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800">' +
+          '<div class="text-xs text-gray-500 font-mono">PORTA ' + p.port + '</div>' +
+          '<div class="text-sm font-bold text-white mt-1 truncate">' + hEsc(p.owner || 'Processo ' + p.pid) + '</div>' +
+          '<div class="mt-2 flex items-center justify-between text-xs text-emerald-400 font-mono">' +
+          '<span>LISTEN</span><span class="text-gray-500">PID ' + p.pid + '</span>' +
+          '</div></div>';
+      }).join('');
+    }
   }
 
-  // MCPs
-  if (!portsData.mcps.length) {
-    mcpEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum MCP registrado no mcp-registry.json.</div>';
-  } else {
-    mcpEl.innerHTML = portsData.mcps.map(m => {
-      return '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800">' +
-        '<div class="text-xs text-gray-500 font-mono">' + (m.transport || '').toUpperCase() + (m.port ? ' · PORTA ' + m.port : '') + '</div>' +
-        '<div class="text-sm font-bold text-white mt-1">' + (m.name || m.id) + '</div>' +
-        '<div class="text-[10px] text-gray-500 mt-1">' + (m.description || '') + '</div>' +
-        '<div class="mt-2 flex gap-2"><span class="px-1.5 py-0.5 rounded text-[10px] ' + (m.priority === 'essential' ? 'bg-amber-950 text-amber-400' : 'bg-gray-900 text-gray-400') + '">' + (m.priority || '') + '</span></div>' +
-        '</div>';
-    }).join('');
+  // ── MCPs do Hermes (mcp-registry.json) ──
+  const mhEl = el('mcps-list');
+  if (mhEl) {
+    if (!portsData.mcpsHermes.length) {
+      mhEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum MCP registrado no mcp-registry.json.</div>';
+    } else {
+      mhEl.innerHTML = portsData.mcpsHermes.map(function (m) {
+        return '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800">' +
+          '<div class="text-xs text-gray-500 font-mono">' + hEsc((m.transport || '').toUpperCase()) + (m.port ? ' · PORTA ' + m.port : '') +
+          (m.listening === true ? ' · <span class="text-emerald-400">escutando</span>' : '') + '</div>' +
+          '<div class="text-sm font-bold text-white mt-1">' + hEsc(m.name || m.id) + '</div>' +
+          '<div class="text-[10px] text-gray-500 mt-1">' + hEsc(m.description || '') + '</div>' +
+          '<div class="mt-2 flex gap-2"><span class="px-1.5 py-0.5 rounded text-[10px] ' + (m.priority === 'essential' ? 'bg-amber-950 text-amber-400' : 'bg-gray-900 text-gray-400') + '">' + hEsc(m.priority || '') + '</span></div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+
+  // ── MCPs do OpenCode (openrouter/omniroute — opencode.json) ──
+  const ocEl = el('mcps-oc-list');
+  if (ocEl) {
+    if (!portsData.mcpsOc.length) {
+      ocEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum MCP configurado no OpenCode (~/.config/opencode/opencode.json).</div>';
+    } else {
+      ocEl.innerHTML = portsData.mcpsOc.map(function (m) {
+        return '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800">' +
+          '<div class="flex items-center justify-between gap-2">' +
+          '<div class="text-sm font-bold text-white truncate">' + hEsc(m.name) + '</div>' +
+          '<span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800">' + hEsc(m.type || 'local') + '</span>' +
+          '</div>' +
+          '<div class="text-[10px] text-gray-500 font-mono mt-1 truncate">' + hEsc(m.command || '') + '</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+
+  // ── MCPs ativos no sistema ──
+  const actEl = el('mcps-active-list');
+  if (actEl) {
+    if (!portsData.mcpsActive.length) {
+      actEl.innerHTML = '<div class="p-4 bg-gray-950 rounded-xl border border-gray-800 text-xs font-mono text-gray-500 text-center">Nenhum MCP ativo detectado.</div>';
+    } else {
+      actEl.innerHTML = portsData.mcpsActive.map(function (a) {
+        return '<div class="p-3 bg-gray-950 rounded-lg border border-gray-800 flex items-center gap-2">' +
+          '<span class="w-2 h-2 rounded-full shrink-0 ' + (a.port ? 'bg-emerald-400' : 'bg-cyan-400') + '"></span>' +
+          '<div class="min-w-0">' +
+          '<div class="text-xs font-bold text-white truncate">' + hEsc(a.name) + '</div>' +
+          '<div class="text-[10px] text-gray-500 font-mono">' + hEsc(a.source || '') + (a.port ? ' · :' + a.port : '') + '</div>' +
+          '</div>' +
+          '<span class="ml-auto shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono ' + (a.port ? 'bg-emerald-950 text-emerald-300' : 'bg-gray-900 text-gray-400') + '">' + hEsc(a.status || '') + '</span>' +
+          '</div>';
+      }).join('');
+    }
   }
 }
 
-async function killProcess(pid, btn) {
-  if (!confirm('Encerrar o processo PID ' + pid + '?')) return;
-  if (btn) { btn.disabled = true; btn.innerText = '...'; }
+/** Ações de processo (fechar/pausar/retomar/reiniciar) via /api/processes/action. */
+async function procAction(pid, action, btn) {
+  const labels = { fechar: 'Fechar (encerrar)', pausar: 'Pausar (suspender)', retomar: 'Retomar', reiniciar: 'Reiniciar' };
+  if (action === 'fechar' || action === 'reiniciar') {
+    if (!confirm((labels[action] || action) + ' o processo PID ' + pid + '?')) return;
+  }
+  if (btn) btn.disabled = true;
   try {
-    const urls = apiUrls('/api/processes/kill');
-    for (const u of urls) {
+    let out = null;
+    for (const u of apiUrls('/api/processes/action')) {
       try {
-        const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid }) });
-        if (r.ok) break;
+        const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: pid, action: action }) });
+        if (r.ok) { out = await r.json(); break; }
       } catch (e) { /* next */ }
     }
-    alert('Processo PID ' + pid + ' encerrado.');
-    await loadPortsInventory();
+    if (!out) alert('API de processos indisponível.');
+    else alert((out.ok ? '✅ ' : '⛔ ') + 'PID ' + pid + ' · ' + action + ': ' + out.detail);
   } catch (e) {
-    alert('Erro ao encerrar: ' + (e.message || e));
+    alert('Erro: ' + (e.message || e));
   }
-  if (btn) { btn.disabled = false; btn.innerText = 'Interromper'; }
-}
-
-async function restartProcess(pid, btn) {
-  if (!confirm('Reiniciar o processo PID ' + pid + '?')) return;
-  if (btn) { btn.disabled = true; btn.innerText = '...'; }
-  try {
-    const urls = apiUrls('/api/processes/restart');
-    for (const u of urls) {
-      try {
-        const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid }) });
-        if (r.ok) break;
-      } catch (e) { /* next */ }
-    }
-    alert('Processo PID ' + pid + ' encerrado para reinício (supervisor deve re-spawnar).');
-    await loadPortsInventory();
-  } catch (e) {
-    alert('Erro ao reiniciar: ' + (e.message || e));
-  }
-  if (btn) { btn.disabled = false; btn.innerText = 'Reiniciar'; }
+  await loadPortsInventory(true);
 }
