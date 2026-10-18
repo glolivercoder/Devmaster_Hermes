@@ -63,11 +63,13 @@ export async function handleOpencode(
         models.push({ id: `${prov.id}/${m.id}`, name: m.name || m.id, provider: prov.id });
       }
     }
-    models.sort((a, b) => {
-      const ao = a.provider === 'opencode-omniroute' ? 0 : 1;
-      const bo = b.provider === 'opencode-omniroute' ? 0 : 1;
-      return ao - bo || a.name.localeCompare(b.name);
-    });
+    // Prioridade: OmniRoute (grátis) → hermes (fallback Control Center) → resto.
+    // Os 235 providers com catálogo builtin têm 9k+ modelos; sem a prioridade
+    // fixa de `hermes`, o corte em 500 engolia o provider inteiro (só 5/25
+    // apareciam — os "Cheaper*" que sortiam cedo no alfabeto).
+    const prio = (prov: string): number =>
+      prov === 'opencode-omniroute' ? 0 : prov === 'hermes' ? 1 : 2;
+    models.sort((a, b) => prio(a.provider) - prio(b.provider) || a.name.localeCompare(b.name));
     // O catálogo completo tem9k+ variações — o seletor da UI fica leve com os
     // omniroute (grátis) primeiro e corte em500.
     json(res, 200, { total: models.length, models: models.slice(0, 500) });

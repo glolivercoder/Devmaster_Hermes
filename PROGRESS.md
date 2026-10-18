@@ -147,3 +147,22 @@
   template click ✓, guards ✓.
 - Target `n8n` no ROUTE_TARGETS (default gemini-flash) · eventos audit
   `n8n:connected/created/auto_fixed/scored`.
+
+## 🔌 OpenCode ↔ Hermes Control Center (fallback + MCPs) - Out/2026
+**Status: FUNCIONAL (E2E)**
+
+- **Provider `hermes` no OpenCode global** (`~/.config/opencode/opencode.json`
+  + cópia em `%APPDATA%\opencode`, backup `.bak-20261017-231945`): aponta para
+  o LiteLLM do Hermes (`localhost:4000/v1`, master key do `.env`) e expõe os
+  **25 modelos do Control Center** (grátis + pagos Cheaper) como rede de
+  segurança caso o OmniRoute caia. **E2E**: `hermes/gemini-flash-free` →
+  `HERMES_FALLBACK_OK` em 2,7s.
+- **4 MCPs do `mcp-registry.json` conectados ao OpenCode** via chave `mcp`:
+  `context7` (docs anti-alucinação), `sequential-thinking`, `memory` e
+  `filesystem` (raiz do projeto). `GET /mcp` no :4196 lista os 4 com tools.
+- **Fix do seletor** (`src/opencode/opencode-routes.ts`): prioridade de ordenação
+  `opencode-omniroute → hermes → resto` — antes, os 9k+ modelos builtin dos 235
+  providers comiam o corte em 500 e só 5/25 modelos `hermes/*` apareciam.
+- **Pendência conhecida (ação externa)**: o auto-fallback *interno* do OmniRoute
+  está com o pool `auto/*` esgotado (só `kr/auto`/Kiro responde 200) — reativar
+  exige conectar provedores free no **dashboard do próprio OmniRoute**.
