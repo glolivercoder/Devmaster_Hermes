@@ -240,6 +240,17 @@ export async function history(project: string, limit = 50): Promise<MemoryRow[]>
   return mapRows(r.rows);
 }
 
+/** Remove uma memória específica, limitada ao projeto informado. */
+export async function deleteMemory(project: string, id: number): Promise<boolean> {
+  await ensureSchema();
+  const r = await getPool().query(
+    `DELETE FROM project_memories m USING projects p
+     WHERE m.project_id = p.id AND p.name = $1 AND m.id = $2`,
+    [normProject(project), id],
+  );
+  return (r.rowCount ?? 0) > 0;
+}
+
 /**
  * Monta o bloco de contexto de continuidade para injetar num prompt de LLM.
  * É o coração do "continuar sem alucinar": diz ao modelo exatamente onde paramos.

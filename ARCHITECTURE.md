@@ -16,6 +16,7 @@ flowchart TD
         EventBus["Central Event Bus (EventEmitter / Redis PubSub)"]
         Orchestrator["Agente Orquestrador Central"]
         PlanDAG["Plano DAG + subagentes especializados"]
+        AgencyRAG["Agency Agents RAG (96 perfis de software)"]
         Approval["Gate de confirmação explícita"]
         PortGuardian["Port & Process Guardian"]
         AuditLogger["Audit Logger & State Tracker"]
@@ -51,6 +52,7 @@ flowchart TD
 
     Orchestrator <--> EventBus
     Orchestrator --> PlanDAG
+    Orchestrator --> AgencyRAG
     PlanDAG --> LiteLLM
     PlanDAG --> Approval
     PlanDAG --> SecurityScanner
@@ -69,6 +71,8 @@ flowchart TD
 
 `POST /api/orchestrator/run` executa capacidades configuradas. `POST /api/orchestrator/coordinate` valida e agenda módulos por dependência; subagentes retornam entregáveis textuais e a síntese não altera arquivos ou serviços. Ações com efeitos externos permanecem nas rotas próprias e exigem confirmação explícita.
 
+O RAG `agency-agents` indexa fichas resumidas dos perfis de engenharia, design, QA/testes e segurança do repositório [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents). `/run` recupera até quatro referências e `/coordinate` até três por tarefa; isso adiciona contexto, não cria novos subagentes. O seed é explícito via `POST /api/memory/seed-agency-agents`.
+
 ## Módulos Principais e Dependências
 
 1. **Módulo 00: Core Foundation & Event Bus** (Eventos, Logs de auditoria, Registry central, Tipagens).
@@ -78,3 +82,4 @@ flowchart TD
 5. **Módulo 04: Telegram Bridge 1-to-1** (grammY bot, fila FIFO local, notificações de incidentes e gates).
 6. **Módulo 05: Security, Pentest & Quality Gates** (Semgrep, TruffleHog, verificação de segredos e conformidade).
 7. **Módulo 06: Frontend Dashboard & Modular Sidebar** (shadcn/ui, Framer Motion, visualização de custos, MCPs e chats).
+8. **Módulo 10: Agency Agents Reference RAG** (fichas atribuídas/versionadas de 96 perfis de software, recuperação semântica no orquestrador; sem delegação externa automática).

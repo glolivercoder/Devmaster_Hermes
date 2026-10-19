@@ -3,7 +3,7 @@
  *
  * Objetivo: usar a LLM CERTA para cada função, com o MENOR custo possível:
  *   • Tarefas PRIMÁRIAS/críticas (orquestrador, coder, security, pentest)
- *     → modelo pago de maior qualidade (fallback garantido).
+ *     → respeita modelo configurado; conexões falhas usam fallback do gateway.
  *   • Tarefas SECUNDÁRIAS (QA, integrator, pipelines, telegram)
  *     → delega a LLMs GRATUITAS/baratas (OmniRoute, free tiers).
  *
@@ -162,12 +162,11 @@ export async function routeIntelligently(
 
   // Disponibilidade (sinal 3): só modelos cujo provider tem chave no env.
   let pool = LLM_MODELS.filter((m) => !configured || isProviderConfigured(m, configured));
-  // Tarefa crítica: exige modelo PAGO quando existe pago configurado — o
-  // benchmark decide entre eles. Free só entra como último recurso (nenhum
-  // pago disponível). Sem esta regra, o custo baixo do free (COST_WEIGHT 1 ×
-  // penalidade 2.5) vencia o pago mesmo sem histórico, violando a política
-  // "crítico → pago".
-  if (isPrimary && pool.some((m) => !m.free)) pool = pool.filter((m) => !m.free);
+  // A rota escolhida pelo operador continua válida mesmo para alvos críticos;
+  // chamadas falhas passam pela cadeia de fallback do GatewayClient.
+  if (isPrimary && pool.some((m) => !m.free)) {
+    pool = pool.filter((m) => !m.free || m.id === opts.override);
+  }
 
   // Preferência do operador: em modo 'auto' a escolha da UI (routes[targetId])
   // é o PADRÃO — honrada enquanto estiver saudável. O smart-router só DESVIA

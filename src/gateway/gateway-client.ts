@@ -8,6 +8,35 @@
 
 import { eventBus } from '../core/event-bus.js';
 import { recordBenchmark } from '../llm/smart-router.js';
+import { LLM_PROVIDERS } from '../llm/providers-llm.js';
+import { LLM_MODELS } from '../llm/models.js';
+
+const FALLBACK_CHAIN = [
+  { provider: 'OMNIROUTE', model: 'omniroute-code' },
+  { provider: 'OPENROUTER', model: 'openrouter-qwen-free' },
+  { provider: 'DEEPSEEK', model: 'deepseek-code' },
+] as const;
+
+function configuredFallbackModels(requestedModel: string): string[] {
+  const configuredProviders = new Set(
+    LLM_PROVIDERS
+      .filter((provider) => provider.envKeys.some((key) => (process.env[key] ?? '').trim()))
+      .map((provider) => provider.id),
+  );
+  const requestedProvider = LLM_MODELS.find((model) => model.id === requestedModel)?.provider;
+  const fallbacks = FALLBACK_CHAIN
+    .filter(({ provider }) => configuredProviders.has(provider))
+    .map(({ model }) => model)
+    .filter((model) => model !== requestedModel);
+
+  if (FALLBACK_CHAIN.some((entry) => entry.model === requestedModel)) {
+    return [requestedModel, ...fallbacks];
+  }
+  return [
+    requestedModel,
+    ...fallbacks.filter((model) => LLM_MODELS.find((candidate) => candidate.id === model)?.provider !== requestedProvider),
+  ];
+}
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -47,6 +76,27 @@ export class GatewayClient {
 
   /** Chat completion via virtual key — logs cost to event bus. */
   async complete(req: CompletionRequest): Promise<CompletionResponse> {
+    const models = configuredFallbackModels(req.model);
+    let lastError: Error | undefined;
+    for (const model of models) {
+      const started = Date.now();
+      try {
+        return await this.completeSingle({ ...req, model });
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        void recordBenchmark(model, { success: false, latencyMs: Date.now() - started }).catch(() => {});
+        if (model !== models[models.length - 1]) {
+          console.warn(`[gateway] ${model} falhou; tentando próximo modelo: ${lastError.message}`);
+        }
+      }
+    }
+    throw new Error(
+      `Falha em todos os modelos tentados (${models.join(' → ')}): ${lastError?.message ?? 'erro desconhecido'}`,
+      { cause: lastError },
+    );
+  }
+
+  private async completeSingle(req: CompletionRequest): Promise<CompletionResponse> {
     const started = Date.now();
     eventBus.publish('llm:request', {
       model: req.model,
@@ -76,11 +126,6 @@ export class GatewayClient {
 
       if (!res.ok) {
         const err = await res.text();
-        // Alimenta o benchmark local com a falha para o smart-router aprender.
-        void recordBenchmark(req.model, {
-          success: false,
-          latencyMs: Date.now() - started,
-        }).catch(() => {});
         throw new Error(`LiteLLM [${res.status}]: ${err}`);
       }
 
@@ -116,10 +161,6 @@ export class GatewayClient {
 
       // Vazio: conta como falha no benchmark e re-tenta 1x antes de desistir.
       lastShape = `choices=${data.choices?.length ?? 0}`;
-      void recordBenchmark(req.model, {
-        success: false,
-        latencyMs: Date.now() - started,
-      }).catch(() => {});
       console.warn(`[gateway] resposta VAZIA do modelo ${req.model} (tentativa ${attempt}/${MAX_TRIES}, ${lastShape}) — re-tentando`);
     }
 

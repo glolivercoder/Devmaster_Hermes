@@ -180,9 +180,10 @@ function renderOrchRuns() {
           : '<span class="text-[10px] font-mono text-gray-600" title="run sem projeto — salvo só no histórico global">sem projeto</span>') +
         (r.codeMapUrl ? '<a href="' + orchEsc(r.codeMapUrl) + '" target="_blank" rel="noopener" class="text-[10px] font-mono text-cyan-400 hover:underline">🗺 mapa ↗</a>' : '') +
       '</div>' +
-      '<div class="text-[11px] text-gray-300 font-mono truncate" title="' + orchEsc(r.prompt) + '">💬 ' + orchEsc(r.prompt) + '</div>' +
+      '<div class="text-[11px] text-gray-300 font-mono truncate" title="' + orchEsc(r.prompt) + '">💬 ' + orchEsc((r.prompt || '').slice(0, 200)) + (r.prompt && r.prompt.length > 200 ? '…' : '') + '</div>' +
+      '<details class="text-[10px] text-gray-400 font-mono"><summary class="cursor-pointer hover:text-gray-200">Prompt original completo (' + (r.prompt || '').length + ' caracteres)</summary><pre class="mt-1 whitespace-pre-wrap break-words max-h-64 overflow-y-auto">' + orchEsc(r.prompt || '') + '</pre></details>' +
       (ok
-        ? '<div class="text-[10px] text-gray-500 font-mono">' + orchEsc((r.reply || '').slice(0, 240)) + (r.reply && r.reply.length >= 240 ? '…' : '') + '</div>'
+        ? '<details class="text-[10px] text-gray-400 font-mono"><summary class="cursor-pointer hover:text-gray-200">Resposta completa (' + (r.reply || '').length + ' caracteres)</summary><pre class="mt-1 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">' + orchEsc(r.reply || '') + '</pre></details><div class="text-[10px] text-gray-500 font-mono">' + orchEsc((r.reply || '').slice(0, 240)) + (r.reply && r.reply.length > 240 ? '…' : '') + '</div>'
         : '<div class="text-[10px] text-red-400 font-mono">⚠️ ' + orchEsc(r.error || 'erro desconhecido') + '</div>') +
       (r.savedFiles && r.savedFiles.length
         ? '<div class="text-[10px] text-gray-600 font-mono">📁 salvos: ' + r.savedFiles.map(f => orchEsc(f)).join(' · ') + '</div>'

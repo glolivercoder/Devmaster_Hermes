@@ -46,7 +46,7 @@ POST /api/deploy/chat           {message, profile?, project?, history?} → Depl
   barato) → `cheaper-fast` (Haiku). Validado E2E: free falhou → cheaper-vision
   assumiu.
 - **smart-router**: target `deploy` adicionado em `ROUTE_TARGETS` (default
-  `gemini-flash`); `computer_user` continua no target original.
+  `omniroute-code`); `computer_user` continua no target original.
 - **researcher.searchWeb** → rota refresh-tiers (regra "atualizar free tiers").
 - **memory (pgvector)** → chat persiste em projeto `deploy:<escolhida>`;
   `continuityBlock` injeta histórico na conversa.

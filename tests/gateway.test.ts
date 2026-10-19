@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { test, mock } from 'node:test';
 import { GatewayClient } from '../src/gateway/gateway-client.js';
 import { eventBus } from '../src/core/event-bus.js';
+import { routeIntelligently } from '../src/llm/smart-router.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function mockFetch(body: unknown, status = 200) {
@@ -83,6 +84,55 @@ test('GatewayClient.complete: throws on non-200 status', async () => {
   );
 });
 
+test('GatewayClient.complete: falls through configured APIs until one responds', async () => {
+  const client = new GatewayClient('http://localhost:4000', 'sk-master');
+  const envNames = ['OMNIROUTE_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY'] as const;
+  const previousEnv = new Map(envNames.map((name) => [name, process.env[name]]));
+  const previousFetch = globalThis.fetch;
+  const requestedModels: string[] = [];
+  for (const name of envNames) process.env[name] = 'test-key';
+
+  // @ts-ignore mock fetch
+  globalThis.fetch = mock.fn(async (_url, init) => {
+    const body = JSON.parse(String(init?.body)) as { model: string };
+    requestedModels.push(body.model);
+    if (body.model !== 'deepseek-code') {
+      return { ok: false, status: 503, text: async () => `${body.model} unavailable` };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: 'Resposta via DeepSeek' } }], model: body.model }),
+      text: async () => '',
+    };
+  });
+
+  try {
+    const response = await client.complete({
+      model: 'omniroute-code',
+      messages: [{ role: 'user', content: 'teste de fallback' }],
+      virtualKey: 'sk-virtual-test',
+    });
+    assert.equal(response.content, 'Resposta via DeepSeek');
+    assert.deepEqual(requestedModels, ['omniroute-code', 'openrouter-qwen-free', 'deepseek-code']);
+  } finally {
+    globalThis.fetch = previousFetch;
+    for (const name of envNames) {
+      const value = previousEnv.get(name);
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
+test('smart-router: honors the configured free OmniRoute model for orchestrator', async () => {
+  const decision = await routeIntelligently('orchestrator', {
+    override: 'omniroute-code',
+    configuredProviders: new Set(['OMNIROUTE', 'DEEPSEEK']),
+  });
+  assert.equal(decision.modelId, 'omniroute-code');
+});
+
 test('GatewayClient.createVirtualKey: returns key string', async () => {
   const client = new GatewayClient('http://localhost:4000', 'sk-master');
   // @ts-ignore mock
@@ -90,7 +140,7 @@ test('GatewayClient.createVirtualKey: returns key string', async () => {
 
   const key = await client.createVirtualKey({
     alias: 'module-orchestrator',
-    models: ['claude-code', 'gemini-flash'],
+    models: ['claude-code', 'omniroute-code'],
     maxBudgetUsd: 5.0,
   });
 

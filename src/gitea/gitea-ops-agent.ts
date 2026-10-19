@@ -1,7 +1,7 @@
 /**
  * GiteaOpsAgent — Subagente autonomo para versionamento local no Gitea.
  * Backups em F:\Projetos Backup\{projeto}\.
- * Modelos gratis OpenRouter/Google, fallback DeepSeek barato.
+ * Modelos grátis OmniRoute/OpenRouter, fallback DeepSeek.
  */
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'node:fs';
@@ -11,7 +11,7 @@ import { eventBus } from '../core/event-bus.js';
 import { testConnection, listRepos, createWebhook, getBaseUrl, getOwner, getToken } from '../../scripts/gitea-client.js';
 
 const BACKUP_ROOT = 'F:\\Projetos Backup';
-const FREE_MODELS = ['openrouter-qwen-free','gemini-flash-free','openrouter-deepseek-free','openrouter-mistral-free','gemini-flash','deepseek-code'];
+const FREE_MODELS = ['omniroute-code','openrouter-qwen-free','openrouter-deepseek-free','openrouter-mistral-free','deepseek-code'];
 
 export interface GiteaRepoConfig { projectName: string; repoName: string; description: string; }
 export interface GiteaOpsResult { ok: boolean; step: string; detail: string; data?: unknown; }

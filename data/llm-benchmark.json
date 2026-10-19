@@ -33,12 +33,12 @@
       "updatedAt": "2026-10-18T03:00:37.806Z"
     },
     "cheaper-opus": {
-      "calls": 54,
-      "success": 52,
+      "calls": 60,
+      "success": 58,
       "failures": 2,
-      "avgLatencyMs": 48828,
+      "avgLatencyMs": 29212,
       "totalSpend": 0,
-      "updatedAt": "2026-10-18T19:08:14.611Z"
+      "updatedAt": "2026-10-18T22:59:17.615Z"
     },
     "cheaper-vision": {
       "calls": 1,
@@ -47,6 +47,38 @@
       "avgLatencyMs": 13196,
       "totalSpend": 0,
       "updatedAt": "2026-10-17T23:46:40.095Z"
+    },
+    "cheaper-code": {
+      "calls": 16,
+      "success": 15,
+      "failures": 1,
+      "avgLatencyMs": 35588,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-18T23:23:11.690Z"
+    },
+    "omniroute-code": {
+      "calls": 4,
+      "success": 3,
+      "failures": 1,
+      "avgLatencyMs": 89052,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-18T23:25:37.954Z"
+    },
+    "openrouter-qwen-free": {
+      "calls": 1,
+      "success": 0,
+      "failures": 1,
+      "avgLatencyMs": 550,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-18T23:23:46.078Z"
+    },
+    "deepseek-code": {
+      "calls": 1,
+      "success": 1,
+      "failures": 0,
+      "avgLatencyMs": 14333,
+      "totalSpend": 0,
+      "updatedAt": "2026-10-18T23:24:00.412Z"
     }
   }
 }

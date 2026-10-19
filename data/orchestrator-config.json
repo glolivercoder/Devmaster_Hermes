@@ -2,7 +2,7 @@
   "pesquisaAvancada": false,
   "analiseMercado": false,
   "siteCrm": false,
-  "siteProfissional": false,
+  "siteProfissional": true,
   "portasProcessos": false,
-  "mapaCodigo": true
+  "mapaCodigo": false
 }

@@ -398,7 +398,7 @@
             </div>
             <div class="text-gray-400 text-[11px]">Testes unitários concluídos</div>
             <div class="text-[10px] text-gray-500 flex justify-between">
-              <span>gemini-flash</span>
+              <span>omniroute-code</span>
               <span class="text-emerald-400">$0.02</span>
             </div>
           </div>
@@ -2709,10 +2709,12 @@ Responda em pt-BR.`;
             ${actions}
           `;
           chat.scrollTop = chat.scrollHeight;
+          if (typeof loadOrchRuns === 'function') void loadOrchRuns();
         })
         .catch(err => {
           const el = document.getElementById(thinkingId);
           if (el) el.innerHTML = `<span class="text-red-400 font-bold">[ERRO]</span> ${String(err.message || err)} <span class="text-gray-500">— hermes-core rodando na :4020?</span>`;
+          if (typeof loadOrchRuns === 'function') void loadOrchRuns();
         });
       }
 
@@ -2750,6 +2752,7 @@ Responda em pt-BR.`;
         const el = document.getElementById(resultId);
         if (el) el.innerHTML = `<span class="text-red-400 font-bold">[COORDENAÇÃO FALHOU]</span> ${escHtml(error.message || error)}`;
       }
+      if (typeof loadOrchRuns === 'function') void loadOrchRuns();
       chat.scrollTop = chat.scrollHeight;
     }
 
@@ -2893,7 +2896,7 @@ Responda em pt-BR.`;
         if (!r2.ok) {
           setState('⚠️ OmniRoute falhou — tentando via Hermes Control Center…');
           session = await newSession();
-          r2 = await send(session.id, 'hermes/gemini-flash-free');
+          r2 = await send(session.id, 'hermes/openrouter-qwen-free');
         }
         if (!r2.ok) {
           const m = await r2.json().catch(() => ({}));

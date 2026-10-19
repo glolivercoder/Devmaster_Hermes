@@ -15,7 +15,9 @@ Registro dinâmico de status e marcos de desenvolvimento.
 | **07 - Composio Integration Subagent** | Subagente integrador multi-serviços com formulários de dados e toolkits | ✅ DONE | ✅ 29/29 tests GREEN |
 | **08 - Computer Use Subagent** | Driver de tela OS (Win/Unix) + OpenRouter Free Vision + Fallback para Editores | ✅ DONE | ✅ 34/34 tests GREEN |
 | **09 - Paperclip & Virtual Office** | Adaptador Paperclip + Desks visuais dos agentes + Quadro Kanban de tickets | ✅ DONE | ✅ 37/37 tests GREEN |
+| **10 - Agency Agents Reference RAG** | Catálogo consultivo de 96 perfis de engenharia, design, QA e segurança | 🟡 IMPLEMENTADO | ✅ build + 10 testes focados; seed PostgreSQL pendente |
 
 ## Próxima Tarefa Imediata
 - Expor recursos adicionais (OpenCode, N8N, Deploy, Composio, Versionamento) como ferramentas do orquestrador sem contornar confirmação das rotas próprias.
 - Adicionar testes de integração para `/api/orchestrator/coordinate` e aprovações de ações externas.
+- Iniciar PostgreSQL/pgvector e executar `POST /api/memory/seed-agency-agents` para preencher o catálogo RAG.

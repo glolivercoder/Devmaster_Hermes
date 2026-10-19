@@ -19,6 +19,7 @@ import {
   listProjects, history, deleteProject, normProject, type MemoryKind,
 } from './project-memory.js';
 import { seedApiCatalog } from './api-catalog.js';
+import { listAgencyAgentReferences, seedAgencyAgents } from './agency-agents.js';
 
 const MAX_BODY = 1024 * 1024;
 
@@ -65,6 +66,17 @@ export async function handleMemoryRoutes(
     // POST /api/memory/seed-apis — semeia o catálogo de APIs no RAG (idempotente)
     if (pathname === '/api/memory/seed-apis' && method === 'POST') {
       send(res, 200, await seedApiCatalog());
+      return true;
+    }
+
+    if (pathname === '/api/memory/agency-agents' && method === 'GET') {
+      const agents = await listAgencyAgentReferences();
+      send(res, 200, { project: 'agency-agents', count: agents.length, agents });
+      return true;
+    }
+
+    if (pathname === '/api/memory/seed-agency-agents' && method === 'POST') {
+      send(res, 200, await seedAgencyAgents());
       return true;
     }
 

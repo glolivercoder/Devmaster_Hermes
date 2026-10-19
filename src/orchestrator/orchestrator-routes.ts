@@ -21,6 +21,7 @@ import { researchTask, type ResearchReport } from '../research/researcher.js';
 import { resolveDocs } from '../research/context7.js';
 import { runMarketAnalysis, type MarketReport } from '../market/market-analysis.js';
 import { continuityBlock, remember, saveState, normProject, recall } from '../memory/project-memory.js';
+import { retrieveAgencyAgentContext } from '../memory/agency-agents.js';
 import { auditLogger } from '../core/audit-logger.js';
 import {
   getPortMapText, parseProcessDirectives, buildPortManagementBlock,
@@ -43,12 +44,12 @@ const HISTORY_MAX = 200; // anel: trim acima disso p/ não crescer p/ sempre
 export interface HistoryEntry {
   ts: string;
   project?: string;
-  prompt: string;      // truncado (200 chars) p/ o card da UI
+  prompt: string;      // prompt original completo
   model: string;
   latencyMs: number;
   ok: boolean;
   error?: string;
-  reply: string;       // truncado (400 chars) p/ pré-visualização
+  reply: string;       // resposta completa da IA
   codeMapUrl?: string;
   savedFiles?: string[];
 }
@@ -291,6 +292,14 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     }
   } catch { /* catálogo ainda não semeado — segue sem */ }
 
+  // Perfis Agency Agents são referências consultivas recuperadas do RAG; não
+  // criam novas delegações nem concedem ferramentas ao modelo.
+  try {
+    blocks.push(await retrieveAgencyAgentContext(prompt));
+  } catch (e) {
+    blocks.push(`(RAG Agency Agents indisponível: ${String(e instanceof Error ? e.message : e)}. Não afirme ter consultado perfis.)`);
+  }
+
   // 3) Análise de mercado (switch) — pipeline pesado: web + notícias + Reddit +
   //    LLM anti-sicofância → dashboard HTML salvo p/ aba Previews. O resumo cru
   //    vai ao contexto do orquestrador; o relatório completo vai no resultado.
@@ -363,7 +372,7 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
     eventBus.publish('agent:task:failed', { agentId: 'hermes-orchestrator', taskId: runTaskId, error: errMsg });
     // Registra no histórico GLOBAL p/ o usuário ver o run (e o motivo) na aba Histórico.
     appendHistory({
-      project: proj, prompt: prompt.slice(0, 200), model, latencyMs: Date.now() - started,
+      project: proj, prompt, model, latencyMs: Date.now() - started,
       ok: false, error: errMsg, reply: '',
     });
     throw e;
@@ -481,11 +490,11 @@ export async function runOrchestrator(prompt: string, project?: string): Promise
   });
   appendHistory({
     project: proj,
-    prompt: prompt.slice(0, 200),
+    prompt,
     model: out.model || model,
     latencyMs: Date.now() - started,
     ok: true,
-    reply: out.content.slice(0, 400),
+    reply: out.content,
     codeMapUrl: codeMap?.url,
     savedFiles: saved?.files,
   });
@@ -566,6 +575,7 @@ export async function handleOrchestratorRoutes(
     }
 
     if (path === '/api/orchestrator/coordinate' && method === 'POST') {
+      const started = Date.now();
       const b = await readBody(req);
       const prompt = String(b.prompt ?? '').trim();
       if (!prompt) { send(res, 400, { error: 'prompt obrigatório' }); return true; }
@@ -586,14 +596,23 @@ export async function handleOrchestratorRoutes(
           /qa|test|qualidade/.test(moduleName) ? 'QA' :
           /integrat/.test(moduleName) ? 'INTEGRATOR' : 'CODER';
         const target = role.toLowerCase();
+        let agencyContext: string;
+        try {
+          agencyContext = await retrieveAgencyAgentContext(`${prompt}\n${module.name}`, 3);
+        } catch (error) {
+          agencyContext = `RAG Agency Agents indisponível: ${String(error instanceof Error ? error.message : error)}.`;
+        }
         return {
           taskId,
           agentRole: role,
           assignedModel: await resolveModel(target),
           virtualKey: await getVirtualKey(target),
-          instructions: role === 'SECURITY' || role === 'PENTEST'
-            ? `Read-only secret scan report (not a penetration test) for ${process.cwd()}:\n${JSON.stringify(securityReport)}`
-            : '',
+          instructions: [
+            `Agency Agents expertise references for this request:\n${agencyContext}`,
+            role === 'SECURITY' || role === 'PENTEST'
+              ? `Read-only secret scan report (not a penetration test) for ${process.cwd()}:\n${JSON.stringify(securityReport)}`
+              : '',
+          ].filter(Boolean).join('\n\n'),
         };
       });
 
@@ -615,6 +634,14 @@ export async function handleOrchestratorRoutes(
           `Delegated task results (bounded excerpts):\n${JSON.stringify(synthesisResults)}`,
           'Synthesize completed outputs, report failed or blocked tasks, identify conflicts and state clearly that no files or external systems were changed.',
         ].join('\n\n'),
+      });
+
+      appendHistory({
+        prompt,
+        model: synthesis.model || orchestratorModel,
+        latencyMs: Date.now() - started,
+        ok: true,
+        reply: synthesis.content,
       });
 
       send(res, 200, {

@@ -17,7 +17,7 @@ loadDotEnv();
 
 // Parse argumentos
 const args = process.argv.slice(2);
-let model = 'gemini-flash';
+let model = 'gemini-pro';
 let message = '';
 
 // Verifica se tem flag --model
@@ -65,7 +65,7 @@ async function testGemini(modelName: string, userMessage: string) {
     console.error('1. Se o LiteLLM está rodando: docker compose up -d litellm');
     console.error('2. Se a chave GEMINI_API_KEY está correta no .env');
     console.error('3. Se o modelo está configurado no litellm-config.yaml');
-    console.error('   Modelos Gemini disponíveis: gemini-pro, gemini-flash, gemini-flash-free');
+    console.error('   Modelo Gemini disponível: gemini-pro');
   }
 }
 

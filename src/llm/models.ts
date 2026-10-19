@@ -13,8 +13,6 @@ export const LLM_MODELS: LlmModelOption[] = [
   { id: 'claude-code', provider: 'ANTHROPIC', underlying: 'anthropic/claude-sonnet-4-5', free: false, costTier: '$$$', bestFor: 'Código complexo, arquitetura' },
   { id: 'claude-fast', provider: 'ANTHROPIC', underlying: 'anthropic/claude-haiku-3-5', free: false, costTier: '$', bestFor: 'Respostas rápidas, Telegram' },
   { id: 'gemini-pro', provider: 'GEMINI', underlying: 'gemini/gemini-2.5-pro', free: false, costTier: '$$', bestFor: 'Raciocínio longo, contexto gigante' },
-  { id: 'gemini-flash', provider: 'GEMINI', underlying: 'gemini/gemini-2.0-flash', free: false, costTier: '$', bestFor: 'Rápido e barato' },
-  { id: 'gemini-flash-free', provider: 'GEMINI', underlying: 'gemini/gemini-2.0-flash', free: true, freeVia: 'Gemini free tier (AI Studio)', costTier: 'free', bestFor: 'Gratuito dentro da cota' },
   { id: 'openrouter-auto', provider: 'OPENROUTER', underlying: 'openrouter/openai/gpt-5.1', free: false, costTier: '$$', bestFor: 'Auto-seleção custo/qualidade' },
   { id: 'openrouter-vision-free', provider: 'OPENROUTER', underlying: 'openrouter/google/gemini-2.0-flash-exp:free', free: true, freeVia: 'OpenRouter :free', costTier: 'free', bestFor: 'Visão gratuita, computer use' },
   { id: 'openrouter-deepseek-free', provider: 'OPENROUTER', underlying: 'openrouter/deepseek/deepseek-r1:free', free: true, freeVia: 'OpenRouter :free', costTier: 'free', bestFor: 'Raciocínio gratuito (R1)' },
@@ -56,15 +54,15 @@ export interface RouteTarget {
 }
 
 export const ROUTE_TARGETS: RouteTarget[] = [
-  // ─── Agentes PRIMÁRIOS / críticos → Cheaper Inference (pago, qualidade) ───
-  // Caem para os gratuitos locais apenas se CHEAPER_INFERENCE_API_KEY não existir.
-  { id: 'orchestrator', label: 'Orquestrador principal', kind: 'agent', defaultModel: 'cheaper-opus' },
+  // Agentes críticos usam o modelo configurado pelo operador; falhas seguem
+  // o fallback global do GatewayClient (OmniRoute → OpenRouter free → DeepSeek).
+  { id: 'orchestrator', label: 'Orquestrador principal', kind: 'agent', defaultModel: 'omniroute-code' },
   { id: 'coder', label: 'Agente CODER', kind: 'agent', defaultModel: 'cheaper-code' },
   { id: 'security', label: 'Agente SECURITY', kind: 'agent', defaultModel: 'cheaper-fast' },
   { id: 'pentest', label: 'Agente PENTEST', kind: 'agent', defaultModel: 'cheaper-code' },
   { id: 'computer_user', label: 'Agente COMPUTER_USE', kind: 'agent', defaultModel: 'openrouter-vision-free' },
-  { id: 'deploy', label: 'Agente DEPLOY', kind: 'agent', defaultModel: 'gemini-flash' },
-  { id: 'n8n', label: 'Agente Automação N8N', kind: 'agent', defaultModel: 'gemini-flash' },
+  { id: 'deploy', label: 'Agente DEPLOY', kind: 'agent', defaultModel: 'omniroute-code' },
+  { id: 'n8n', label: 'Agente Automação N8N', kind: 'agent', defaultModel: 'omniroute-code' },
   // ─── Agentes SECUNDÁRIOS → OmniRoute (gratuito, auto-roteamento c/ fallback) ─
   { id: 'qa', label: 'Agente QA', kind: 'agent', defaultModel: 'omniroute-fast' },
   { id: 'integrator', label: 'Agente INTEGRATOR', kind: 'agent', defaultModel: 'omniroute-fast' },
@@ -72,7 +70,7 @@ export const ROUTE_TARGETS: RouteTarget[] = [
   // ─── Pipelines de serviço → OmniRoute (custo zero, baixa criticidade) ─────
   { id: 'svc-serpapi', label: 'Pipeline SerpAPI', kind: 'service', defaultModel: 'omniroute-fast' },
   { id: 'svc-tavily', label: 'Pipeline Tavily', kind: 'service', defaultModel: 'omniroute-fast' },
-  { id: 'svc-brave', label: 'Pipeline Brave Search', kind: 'service', defaultModel: 'gemini-flash-free' },
+  { id: 'svc-brave', label: 'Pipeline Brave Search', kind: 'service', defaultModel: 'openrouter-qwen-free' },
   { id: 'svc-linkup', label: 'Pipeline Linkup', kind: 'service', defaultModel: 'omniroute-fast' },
   { id: 'svc-github', label: 'Pipeline GitHub', kind: 'service', defaultModel: 'omniroute-code' },
   { id: 'svc-media', label: 'Pipeline Mídia', kind: 'service', defaultModel: 'openrouter-vision-free' },
